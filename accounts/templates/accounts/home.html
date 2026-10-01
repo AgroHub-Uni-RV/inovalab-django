@@ -18,6 +18,7 @@
         <dt>Conta</dt><dd><span class="status-dot" aria-hidden="true"></span> Ativa</dd>
     </dl>
     <div class="account-actions">
+        <a class="button secondary" href="{% url 'catalogo:servicos-list' %}">Catálogo</a>
         {% if user.is_superuser %}
         <a class="button primary" href="{% url 'admin:index' %}">Administrar contas <span aria-hidden="true">↗</span></a>
         {% endif %}

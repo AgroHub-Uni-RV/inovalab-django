@@ -1,0 +1,15 @@
+{% extends 'catalogo/base.html' %}
+{% block title %}{{ object.nome }}{% endblock %}
+{% block content %}
+<p><a href="{{ list_url }}">Voltar para {{ title }}</a></p>
+<h1>{{ object.nome }}</h1>
+<dl>
+    <dt>Status</dt><dd>{{ object.get_status_display }}</dd>
+    {% if category == 'espacos' %}
+    <dt>Capacidade máxima</dt><dd>{{ object.capacidade_maxima_de_pessoas }} pessoas</dd>
+    {% else %}
+    <dt>Descrição</dt><dd>{{ object.descricao|default:'Sem descrição.'|linebreaksbr }}</dd>
+    {% endif %}
+</dl>
+{% if can_manage %}<p><a class="button" href="{% url update_url_name object.pk %}">Editar</a></p>{% endif %}
+{% endblock %}

@@ -1,0 +1,27 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Catálogo{% endblock %} · InovaLab</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="{% static 'catalogo/style.css' %}">
+</head>
+<body>
+    <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+    <header>
+        <strong>InovaLab</strong>
+        <nav aria-label="Catálogo">
+            <a href="{% url 'catalogo:servicos-list' %}" {% if category == 'servicos' %}aria-current="page"{% endif %}>Serviços</a>
+            <a href="{% url 'catalogo:equipamentos-list' %}" {% if category == 'equipamentos' %}aria-current="page"{% endif %}>Equipamentos</a>
+            <a href="{% url 'catalogo:espacos-list' %}" {% if category == 'espacos' %}aria-current="page"{% endif %}>Espaços</a>
+            <a href="{% url 'accounts:home' %}">Minha conta</a>
+        </nav>
+    </header>
+    <main id="conteudo" tabindex="-1">
+        {% if messages %}<div role="status">{% for message in messages %}<p class="message">{{ message }}</p>{% endfor %}</div>{% endif %}
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

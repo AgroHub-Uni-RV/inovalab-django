@@ -1,0 +1,11 @@
+{% extends 'catalogo/base.html' %}
+{% block title %}{% if object %}Editar{% else %}Novo{% endif %} {{ singular_title }}{% endblock %}
+{% block content %}
+<h1>{% if object %}Editar{% else %}Novo{% endif %} {{ singular_title }}</h1>
+{% if form.errors %}<p class="error" role="alert">Corrija os campos indicados para salvar.</p>{% endif %}
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div class="actions"><button type="submit">Salvar</button><a href="{{ list_url }}">Cancelar</a></div>
+</form>
+{% endblock %}

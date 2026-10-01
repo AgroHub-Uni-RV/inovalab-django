@@ -1,0 +1,23 @@
+{% extends 'catalogo/base.html' %}
+{% block title %}{{ title|capfirst }}{% endblock %}
+{% block content %}
+<h1>{{ title|capfirst }}</h1>
+{% if can_manage %}<p><a class="button" href="{{ create_url }}">Novo {{ singular_title }}</a></p>{% endif %}
+{% if object_list %}
+<div class="table-wrapper">
+    <table>
+        <thead><tr><th scope="col">Nome</th>{% if category == 'espacos' %}<th scope="col">Capacidade</th>{% endif %}<th scope="col">Status</th></tr></thead>
+        <tbody>{% for entry in object_list %}
+            <tr><td><a href="{% url detail_url_name entry.pk %}">{{ entry.nome }}</a></td>{% if category == 'espacos' %}<td>{{ entry.capacidade_maxima_de_pessoas }} pessoas</td>{% endif %}<td>{{ entry.get_status_display }}</td></tr>
+        {% endfor %}</tbody>
+    </table>
+</div>
+{% else %}<p>Nenhum cadastro encontrado.</p>{% endif %}
+{% if is_paginated %}
+<nav class="pagination" aria-label="Paginação">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}
+    <span>Página {{ page_obj.number }} de {{ paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">Próxima</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}
