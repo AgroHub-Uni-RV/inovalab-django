@@ -83,7 +83,9 @@ Não há autenticação de sistemas externos neste módulo; a etapa de integraç
 
 ## Verificações executadas
 
-37 testes de catálogo e 35 de identidade/configuração passaram: **72 testes no total**. Cobrem modelos/restrições, carga repetível, preservação de edições, campos privados, consulta e escrita nos três cadastros, permissões, paginação, CSRF, validação sem persistência parcial e revogação da sessão.
+38 testes de catálogo e 35 de identidade/configuração passaram: **73 testes no total**. Cobrem modelos/restrições, carga repetível, preservação de edições, campos privados, consulta e escrita nos três cadastros, permissões, paginação, CSRF, validação sem persistência parcial e revogação da sessão.
+
+A revisão independente identificou que chamadas diretas à operação compartilhada podiam converter uma capacidade fracionária ou booleana em inteiro antes da validação. A validação do modelo agora verifica o valor original. O teste de regressão reproduziu a falha antes da correção e passou depois, cobrindo criação, edição sem persistência parcial e `full_clean`, inclusive valores não finitos. A suíte completa passou após a correção; não foi necessária nova migração.
 
 `manage.py check`, `makemigrations --check --dry-run`, `pip check` e `git diff --check` sem pendências. Migrações locais aplicadas e repetidas; carga repetida criou zero serviços adicionais. Contas anteriores preservadas.
 
@@ -104,7 +106,7 @@ Para sua depuração posterior:
 
 1. Entre com uma conta comum e outra do grupo `Administradores`; confirme consulta para ambas e manutenção só para a segunda. Verifique também um staff sem grupo.
 2. Crie e edite serviços, equipamentos e espaços; confira persistência após atualizar a página e consulte os mesmos IDs na API.
-3. Tente nomes vazios/longos, status inválidos e capacidades 0, negativas, fracionárias e acima de 2147483647; confirme rejeição sem gravação parcial na web/API.
+3. Tente nomes vazios/longos, status inválidos e capacidades 0, negativas, fracionárias, booleanas e acima de 2147483647; confirme rejeição sem gravação parcial na web/API.
 4. Renomeie um serviço inicial, edite descrição/status e execute `carregar_servicos_iniciais` duas vezes; confirme ID e edições preservados. Não apagar seu banco para esse teste.
 5. Com mais de 25 registros, percorra todas as páginas web/API e confira ordenação e total.
 6. Tente POST/PATCH como usuário comum, como staff sem grupo e sem CSRF; confira 403 e dados inalterados. Com administrador e CSRF válido, tente DELETE: 405.

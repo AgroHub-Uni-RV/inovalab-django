@@ -54,7 +54,7 @@ Verificação automatizada:
 & .\venv\Scripts\python.exe -m pip check
 ```
 
-72 testes passaram (37 do catálogo e 35 de identidade/configuração); checks, migrações e dependências sem pendências. Os fluxos básicos foram verificados no Chrome, incluindo layout a 360 px. Consulte os guias de [identidade](docs/modules/01-identidade-e-acesso.md) e [catálogo](docs/modules/02-catalogo.md) para contratos e roteiros. `.env` não é carregado automaticamente. Esta entrega é local; hospedagem e produção permanecem por definir.
+73 testes passaram (38 do catálogo e 35 de identidade/configuração); checks, migrações e dependências sem pendências. Os fluxos básicos foram verificados no Chrome, incluindo layout a 360 px. Consulte os guias de [identidade](docs/modules/01-identidade-e-acesso.md) e [catálogo](docs/modules/02-catalogo.md) para contratos e roteiros. `.env` não é carregado automaticamente. Esta entrega é local; hospedagem e produção permanecem por definir.
 
 Após entrar, use **Catálogo** ou abra `/catalogo/servicos/`. A migração cria os onze serviços do PDF; `manage.py carregar_servicos_iniciais` repete a carga preservando alterações. APIs disponíveis: `/api/v1/servicos/`, `/api/v1/equipamentos/`, `/api/v1/espacos/`, com detalhes por ID. Indisponibilização preserva registros; exclusão física não é oferecida.
 

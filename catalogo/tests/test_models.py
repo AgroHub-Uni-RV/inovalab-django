@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser, Group
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -73,6 +75,26 @@ class CatalogModelTests(TestCase):
         entry.refresh_from_db()
         self.assertEqual(entry.nome, 'Original')
         self.assertEqual(entry.capacidade_maxima_de_pessoas, 10)
+
+    def test_capacity_original_value_is_validated_before_integer_coercion(self):
+        entry = save_entry(actor=self.admin, model=Espaco, data={
+            'nome': 'Original', 'capacidade_maxima_de_pessoas': 10,
+        })
+        for value in (1.5, Decimal('1.5'), True, False, float('inf'), float('nan')):
+            with self.subTest(value=value, operation='create'), self.assertRaises(ValidationError):
+                save_entry(actor=self.admin, model=Espaco, data={
+                    'nome': 'Não criar', 'capacidade_maxima_de_pessoas': value,
+                })
+            with self.subTest(value=value, operation='update'), self.assertRaises(ValidationError):
+                save_entry(actor=self.admin, model=Espaco, instance=entry, data={
+                    'nome': 'Não editar', 'capacidade_maxima_de_pessoas': value,
+                })
+            with self.subTest(value=value, operation='model'), self.assertRaises(ValidationError):
+                Espaco(nome='Não criar', capacidade_maxima_de_pessoas=value).full_clean()
+            entry.refresh_from_db()
+            self.assertEqual(entry.nome, 'Original')
+            self.assertEqual(entry.capacidade_maxima_de_pessoas, 10)
+        self.assertEqual(Espaco.objects.count(), 1)
 
     def test_private_seed_key_cannot_be_changed_by_write_operation(self):
         entry = Servico.objects.first()

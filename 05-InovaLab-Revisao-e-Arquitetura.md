@@ -132,7 +132,7 @@ Cada módulo terá especificação e plano próprios após validação. Por inst
 | Etapa | Entrega proposta | Decisões necessárias | Verificação principal |
 | --- | --- | --- | --- |
 | 1. Identidade e acesso (entregue) | Colisão corrigida, configuração, usuário/papéis; contas no admin, login/logout, página privada e API de identidade | Responsável autorizou avançar para catálogo em 01/10/2026 | 35 testes passaram na entrega; fluxo web/API e admin verificados no Chrome |
-| 2. Catálogo (entregue) | Serviços, equipamentos e espaços; frontend/API simples e carga dos 11 serviços | Q12 confirmado; aguardar testes profundos pelo responsável | 37 testes do catálogo e suíte de 72 passando; fluxos básicos no Chrome; referências de tarefas/reservas protegidas nas etapas futuras |
+| 2. Catálogo (entregue) | Serviços, equipamentos e espaços; frontend/API simples e carga dos 11 serviços | Q12 confirmado; aguardar testes profundos pelo responsável | 38 testes do catálogo e suíte de 73 passando; revisão independente e fluxos básicos no Chrome; referências de tarefas/reservas protegidas nas etapas futuras |
 | 3. Tarefas | CRUD de admin, consulta restrita, Kanban e transições web/API | Q03 restante, Q04, Q08 para tarefas e histórico | CT01–CT08, CT25–CT28 e equivalência web/API |
 | 4. Agenda | Agenda e proteção de conflito | Q05 restante, Q06, Q08 para reservas, Q12–Q14 e banco | CT09–CT15, CT19–CT20, incluindo concorrência no banco escolhido |
 | 5. AgroHub | Contrato, credencial e recebimento idempotente | Q07, dados mínimos e alterações locais | CT16–CT18, CT28–CT29 e reenvio simultâneo |

@@ -1,3 +1,5 @@
+from decimal import Decimal, InvalidOperation
+
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -59,6 +61,19 @@ class Espaco(CadastroBase):
         'capacidade máxima de pessoas', validators=[MinValueValidator(1), MaxValueValidator(2147483647)],
     )
     status = models.CharField('status', max_length=15, choices=StatusRecurso.choices, default=StatusRecurso.DISPONIVEL)
+
+    def clean_fields(self, exclude=None):
+        field = 'capacidade_maxima_de_pessoas'
+        value = self.capacidade_maxima_de_pessoas
+        if field not in (exclude or ()) and value is not None:
+            # IntegerField converts values before running validators; validate the original first.
+            try:
+                number = Decimal(str(value))
+            except (InvalidOperation, ValueError, TypeError):
+                raise ValidationError({field: 'Informe uma capacidade inteira.'})
+            if not number.is_finite() or number != number.to_integral_value():
+                raise ValidationError({field: 'Informe uma capacidade inteira.'})
+        super().clean_fields(exclude=exclude)
 
     class Meta:
         ordering = ['nome', 'pk']
