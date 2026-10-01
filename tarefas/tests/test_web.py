@@ -1,3 +1,6 @@
+from datetime import datetime
+import re
+
 from django.test import Client, TestCase
 
 from tarefas.models import Tarefa
@@ -122,3 +125,16 @@ class TaskWebTests(TaskFixtures, TestCase):
     def test_home_has_task_navigation(self):
         self.client.force_login(self.owner)
         self.assertContains(self.client.get('/'), '/tarefas/')
+
+    def test_editing_description_preserves_existing_deadline_precision(self):
+        deadline = datetime.fromisoformat('2026-11-01T14:22:59.123456-03:00')
+        task = save_task(actor=self.admin, task_id=self.mine.pk, expected_version=1, data={'prazo': deadline})
+        self.client.force_login(self.admin)
+        path = f'/tarefas/{task.pk}/editar/'
+        html = self.client.get(path).content.decode()
+        rendered_deadline = re.search(r'name="prazo"[^>]*value="([^"]+)"', html).group(1)
+        response = self.client.post(path, self.payload(descricao='Somente descrição', prazo=rendered_deadline, versao=2))
+        self.assertEqual(response.status_code, 302)
+        task.refresh_from_db()
+        self.assertEqual(task.prazo, deadline)
+        self.assertEqual(task.descricao, 'Somente descrição')

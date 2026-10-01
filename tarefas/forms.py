@@ -29,7 +29,7 @@ class TaskForm(StrictFormMixin, forms.ModelForm):
         fields = ['servico', 'descricao', 'responsavel', 'prazo']
         widgets = {
             'descricao': forms.Textarea(attrs={'rows': 4}),
-            'prazo': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local'}),
+            'prazo': forms.DateTimeInput(format='%Y-%m-%dT%H:%M:%S', attrs={'type': 'datetime-local', 'step': '1'}),
         }
         help_texts = {'prazo': 'Opcional. Horário de Brasília; tarefas vencidas continuam executáveis.'}
 
@@ -48,6 +48,14 @@ class TaskForm(StrictFormMixin, forms.ModelForm):
         if not self.instance.pk and version is not None:
             raise forms.ValidationError('A versão inicial é definida pelo sistema.')
         return version
+
+    def clean_prazo(self):
+        value = self.cleaned_data.get('prazo')
+        original = self.instance.prazo
+        # The browser edits seconds; preserve finer API precision when this field is unchanged.
+        if original is not None and value == original.replace(microsecond=0):
+            return original
+        return value
 
 
 class TransitionForm(StrictFormMixin, forms.Form):
