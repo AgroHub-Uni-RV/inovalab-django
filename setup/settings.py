@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'core',
     'accounts.apps.AccountsConfig',
     'catalogo.apps.CatalogoConfig',
+    'tarefas.apps.TarefasConfig',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
