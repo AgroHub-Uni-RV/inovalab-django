@@ -33,7 +33,7 @@ Não são requisitos confirmados: cobrança, pagamentos, projetos hierárquicos,
 | Sistema AgroHub | Participar da integração de agendamento por API; envio ao InovaLab é o fluxo proposto | Integração C — F1 p. 2; direção D/P, Q07 |
 | Visitante do site | Visualizar banners publicados em home/sobre | D — F1 p. 3 |
 
-Gestão dos cadastros, materiais, banners e contas pelo administrador é proposta. O PDF não define esses responsáveis. Não conceder acesso global ao usuário interno por analogia com o Trello.
+O PDF não define responsáveis pelos cadastros. F3 confirmou contas pelo administrador técnico e, na passagem para catálogo, manutenção de serviços/equipamentos/espaços pelos administradores do laboratório, com consulta por todos os usuários internos ativos. Gestão de materiais e banners permanece a definir em Q12. Não conceder acesso global ao usuário interno por analogia com o Trello.
 
 ## 4. Requisitos funcionais
 
@@ -141,7 +141,7 @@ O PDF lista “Óculos de realidade virtual” e “Scanner 3D manual” como se
 | Q09 | Quais categorias, status, unidades e significado de “fonte” dos materiais? Haverá entradas, saídas e consumo por tarefa? | Cadastro simples versus estoque |
 | Q10 | Quais datas controlam banner agendado? Haverá ordem e vários banners por local? | Publicação automática |
 | Q11 | Decidido em F3: administrador cadastra contas pelo Django Admin e login inicial usa usuário/senha. Recuperação por e-mail e login institucional ficam fora da primeira entrega; evolução ainda a definir | Provisionamento inicial definido; separação de papéis detalhada na especificação de identidade |
-| Q12 | Quem administra serviços, espaços, equipamentos, materiais e banners? | Permissões ainda não documentadas |
+| Q12 | Catálogo decidido em F3: administradores do laboratório mantêm serviços/equipamentos/espaços; todos os usuários internos ativos consultam. Falta definir manutenção e consulta de materiais/banners | Política de catálogo definida; demais cadastros ainda pendentes |
 | Q13 | Qual horário de funcionamento, antecedência, duração mínima/máxima e política de feriados? | Validação de reservas |
 | Q14 | Quantas pessoas usarão a reserva? É necessário verificar a capacidade do espaço? | Campo ausente para aplicar capacidade |
 | Q15 | “Eventos/Reuniões”, recessos/feriados e gestão de “usuários do AgroHub” nas telas ampliam o escopo? A ordem de banners precisa ser editável? | Divergências e elementos visuais adicionais registrados no arquivo 05 |
@@ -158,6 +158,7 @@ O PDF lista “Óculos de realidade virtual” e “Scanner 3D manual” como se
 | 01/10/2026 | F3 — passagem para catálogo | Responsável autorizou avançar de identidade para catálogo | Preparar somente o segundo módulo; aguardar nova depuração antes de tarefas |
 | 01/10/2026 | F3 — simplicidade do MVP | Preservar o frontend de identidade e simplificar as próximas telas | Listas, formulários e ações básicas; refinamento visual posterior |
 | 01/10/2026 | F3 — execução de testes | O responsável executará os testes das próximas entregas | Preparar comandos e cenários; não executar suítes ou verificações funcionais no navegador pelo agente |
+| 01/10/2026 | F3 — Q12 para catálogo | Administradores do laboratório mantêm serviços/equipamentos/espaços; todos os usuários internos ativos consultam | Aplicar a mesma permissão no frontend e na API; materiais e banners continuam por definir |
 
 ## 10. Evolução sugerida, fora do escopo confirmado
 

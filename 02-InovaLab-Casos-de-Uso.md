@@ -52,9 +52,9 @@ Todos os casos têm escopo no sistema InovaLab e nível de objetivo do usuário,
 
 ## UC06 — Administrar serviços, equipamentos e espaços
 
-- **Base:** C para dados; P para manutenção pelo admin. RF08–RF11.
-- **Ator proposto:** administrador. **Interesse:** catálogo correto para tarefas e agenda.
-- **Pré-condição:** permissão de cadastro, a validar em Q12.
+- **Base:** C para dados do PDF e autoridade definida pelo responsável em F3/Q12. RF08–RF11.
+- **Ator:** administrador do laboratório mantém; todos os usuários internos ativos consultam. **Interesse:** catálogo correto para tarefas e agenda.
+- **Pré-condição:** sessão ativa; manutenção exige papel de administrador do laboratório, sem exigir gestão técnica de contas.
 - **Fluxo principal:** 1. Seleciona o tipo de cadastro. 2. Informa os campos específicos. 3. Sistema valida capacidade e status aplicáveis. 4. Salva e disponibiliza para consultas autorizadas.
 - **Alternativas:** edita cadastro existente; marca indisponibilidade; tentativa de exclusão com vínculos é bloqueada ou substituída por desativação conforme política; indisponibilizar não cancela silenciosamente reservas existentes.
 - **Pós-condição:** catálogo atualizado e vínculos preservados. Serviços iniciais carregados conforme RF11.

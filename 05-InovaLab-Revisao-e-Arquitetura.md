@@ -131,8 +131,8 @@ Cada módulo terá especificação e plano próprios após validação. Por inst
 
 | Etapa | Entrega proposta | Decisões necessárias | Verificação principal |
 | --- | --- | --- | --- |
-| 1. Identidade e acesso (entregue) | Colisão corrigida, configuração, usuário/papéis; contas no admin, login/logout, página privada e API de identidade | Especificação e implementação aprovadas; aguardando depuração pelo responsável | 35 testes passam; fluxo web/API e admin verificados no Chrome |
-| 2. Catálogo | Serviços, equipamentos e espaços; frontend/API e carga dos 11 serviços | Autorização Q12 e regras dos cadastros | CT20/CT24; escrita sem permissão falha; carga não duplica nem sobrescreve |
+| 1. Identidade e acesso (entregue) | Colisão corrigida, configuração, usuário/papéis; contas no admin, login/logout, página privada e API de identidade | Responsável autorizou avançar para catálogo em 01/10/2026 | 35 testes passaram na entrega; fluxo web/API e admin verificados no Chrome |
+| 2. Catálogo (desenho em revisão) | Serviços, equipamentos e espaços; frontend/API simples e carga dos 11 serviços | Q12 confirmado para catálogo; revisar regras no desenho do módulo 2 | CT20/CT24; escrita sem permissão falha; carga não duplica nem sobrescreve; responsável executa testes |
 | 3. Tarefas | CRUD de admin, consulta restrita, Kanban e transições web/API | Q03 restante, Q04, Q08 para tarefas e histórico | CT01–CT08, CT25–CT28 e equivalência web/API |
 | 4. Agenda | Agenda e proteção de conflito | Q05 restante, Q06, Q08 para reservas, Q12–Q14 e banco | CT09–CT15, CT19–CT20, incluindo concorrência no banco escolhido |
 | 5. AgroHub | Contrato, credencial e recebimento idempotente | Q07, dados mínimos e alterações locais | CT16–CT18, CT28–CT29 e reenvio simultâneo |

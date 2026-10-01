@@ -2,7 +2,7 @@
 
 Sistema Django para demandas do laboratório, tarefas, agenda, materiais e banners, com frontend básico e API para futuras integrações.
 
-O módulo **Identidade e acesso** está implementado: contas pelo Django Admin, login/logout, página privada e `GET /api/v1/me/`. Os demais módulos e seus endpoints seguem como propostas, aguardando a depuração desta entrega antes de avançar.
+O módulo **Identidade e acesso** está implementado: contas pelo Django Admin, login/logout, página privada e `GET /api/v1/me/`. O responsável autorizou avançar para **Catálogo**, cuja especificação está em revisão. Os demais módulos e seus endpoints seguem como propostas para entregas posteriores.
 
 ## Documentação
 
@@ -57,7 +57,7 @@ Verificação automatizada:
 
 Revisar requisitos e decisões de cada etapa, validar seu desenho, preparar o plano, implementar o fluxo web/API e verificar cenários relevantes. A coleção de skills [Superpowers](https://github.com/obra/superpowers) foi instalada neste ambiente do Codex; não é dependência da aplicação e não acompanha um clone do projeto.
 
-Por decisão do responsável, entregar um módulo por vez e aguardar sua depuração antes do próximo. A primeira entrega segue a [especificação aprovada](docs/superpowers/specs/2026-10-01-identidade-e-acesso-design.md) e o [plano autorizado](docs/superpowers/plans/2026-10-01-identidade-e-acesso.md), executado diretamente com revisão independente ao final. O responsável autorizou iniciar catálogo em 01/10/2026; seu desenho está em preparação.
+Por decisão do responsável, entregar um módulo por vez e aguardar sua depuração antes do próximo. A primeira entrega segue a [especificação aprovada](docs/superpowers/specs/2026-10-01-identidade-e-acesso-design.md) e o [plano autorizado](docs/superpowers/plans/2026-10-01-identidade-e-acesso.md), executado diretamente com revisão independente ao final. O responsável autorizou iniciar catálogo em 01/10/2026; sua [especificação para revisão](docs/superpowers/specs/2026-10-01-catalogo-design.md) descreve telas simples, endpoints e política de acesso confirmada. Catálogo ainda não foi implementado.
 
 Para as próximas entregas do MVP, usar frontend mais simples, preservando a interface atual de identidade. O responsável executará os testes: a entrega fornecerá comandos e cenários, sem executar suítes ou verificação funcional no navegador pelo agente. Essas orientações estão em [AGENTS.md](AGENTS.md).
 
