@@ -42,6 +42,6 @@ O segundo comando falha com `Application labels aren't unique, duplicates: auth`
 
 Revisar requisitos e decisões de cada etapa, validar seu desenho, preparar o plano, implementar o fluxo web/API e verificar cenários relevantes. A coleção de skills [Superpowers](https://github.com/obra/superpowers) foi instalada neste ambiente do Codex; não é dependência da aplicação e não acompanha um clone do projeto.
 
-Por decisão do responsável, entregar um módulo por vez e aguardar sua depuração antes do próximo. A primeira entrega será identidade e acesso; sua [especificação para revisão](docs/superpowers/specs/2026-10-01-identidade-e-acesso-design.md) descreve contas pelo Django Admin, login por usuário/senha, logout, página privada e `/api/v1/me/`. Este módulo ainda não foi implementado.
+Por decisão do responsável, entregar um módulo por vez e aguardar sua depuração antes do próximo. A primeira entrega será identidade e acesso; sua [especificação aprovada](docs/superpowers/specs/2026-10-01-identidade-e-acesso-design.md) descreve contas pelo Django Admin, login por usuário/senha, logout, página privada e `/api/v1/me/`. O [plano de implementação](docs/superpowers/plans/2026-10-01-identidade-e-acesso.md) aguarda revisão e escolha do método de execução. Este módulo ainda não foi implementado.
 
 Commits importantes seguem o formato em português, por exemplo `feat (docs): adiciona documentação da arquitetura do sistema.`.
