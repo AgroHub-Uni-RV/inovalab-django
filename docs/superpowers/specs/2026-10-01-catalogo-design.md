@@ -1,6 +1,6 @@
 # Módulo 2 — Catálogo
 
-01/10/2026 • Especificação autorizada para implementação pelo responsável em 01/10/2026. Preservar o frontend de identidade e simplificar as próximas telas do MVP. O responsável assumiu a execução dos testes e confirmou Q12 para catálogo: administradores do laboratório mantêm; todos os usuários internos ativos consultam. Esta especificação detalha RF08–RF11, RF23/RF24, RN05/RN12, UC06 e CT20/CT24. Execução direta conforme o [plano de implementação](../plans/2026-10-01-catalogo.md).
+01/10/2026 • Especificação autorizada para implementação pelo responsável em 01/10/2026. Catálogo implementado conforme o [plano](../plans/2026-10-01-catalogo.md); execução e contrato no [guia da entrega](../../modules/02-catalogo.md). Preservar identidade e simplificar as próximas telas do MVP. Q12 confirmado: administradores do laboratório mantêm; usuários internos ativos consultam. A orientação vigente autoriza testes automatizados e básicos no navegador; testes mais profundos ficam para o responsável. Esta especificação detalha RF08–RF11, RF23/RF24, RN05/RN12, UC06 e CT20/CT24.
 
 ## Objetivo e limites
 

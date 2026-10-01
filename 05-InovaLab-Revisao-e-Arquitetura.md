@@ -98,13 +98,13 @@ Para recursos exclusivos, propõe-se bloquear o registro do recurso na transaç�
 
 ## 7. Superfície proposta da API
 
-`/api/v1/me/` está entregue conforme o [contrato do módulo 1](docs/modules/01-identidade-e-acesso.md). Os demais caminhos abaixo são propostas, **não endpoints existentes**. Implementar por etapa e gerar contrato correspondente ao código entregue. RF23 não concede acesso externo irrestrito aos módulos internos.
+Identidade e catálogo estão entregues conforme os contratos dos [módulos 1](docs/modules/01-identidade-e-acesso.md) e [2](docs/modules/02-catalogo.md). Os demais caminhos abaixo são propostas, **não endpoints existentes**. Implementar por etapa e gerar contrato correspondente ao código entregue. RF23 não concede acesso externo irrestrito aos módulos internos.
 
 | Caminho proposto | Operação | Acesso e decisões |
 | --- | --- | --- |
 | `/api/v1/me/` (entregue) | Identidade atual e classificação de administrador do laboratório | Sessão válida; somente cinco campos do contrato, sem listar contas alheias |
-| `/api/v1/servicos/` | Consultar/manter serviços | Permissões Q12; integração recebe apenas campos aprovados |
-| `/api/v1/equipamentos/`, `/api/v1/espacos/` | Consultar/manter recursos | Política do catálogo; sem revelar agenda privada |
+| `/api/v1/servicos/` (entregue) | Consultar/criar/editar serviços; detalhes por ID | Sessão ativa consulta; administradores do laboratório escrevem; sem DELETE |
+| `/api/v1/equipamentos/`, `/api/v1/espacos/` (entregues) | Consultar/criar/editar recursos; detalhes por ID | Mesma política do catálogo; sem agenda ou exclusão física |
 | `/api/v1/tarefas/` e `/{id}/` | Consultar, criar, editar e excluir | Consulta responsável/admin; escrita de campos/exclusão somente admin; sem status genérico que contorne o fluxo |
 | `/api/v1/tarefas/{id}/transicoes/` | Iniciar, enviar, aprovar, recusar ou reabrir | Campos e comandos por ação; RN16 e mapa aprovado |
 | `/api/v1/agendamentos/` e `/{id}/` | Agenda interna | Administrador no escopo atual; exclusão/cancelamento Q08 |
@@ -132,7 +132,7 @@ Cada módulo terá especificação e plano próprios após validação. Por inst
 | Etapa | Entrega proposta | Decisões necessárias | Verificação principal |
 | --- | --- | --- | --- |
 | 1. Identidade e acesso (entregue) | Colisão corrigida, configuração, usuário/papéis; contas no admin, login/logout, página privada e API de identidade | Responsável autorizou avançar para catálogo em 01/10/2026 | 35 testes passaram na entrega; fluxo web/API e admin verificados no Chrome |
-| 2. Catálogo (em implementação) | Serviços, equipamentos e espaços; frontend/API simples e carga dos 11 serviços | Q12 confirmado; especificação autorizada para implementação | CT20/CT24; testes automatizados e básicos no navegador; testes profundos pelo responsável |
+| 2. Catálogo (entregue) | Serviços, equipamentos e espaços; frontend/API simples e carga dos 11 serviços | Q12 confirmado; aguardar testes profundos pelo responsável | 37 testes do catálogo e suíte de 72 passando; fluxos básicos no Chrome; referências de tarefas/reservas protegidas nas etapas futuras |
 | 3. Tarefas | CRUD de admin, consulta restrita, Kanban e transições web/API | Q03 restante, Q04, Q08 para tarefas e histórico | CT01–CT08, CT25–CT28 e equivalência web/API |
 | 4. Agenda | Agenda e proteção de conflito | Q05 restante, Q06, Q08 para reservas, Q12–Q14 e banco | CT09–CT15, CT19–CT20, incluindo concorrência no banco escolhido |
 | 5. AgroHub | Contrato, credencial e recebimento idempotente | Q07, dados mínimos e alterações locais | CT16–CT18, CT28–CT29 e reenvio simultâneo |
@@ -155,6 +155,7 @@ As 15 skills de [obra/superpowers](https://github.com/obra/superpowers) foram in
 - [x] Elaborar plano e definir execução com as skills pertinentes.
 - [x] Implementar, verificar fluxo web/API e atualizar documentação da primeira etapa.
 - [x] Receber autorização do responsável para avançar de identidade para catálogo.
-- [ ] Entregar catálogo com telas simples, testes automatizados e básicos no navegador; aguardar testes profundos pelo responsável.
+- [x] Entregar catálogo com telas simples, testes automatizados e básicos no navegador.
+- [ ] Aguardar testes profundos do catálogo pelo responsável antes de iniciar tarefas.
 
 O processo `brainstorming` exige revisão do design antes de implementar. Esta revisão documental prepara uma proposta concreta; a aprovação de uma regra de negócio não transforma todo o desenho técnico em especificação aprovada.

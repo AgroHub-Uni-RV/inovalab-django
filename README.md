@@ -2,7 +2,7 @@
 
 Sistema Django para demandas do laboratório, tarefas, agenda, materiais e banners, com frontend básico e API para futuras integrações.
 
-O módulo **Identidade e acesso** está implementado: contas pelo Django Admin, login/logout, página privada e `GET /api/v1/me/`. O responsável autorizou avançar para **Catálogo**, cuja especificação está em revisão. Os demais módulos e seus endpoints seguem como propostas para entregas posteriores.
+Os módulos **Identidade e acesso** e **Catálogo** estão implementados. O catálogo entrega serviços, equipamentos e espaços com telas simples e APIs autenticadas. Os demais módulos e seus endpoints seguem como propostas; tarefas aguardam a depuração do catálogo antes de iniciar.
 
 ## Documentação
 
@@ -15,6 +15,7 @@ O módulo **Identidade e acesso** está implementado: contas pelo Django Admin, 
 | [05 — Revisão e arquitetura](05-InovaLab-Revisao-e-Arquitetura.md) | Telas, diagnóstico, alternativas, API proposta e etapas |
 | [06 — Conferência do PDF](06-InovaLab-Conferencia-do-PDF.md) | Comparação por página, cobertura dos requisitos e distinção entre PDF, decisões e propostas |
 | [Módulo 1 — Identidade e acesso](docs/modules/01-identidade-e-acesso.md) | Instalação, contas, contrato da API e roteiro para depuração |
+| [Módulo 2 — Catálogo](docs/modules/02-catalogo.md) | Cadastros, carga inicial, endpoints e testes para aprofundar |
 
 Leia as classificações **C** (confirmado pela fonte), **D** (derivado) e **P** (proposta) no arquivo 01. Propostas não são decisões aprovadas. As seis telas e as três páginas de `Referencias/InovaLab - Modelagem.pdf` foram examinadas. A pasta permanece ignorada pelo Git e pode faltar em outro clone.
 
@@ -24,6 +25,8 @@ Leia as classificações **C** (confirmado pela fonte), **D** (derivado) e **P**
 - Somente administradores aprovam, recusam e reabrem tarefas; o responsável executa e envia para avaliação.
 - Cada reserva do MVP tem um único serviço, equipamento ou espaço, sem bloquear automaticamente recursos associados.
 - Contas internas cadastradas pelo administrador técnico, com login por usuário e senha.
+- Administradores do laboratório mantêm o catálogo; todos os usuários internos ativos consultam.
+- Frontend mais simples no MVP, preservando identidade; testes automatizados e básicos no navegador executados, testes profundos pelo responsável.
 
 O primeiro módulo usa Django, templates e Django REST Framework, com política de papéis compartilhada entre interface e API. SQLite atende à execução local desta etapa; banco e concorrência da agenda serão definidos em sua própria entrega.
 
@@ -51,13 +54,15 @@ Verificação automatizada:
 & .\venv\Scripts\python.exe -m pip check
 ```
 
-35 testes passaram; checks, migrações e dependências sem pendências. O fluxo foi verificado no Chrome, incluindo layout a 360 px. Consulte o [guia do módulo](docs/modules/01-identidade-e-acesso.md) para variáveis de ambiente, contrato JSON e roteiro manual. `.env` não é carregado automaticamente. Esta entrega é local; hospedagem e produção permanecem por definir.
+72 testes passaram (37 do catálogo e 35 de identidade/configuração); checks, migrações e dependências sem pendências. Os fluxos básicos foram verificados no Chrome, incluindo layout a 360 px. Consulte os guias de [identidade](docs/modules/01-identidade-e-acesso.md) e [catálogo](docs/modules/02-catalogo.md) para contratos e roteiros. `.env` não é carregado automaticamente. Esta entrega é local; hospedagem e produção permanecem por definir.
+
+Após entrar, use **Catálogo** ou abra `/catalogo/servicos/`. A migração cria os onze serviços do PDF; `manage.py carregar_servicos_iniciais` repete a carga preservando alterações. APIs disponíveis: `/api/v1/servicos/`, `/api/v1/equipamentos/`, `/api/v1/espacos/`, com detalhes por ID. Indisponibilização preserva registros; exclusão física não é oferecida.
 
 ## Processo
 
 Revisar requisitos e decisões de cada etapa, validar seu desenho, preparar o plano, implementar o fluxo web/API e verificar cenários relevantes. A coleção de skills [Superpowers](https://github.com/obra/superpowers) foi instalada neste ambiente do Codex; não é dependência da aplicação e não acompanha um clone do projeto.
 
-Por decisão do responsável, entregar um módulo por vez e aguardar sua depuração antes do próximo. A primeira entrega segue a [especificação aprovada](docs/superpowers/specs/2026-10-01-identidade-e-acesso-design.md) e o [plano autorizado](docs/superpowers/plans/2026-10-01-identidade-e-acesso.md), executado diretamente com revisão independente ao final. O responsável autorizou iniciar catálogo em 01/10/2026; sua [especificação para revisão](docs/superpowers/specs/2026-10-01-catalogo-design.md) descreve telas simples, endpoints e política de acesso confirmada. Catálogo ainda não foi implementado.
+Por decisão do responsável, entregar um módulo por vez e aguardar sua depuração antes do próximo. Identidade e catálogo seguem suas especificações e planos autorizados, com execução direta e revisão independente ao final. O [catálogo](docs/superpowers/specs/2026-10-01-catalogo-design.md) está entregue conforme seu [plano](docs/superpowers/plans/2026-10-01-catalogo.md), aguardando testes mais profundos pelo responsável antes de tarefas.
 
 Para as próximas entregas do MVP, usar frontend mais simples, preservando a interface atual de identidade. Executar os testes automatizados do Django e os testes básicos no navegador; o responsável realizará os testes mais profundos posteriormente. Essas orientações estão em [AGENTS.md](AGENTS.md).
 

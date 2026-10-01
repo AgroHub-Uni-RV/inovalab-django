@@ -1,6 +1,6 @@
 # InovaLab — Diretrizes de modelagem para Django
 
-Versão 0.3 • 01/10/2026. Diretrizes para os módulos futuros; identidade e acesso já implementados conforme o [guia da entrega](docs/modules/01-identidade-e-acesso.md). O primeiro módulo foi verificado com Python 3.14.3, Django 6.1.1 e DRF 3.18.1, usando SQLite local. Banco da agenda e hospedagem serão definidos em suas etapas. A proposta de arquitetura e o diagnóstico histórico estão no arquivo 05.
+Versão 0.4 • 01/10/2026. Diretrizes para os módulos futuros; [identidade](docs/modules/01-identidade-e-acesso.md) e [catálogo](docs/modules/02-catalogo.md) implementados e verificados com Python 3.14.3, Django 6.1.1 e DRF 3.18.1, usando SQLite local. Banco da agenda e hospedagem serão definidos em suas etapas. A proposta de arquitetura e o diagnóstico histórico estão no arquivo 05.
 
 ## 1. Organização sugerida
 
