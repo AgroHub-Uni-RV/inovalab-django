@@ -1,21 +1,22 @@
 # InovaLab — Cenários base e rastreabilidade
 
-Versão 0.1 • 01/10/2026. Cenários escritos para orientar validação e futuros testes, não como testes já executados. Dados e nomes são exemplos fictícios. C/D/P e Q01–Q14 estão definidos em `01-InovaLab-Escopo-e-Requisitos.md`.
+Versão 0.2 • 01/10/2026. Cenários escritos para orientar validação e futuros testes, não como testes já executados. Dados e nomes são exemplos fictícios. C/D/P e Q01–Q15 estão definidos em `01-InovaLab-Escopo-e-Requisitos.md`.
 
 ## 1. Fluxo proposto das tarefas
 
-O PDF confirma os quatro estados e o retorno de avaliação para criação em caso de recusa. A sequência completa abaixo e a autoridade de cada transição são propostas pendentes de Q03.
+O PDF original foi conferido: a página 2 lista inicialmente `re-criar`, mas a resposta da página 3 elimina essa etapa, resultando nos quatro estados e no retorno para criação em caso de recusa. F4 mostra o quadro nessas quatro colunas. F3 confirma que somente administradores aprovam, recusam e reabrem; o responsável executa e envia para avaliação. A sequência inicial e o destino da reabertura abaixo são propostas a validar.
 
 ```mermaid
 stateDiagram-v2
     [*] --> Demanda
-    Demanda --> Criacao: Iniciar
-    Criacao --> Avaliacao: Enviar para avaliar
-    Avaliacao --> Concluido: Aprovar
-    Avaliacao --> Criacao: Recusar
+    Demanda --> Criacao: Responsável ou admin inicia
+    Criacao --> Avaliacao: Responsável ou admin envia
+    Avaliacao --> Concluido: Admin aprova
+    Avaliacao --> Criacao: Admin recusa
+    Concluido --> Criacao: Admin reabre (destino proposto)
 ```
 
-Não há estado `re-criar`. Não há fluxo aprovado de reabertura ou de avanço direto para concluído. Até definir Q03, não interpretar este diagrama como uma permissão para restringir direitos já descritos no PDF.
+Não há estado `re-criar`. A autoridade para reabrir está aprovada; retornar para criação é proposta. Avanço direto de demanda/criação para concluído e outras transições não estão aprovados. Datas automáticas e motivo de recusa continuam dependentes de Q04/RN11.
 
 ## 2. Cenários de tarefas e acesso
 
@@ -29,11 +30,11 @@ Não há estado `re-criar`. Não há fluxo aprovado de reabertura ou de avanço 
 
 ### CT03 — Enviar para avaliação e aprovar
 
-**UC04–UC05; RF06; P.** Dada uma tarefa em criação, quando Ana enviar para avaliação e o ator autorizado aprovar, então a tarefa passa a concluído. Pela proposta RN11, data de conclusão e evento são registrados. O ator que aprova depende de Q03.
+**UC04–UC05; RF06; C para atores F3, P para datas/histórico.** Dada uma tarefa em criação, quando Ana enviar para avaliação e um administrador aprovar, então a tarefa passa a concluído. Pela proposta RN11, data de conclusão e evento são registrados. Ana não pode aprovar a própria entrega.
 
 ### CT04 — Recusar e refazer
 
-**UC05; RF06; C para retorno, P para ator/motivo.** Dada uma tarefa em avaliação, quando houver recusa pelo ator autorizado, então ela retorna à coluna criação. Nenhuma coluna “recriar” é criada. Depois da correção, pode voltar à avaliação conforme fluxo aprovado.
+**UC05; RF06; C para retorno/ator, P para motivo.** Dada uma tarefa em avaliação, quando um administrador recusar, então ela retorna à coluna criação. Nenhuma coluna “recriar” é criada. Depois da correção, o responsável pode enviá-la novamente para avaliação.
 
 ### CT05 — Impedir acesso à tarefa alheia
 
@@ -123,7 +124,25 @@ Não há estado `re-criar`. Não há fluxo aprovado de reabertura ou de avanço 
 
 **UC01; RF01; D.** Dada uma sessão autenticada, quando o usuário sair e tentar novamente uma operação privada com aquela sessão, então o acesso deve ser negado. Novo acesso exige autenticação.
 
-## 5. Matriz de rastreabilidade funcional
+## 5. Cenários complementares da revisão
+
+### CT26 — Bloquear avaliação pelo responsável
+
+**UC04–UC05; RF05–RF06, RN16; C — F3.** Dada uma tarefa própria em avaliação, quando Ana tentar aprovar ou recusar pela interface ou API, então o servidor rejeita sem alterar o registro. Remover o botão não substitui essa validação.
+
+### CT27 — Reabrir tarefa concluída
+
+**UC04–UC05; RF06, RN16; C para ator, P para destino.** Dada uma tarefa concluída, quando o responsável tentar reabri-la, então o servidor rejeita. Um administrador pode reabrir; o destino e o tratamento da data de conclusão precisam ser confirmados antes de testar o resultado positivo.
+
+### CT28 — Aplicar a mesma regra na interface e API
+
+**UC03–UC09; RF23–RF24; D/P.** Para cada operação entregue nas duas interfaces, dados equivalentes e o mesmo ator devem produzir o mesmo resultado de negócio. A API não concede acesso adicional a tarefa alheia, avaliação ou agenda privada.
+
+### CT29 — Documentar o contrato entregue
+
+**UC09 e operações de RF23; RNF09; P.** Dada uma versão publicada da API, quando um integrador consultar o contrato, então encontra campos obrigatórios, autenticação, respostas, erros e exemplos correspondentes à implementação. Rotas somente propostas não são apresentadas como disponíveis.
+
+## 6. Matriz de rastreabilidade funcional
 
 | Requisito | Casos de uso | Cenários |
 | --- | --- | --- |
@@ -132,7 +151,7 @@ Não há estado `re-criar`. Não há fluxo aprovado de reabertura ou de avanço 
 | RF03 | UC03 | CT01, CT07 |
 | RF04 | UC03 | CT01 |
 | RF05 | UC04 | CT02, CT05, CT06, CT08 |
-| RF06 | UC04, UC05 | CT03, CT04 |
+| RF06 | UC04, UC05 | CT03, CT04, CT26, CT27 |
 | RF07 | UC02, UC04 | CT02, CT04 |
 | RF08 | UC06 | CT15, CT20 |
 | RF09 | UC06 | CT09, CT20 |
@@ -149,5 +168,7 @@ Não há estado `re-criar`. Não há fluxo aprovado de reabertura ou de avanço 
 | RF20 | UC02 | CT05; complementar com filtros aprovados |
 | RF21 | UC03, UC04, UC05 | CT03, CT07; complementar após definir eventos |
 | RF22 | UC09 | CT17 |
+| RF23 | Casos operacionais entregues por etapa | CT28, CT29; CT05–CT06 e CT26 também pela API |
+| RF24 | Casos internos entregues por etapa | CT28; respectivos cenários pela interface |
 
 Esta matriz indica cobertura base, não cobertura exaustiva. Os RNFs têm verificação própria no arquivo 01. Casos detalhados de campos obrigatórios, carga, recuperação e permissões dos cadastros dependem das decisões abertas.

@@ -1,6 +1,6 @@
 # InovaLab — Diretrizes de modelagem para Django
 
-Versão 0.1 • 01/10/2026. Recomendações técnicas, não código implementado. Django é a única escolha tecnológica confirmada. A versão do framework, banco, hospedagem e bibliotecas devem ser definidas na implementação.
+Versão 0.2 • 01/10/2026. Recomendações técnicas, não código implementado. Django, frontend básico e endpoints de API são objetivos confirmados. O ambiente local usa Python 3.14.3 e Django 6.1.1; compatibilidade das bibliotecas, banco e hospedagem serão definidos na implementação. A proposta de arquitetura e o diagnóstico estão no arquivo 05.
 
 ## 1. Organização sugerida
 
@@ -14,6 +14,8 @@ Versão 0.1 • 01/10/2026. Recomendações técnicas, não código implementado
 | conteudo | Banners e publicação |
 | integracoes | Contrato e autenticação AgroHub; adaptação ao domínio |
 
+O app local `auth` atualmente colide com o rótulo de `django.contrib.auth`: `manage.py check` falha antes de iniciar. Propor substituí-lo por `accounts`, inspecionando migrações e banco antes da mudança. `core` deve concentrar apenas elementos compartilhados e a composição do painel.
+
 Separar regras compartilhadas da interface. A API e os formulários devem chamar as mesmas operações de domínio para reservar, editar e excluir. Não implementar uma validação de conflito diferente em cada entrada.
 
 ## 2. Entidades e campos
@@ -24,22 +26,24 @@ Separar regras compartilhadas da interface. A API e os formulários devem chamar
 | --- | --- | --- |
 | Serviço | nome, descricao, status — C | Valores disponível/indisponível; identificador e datas de auditoria — D/P |
 | Equipamento | nome, descricao, status — C | Disponível/ocupado/indisponível; distinguir disponibilidade administrativa da ocupação temporal — P |
-| Espaço | nome, capacidade_maxima_de_pessoas, status — C | Capacidade positiva; participantes por reserva ausentes na fonte |
+| Espaço | nome, capacidade_maxima_de_pessoas, status — C | Capacidade positiva — P; participantes por reserva ausentes na fonte |
 | Tarefa | servico, descricao, responsavel, status, data_inicio, prazo_final, data_conclusao — C | Título curto opcional — P; não é campo existente na fonte |
-| Agendamento | categoria, objeto, motivo, data, horario_inicio, horario_fim; requerente no modelo Figma — C | Unificação dos campos — D; origem, id_externo, criado_por, timestamps e versão — P |
+| Agendamento | AgroHub: categoria, objeto_agendadado, motivo, data, horario_inicio, horario_fim; Figma: servico, data_hora, requerente — C | Unificação/normalização dos campos — D; origem, id_externo, criado_por, timestamps e versão — P |
 | Material | nome, categoria, quantidade, status, fonte — C | Unidade e precisão numérica — P; significado de fonte em aberto |
 | Banner | titulo, banner_img WebP, status, local — C | inicio_exibicao, fim_exibicao e texto_alternativo — P |
 | Evento de histórico | Não consta | Ator, entidade, instante, operação e mudanças — P |
 
 Usar uma identidade configurável do Django desde o início e referências ao modelo de usuário configurado. Um solicitante AgroHub pode ser representado por identificador externo e dados mínimos aprovados; não presumir ForeignKey obrigatória para usuário interno.
 
+Na conferência direta do PDF, `objeto_agendadado` é a grafia original; normalizar para uma referência íntegra é decisão de implementação, sem exigir esse erro de grafia no novo contrato. `data_hora` do modelo Figma deve ter representação correspondente na reserva unificada. Se houver migração, seu horário final não pode ser inferido de uma duração que a fonte não informa.
+
 ## 3. Alvo do agendamento
 
-Proposta inicial simples: três referências opcionais, `servico`, `equipamento` e `espaco`, com restrição de banco garantindo **exatamente uma preenchida**. A categoria deve ser derivada dessa referência ou, se armazenada para integração, validada para corresponder ao alvo.
+F3 confirma um único alvo por reserva no MVP. Proposta técnica: três referências opcionais, `servico`, `equipamento` e `espaco`, com restrição de banco garantindo **exatamente uma preenchida**. A categoria deve ser derivada dessa referência ou, se armazenada para integração, validada para corresponder ao alvo.
 
 Evitar apenas `categoria + id_objeto` sem integridade referencial. A alternativa de recurso agendável comum pode ser melhor se houver calendários, capacidades e indisponibilidades compartilhadas; não é necessária antes de esclarecer Q05.
 
-Um serviço pode consumir simultaneamente espaço, equipamento e operador. O PDF não modela essa associação. Se isso for necessário, uma única referência por reserva não basta: será preciso modelar alocações associadas e verificar todas numa transação.
+F3 deixa alocações compostas fora do MVP: uma reserva de serviço não bloqueia automaticamente equipamentos, espaços ou operadores. Se isso se tornar necessário, será preciso modelar alocações associadas e verificar todas numa transação. Atendimento simultâneo por serviço permanece pendente em Q05.
 
 ## 4. Estados e permissões
 
@@ -49,7 +53,7 @@ O filtro de tarefas deve considerar o usuário antes de aplicar busca, paginaç�
 
 Na operação de usuário comum, aceitar exclusivamente a alteração de status; campos automáticos são definidos pelo servidor. O papel de administrador do negócio não deve depender obrigatoriamente de conceder superusuário do Django.
 
-Q03 é bloqueador para restringir conclusão a administradores: a fonte diz que usuário altera status, mas não especifica quais transições. O fluxo proposto precisa ser aprovado antes de virar uma restrição.
+F3 resolveu a autoridade de Q03: somente administradores aprovam, recusam e reabrem; o responsável executa e envia para avaliação. Aplicar essa autorização tanto na API quanto nos formulários. Destino da reabertura, datas automáticas e demais transições continuam sujeitos à validação do mapa do arquivo 03.
 
 ## 5. Datas, conflitos e concorrência
 
@@ -79,12 +83,12 @@ Para banners, validar o conteúdo real do arquivo. WebP é o formato confirmado;
 
 ## 8. Ordem sugerida de implementação
 
-1. Incorporar as seis imagens e resolver Q03, Q05, Q07 e permissões de Q12.
+1. Usar a revisão das seis telas F4 e a autoridade confirmada em Q03; validar a primeira etapa da arquitetura e as decisões necessárias a ela. Resolver Q05/Q07 antes da agenda integrada e Q12 antes dos cadastros específicos.
 2. Implementar identidade, autorização e cadastros básicos.
-3. Implementar tarefas e transições aprovadas, com quadro Kanban se confirmado.
+3. Implementar tarefas e transições aprovadas, com quadro Kanban conforme referência F4.
 4. Implementar agenda unificada e proteção contra conflito.
 5. Integrar AgroHub com contrato e cenários de reenvio.
 6. Implementar materiais e banners conforme decisões pendentes.
 7. Validar cenários do arquivo 03 e metas não funcionais aprovadas.
 
-Não é necessário criar API para toda a aplicação só porque existe uma integração externa. A escolha entre templates Django e frontend separado deve seguir a experiência desejada e o custo de manutenção.
+F3 solicita explicitamente endpoints para futuras integrações, além do AgroHub. Cada módulo deve planejar sua superfície de API junto com a interface, sem pressupor acesso público aos dados. A recomendação é Django com templates e Django REST Framework, compartilhando operações de domínio; bibliotecas e contratos precisam ser verificados por etapa. Frontend separado é alternativa se a experiência futura justificar seu custo.

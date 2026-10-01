@@ -1,6 +1,6 @@
 # InovaLab — Casos de uso
 
-Versão 0.1 • 01/10/2026. Ler as classificações e questões de `01-InovaLab-Escopo-e-Requisitos.md`. Base: PDF p. 1–3 e solicitação do usuário; as seis imagens estão pendentes.
+Versão 0.3 • 01/10/2026. Ler as classificações e questões de `01-InovaLab-Escopo-e-Requisitos.md`. Base: PDF original conferido integralmente, decisões F3 e seis telas locais F4 examinadas. Divergências das telas estão no arquivo 05; a conferência do PDF está no arquivo 06.
 
 Todos os casos têm escopo no sistema InovaLab e nível de objetivo do usuário, exceto UC09, que representa integração. Fluxos detalhados são uma elaboração derivada/proposta, mesmo quando o objetivo é confirmado. Não há implementação entregue.
 
@@ -15,7 +15,7 @@ Todos os casos têm escopo no sistema InovaLab e nível de objetivo do usuário,
 
 ## UC02 — Consultar tarefas
 
-- **Base:** C para visibilidade; P para Kanban/filtros. RF02, RF07, RF20.
+- **Base:** C para visibilidade e quadro visual; D/P para operação e filtros completos. RF02, RF07, RF20, RF24.
 - **Ator:** usuário interno ou administrador.
 - **Interesse:** acompanhar o trabalho sem exposição de tarefas alheias.
 - **Pré-condição:** sessão autenticada.
@@ -35,19 +35,19 @@ Todos os casos têm escopo no sistema InovaLab e nível de objetivo do usuário,
 
 - **Base:** C para alteração pelo responsável; P para mapa de transições. RF05, RF06.
 - **Ator:** responsável pela tarefa; administrador também pode editar via UC03.
-- **Pré-condições:** sessão válida, tarefa acessível e transição autorizada pela política aprovada em Q03.
+- **Pré-condições:** sessão válida, tarefa acessível e transição permitida. F3 autoriza o responsável a executar e enviar para avaliação; aprovação, recusa e reabertura são exclusivas de administradores. O mapa completo ainda é proposto no arquivo 03.
 - **Fluxo principal:** 1. Ator seleciona a tarefa. 2. Escolhe o próximo status. 3. Sistema revalida responsável e transição. 4. Atualiza somente o status e campos automáticos previstos. 5. Reposiciona o cartão.
 - **Alternativas:** tarefa alheia ou tentativa de editar outros campos é rejeitada; transição não autorizada mantém o estado anterior; edição concorrente exige atualização da tela antes de nova tentativa, conforme proposta técnica.
 - **Pós-condição:** status atualizado de forma consistente; registro automático de datas depende de Q04/RN11.
 
 ## UC05 — Avaliar uma tarefa
 
-- **Base:** C para retorno à criação; P para ator e demais passos. RF06, RF21.
-- **Ator proposto:** administrador avaliador. Essa exclusividade ainda não foi aprovada.
+- **Base:** C para retorno à criação e autoridade do admin (F3); P para datas, motivo e destino da reabertura. RF06, RF21.
+- **Ator:** administrador avaliador; exclusividade confirmada pelo responsável em F3.
 - **Interesse:** aceitar a entrega ou solicitar correção.
-- **Pré-condições:** tarefa em avaliação e ator autorizado por Q03.
+- **Pré-condições:** tarefa em avaliação e administrador autenticado.
 - **Fluxo principal:** 1. Ator consulta a tarefa em avaliação. 2. Verifica a entrega pelos meios definidos pelo laboratório. 3. Aprova. 4. Sistema altera para concluído e registra conclusão, conforme RN11.
-- **Alternativas:** recusa retorna à criação, sem status `re-criar`; motivo da recusa é campo proposto; estado já alterado por outro ator exige nova leitura; reabertura depende de Q03.
+- **Alternativas:** recusa retorna à criação, sem status `re-criar`; motivo da recusa é campo proposto; estado já alterado por outro ator exige nova leitura; somente admin reabre uma concluída, com destino ainda a validar em Q03; responsável não aprova nem recusa por requisição direta.
 - **Pós-condição:** tarefa concluída ou devolvida para criação. Anexar uma entrega dentro do sistema não é pré-requisito confirmado.
 
 ## UC06 — Administrar serviços, equipamentos e espaços
@@ -115,4 +115,4 @@ Todos os casos têm escopo no sistema InovaLab e nível de objetivo do usuário,
 
 ## Relações entre casos
 
-UC03 e UC04 reutilizam autorização e validação de tarefa; UC08 e UC09 compartilham validação de reserva. Isso é compartilhamento de comportamento, não obrigação de transformar cada validação em um caso de uso separado. A autenticação aparece como pré-condição dos casos internos. A decisão de avaliação integra o ciclo da tarefa, mas seu ator ainda exige validação.
+UC03 e UC04 reutilizam autorização e validação de tarefa; UC08 e UC09 compartilham validação de reserva. Isso é compartilhamento de comportamento, não obrigação de transformar cada validação em um caso de uso separado. A autenticação aparece como pré-condição dos casos internos. O ator da avaliação é o administrador, conforme F3. RF23/RF24 aplicam-se aos casos operacionais entregues por etapa: adaptar uma operação para API ou formulário não cria novas permissões. O mapa de endpoints proposto está no arquivo 05.
