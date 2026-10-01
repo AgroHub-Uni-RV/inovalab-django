@@ -1,0 +1,6 @@
+{% extends 'tarefas/base.html' %}
+{% block content %}
+<h1>Não foi possível alterar a tarefa</h1>
+<p role="alert">{{ message }}</p>
+<p><a href="{% url 'tarefas:detail' task.pk %}">Atualizar tarefa</a> · <a href="{% url 'tarefas:board' %}">Voltar ao quadro</a></p>
+{% endblock %}

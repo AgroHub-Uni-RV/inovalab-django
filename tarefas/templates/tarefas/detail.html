@@ -1,0 +1,30 @@
+{% extends 'tarefas/base.html' %}
+{% block content %}
+<p><a href="{% url 'tarefas:board' %}">Voltar ao quadro</a></p>
+<h1>Tarefa #{{ task.pk }}</h1>
+<dl>
+    <dt>Serviço</dt><dd>{{ task.servico.nome }}</dd>
+    <dt>Descrição</dt><dd>{{ task.descricao|linebreaksbr }}</dd>
+    <dt>Responsável</dt><dd>{{ task.responsavel.username }}</dd>
+    <dt>Status</dt><dd>{{ task.get_status_display }}</dd>
+    <dt>Início</dt><dd>{{ task.inicio|date:'d/m/Y H:i'|default:'Não iniciado' }}</dd>
+    <dt>Prazo</dt><dd>{{ task.prazo|date:'d/m/Y H:i'|default:'Não definido' }}</dd>
+    <dt>Conclusão</dt><dd>{{ task.conclusao|date:'d/m/Y H:i'|default:'Não concluído' }}</dd>
+</dl>
+<p>Datas no horário de Brasília.</p>
+{% if actions %}
+<div class="task-actions">
+    {% for action in actions %}
+    <form action="{% url 'tarefas:transition' task.pk %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="versao" value="{{ task.versao }}">
+        <button type="submit" name="acao" value="{{ action.name }}">{{ action.label }}</button>
+    </form>
+    {% endfor %}
+</div>
+{% endif %}
+{% if can_manage %}<p><a href="{% url 'tarefas:update' task.pk %}">Editar dados</a> · <a href="{% url 'tarefas:delete' task.pk %}">Excluir tarefa</a></p>{% endif %}
+<h2>Alterações recentes</h2>
+{% for event in events %}{% include 'tarefas/event.html' %}{% endfor %}
+<p><a href="{% url 'tarefas:history' task.pk %}">Ver histórico completo</a></p>
+{% endblock %}

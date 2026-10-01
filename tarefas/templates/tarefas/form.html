@@ -1,0 +1,12 @@
+{% extends 'tarefas/base.html' %}
+{% block content %}
+<p><a href="{% url 'tarefas:board' %}">Voltar ao quadro</a></p>
+<h1>{% if object %}Editar tarefa #{{ object.pk }}{% else %}Nova tarefa{% endif %}</h1>
+{% if form.errors %}<p role="alert">Confira os erros antes de salvar.</p>{% endif %}
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Salvar tarefa</button>
+</form>
+{% if object %}<p><a href="{% url 'tarefas:detail' object.pk %}">Cancelar</a></p>{% endif %}
+{% endblock %}

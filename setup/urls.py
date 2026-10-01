@@ -23,6 +23,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/me/', MeView.as_view(), name='identity-me'),
     path('api/v1/', include('catalogo.api_urls')),
+    path('api/v1/', include('tarefas.api_urls')),
     path('catalogo/', include('catalogo.urls')),
+    path('tarefas/', include('tarefas.urls')),
     path('', include('accounts.urls')),
 ]

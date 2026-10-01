@@ -1,0 +1,23 @@
+{% extends 'tarefas/base.html' %}
+{% block content %}
+<h1>Tarefas</h1>
+<p>{% if can_manage %}Todas as tarefas do laboratório.{% else %}Suas tarefas.{% endif %} Selecione uma tarefa para consultar ou alterar seu status.</p>
+{% if can_manage %}<p><a class="button" href="{% url 'tarefas:create' %}">Nova tarefa</a></p>{% endif %}
+<div class="task-board">
+    {% for column in columns %}
+    <section class="task-column" aria-label="{{ column.label }}">
+        <h2>{{ column.label }} ({{ column.count }})</h2>
+        {% for task in column.tasks %}
+        <article class="task-card">
+            <h3><a href="{% url 'tarefas:detail' task.pk %}">#{{ task.pk }} · {{ task.servico.nome }}</a></h3>
+            <p>{{ task.descricao|truncatechars:180 }}</p>
+            <p>Responsável: {{ task.responsavel.username }}</p>
+            <p>Prazo: {{ task.prazo|date:'d/m/Y H:i'|default:'Não definido' }}</p>
+        </article>
+        {% empty %}<p>Nenhuma tarefa nesta página.</p>{% endfor %}
+    </section>
+    {% endfor %}
+</div>
+<p>As contagens abrangem todas as tarefas que você pode consultar; cada página mostra até 25 cartões.</p>
+{% include 'tarefas/pagination.html' %}
+{% endblock %}

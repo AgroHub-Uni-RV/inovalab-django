@@ -1,0 +1,12 @@
+<article class="task-event">
+    <p><strong>{{ event.ator_nome }}</strong> · {{ event.instante|date:'d/m/Y H:i' }} ·
+        {% if event.acao == 'criar' %}Criou a tarefa
+        {% elif event.acao == 'editar' %}Editou os dados
+        {% elif event.acao == 'iniciar' %}Iniciou a execução
+        {% elif event.acao == 'enviar' %}Enviou para avaliação
+        {% elif event.acao == 'aprovar' %}Aprovou a entrega
+        {% elif event.acao == 'recusar' %}Devolveu para criação
+        {% elif event.acao == 'reabrir' %}Reabriu a tarefa
+        {% elif event.acao == 'excluir' %}Excluiu a tarefa{% endif %}
+    </p>
+</article>

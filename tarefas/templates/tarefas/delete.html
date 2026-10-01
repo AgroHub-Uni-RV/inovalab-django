@@ -1,0 +1,12 @@
+{% extends 'tarefas/base.html' %}
+{% block content %}
+<h1>Excluir tarefa #{{ task.pk }}</h1>
+<p>{{ task.descricao }}</p>
+<p>A tarefa sairá do quadro e das consultas. Seus dados e histórico serão preservados no banco.</p>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Confirmar exclusão</button>
+</form>
+<p><a href="{% url 'tarefas:detail' task.pk %}">Cancelar</a></p>
+{% endblock %}

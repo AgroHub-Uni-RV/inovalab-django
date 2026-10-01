@@ -16,6 +16,7 @@
             <a href="{% url 'catalogo:servicos-list' %}" {% if category == 'servicos' %}aria-current="page"{% endif %}>Serviços</a>
             <a href="{% url 'catalogo:equipamentos-list' %}" {% if category == 'equipamentos' %}aria-current="page"{% endif %}>Equipamentos</a>
             <a href="{% url 'catalogo:espacos-list' %}" {% if category == 'espacos' %}aria-current="page"{% endif %}>Espaços</a>
+            <a href="{% url 'tarefas:board' %}">Tarefas</a>
             <a href="{% url 'accounts:home' %}">Minha conta</a>
         </nav>
     </header>

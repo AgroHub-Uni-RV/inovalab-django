@@ -1,0 +1,7 @@
+{% extends 'tarefas/base.html' %}
+{% block content %}
+<p><a href="{% url 'tarefas:detail' task.pk %}">Voltar à tarefa</a></p>
+<h1>Histórico da tarefa #{{ task.pk }}</h1>
+{% for event in object_list %}{% include 'tarefas/event.html' %}{% endfor %}
+{% include 'tarefas/pagination.html' %}
+{% endblock %}
