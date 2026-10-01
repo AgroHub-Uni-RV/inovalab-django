@@ -157,8 +157,9 @@ O PDF lista “Óculos de realidade virtual” e “Scanner 3D manual” como se
 | 01/10/2026 | F3 — execução por módulos | Concluir um módulo e aguardar depuração pelo responsável antes do próximo | Entregar identidade separadamente do catálogo; respeitar essa passagem em todas as etapas |
 | 01/10/2026 | F3 — passagem para catálogo | Responsável autorizou avançar de identidade para catálogo | Preparar somente o segundo módulo; aguardar nova depuração antes de tarefas |
 | 01/10/2026 | F3 — simplicidade do MVP | Preservar o frontend de identidade e simplificar as próximas telas | Listas, formulários e ações básicas; refinamento visual posterior |
-| 01/10/2026 | F3 — execução de testes | O responsável executará os testes das próximas entregas | Preparar comandos e cenários; não executar suítes ou verificações funcionais no navegador pelo agente |
+| 01/10/2026 | F3 — execução de testes, decisão inicial substituída | Inicialmente o responsável assumiu toda a execução | Substituída pela decisão posterior abaixo |
 | 01/10/2026 | F3 — Q12 para catálogo | Administradores do laboratório mantêm serviços/equipamentos/espaços; todos os usuários internos ativos consultam | Aplicar a mesma permissão no frontend e na API; materiais e banners continuam por definir |
+| 01/10/2026 | F3 — execução de testes, decisão vigente | Executar testes automatizados do Django e básicos no navegador; responsável realizará testes mais profundos posteriormente | Seguir fluxo normal de desenvolvimento/verificação e informar os resultados e os cenários restantes |
 
 ## 10. Evolução sugerida, fora do escopo confirmado
 

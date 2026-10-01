@@ -59,6 +59,6 @@ Revisar requisitos e decisões de cada etapa, validar seu desenho, preparar o pl
 
 Por decisão do responsável, entregar um módulo por vez e aguardar sua depuração antes do próximo. A primeira entrega segue a [especificação aprovada](docs/superpowers/specs/2026-10-01-identidade-e-acesso-design.md) e o [plano autorizado](docs/superpowers/plans/2026-10-01-identidade-e-acesso.md), executado diretamente com revisão independente ao final. O responsável autorizou iniciar catálogo em 01/10/2026; sua [especificação para revisão](docs/superpowers/specs/2026-10-01-catalogo-design.md) descreve telas simples, endpoints e política de acesso confirmada. Catálogo ainda não foi implementado.
 
-Para as próximas entregas do MVP, usar frontend mais simples, preservando a interface atual de identidade. O responsável executará os testes: a entrega fornecerá comandos e cenários, sem executar suítes ou verificação funcional no navegador pelo agente. Essas orientações estão em [AGENTS.md](AGENTS.md).
+Para as próximas entregas do MVP, usar frontend mais simples, preservando a interface atual de identidade. Executar os testes automatizados do Django e os testes básicos no navegador; o responsável realizará os testes mais profundos posteriormente. Essas orientações estão em [AGENTS.md](AGENTS.md).
 
 Commits importantes seguem o formato em português, por exemplo `feat (docs): adiciona documentação da arquitetura do sistema.`.

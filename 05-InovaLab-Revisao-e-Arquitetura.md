@@ -132,7 +132,7 @@ Cada módulo terá especificação e plano próprios após validação. Por inst
 | Etapa | Entrega proposta | Decisões necessárias | Verificação principal |
 | --- | --- | --- | --- |
 | 1. Identidade e acesso (entregue) | Colisão corrigida, configuração, usuário/papéis; contas no admin, login/logout, página privada e API de identidade | Responsável autorizou avançar para catálogo em 01/10/2026 | 35 testes passaram na entrega; fluxo web/API e admin verificados no Chrome |
-| 2. Catálogo (desenho em revisão) | Serviços, equipamentos e espaços; frontend/API simples e carga dos 11 serviços | Q12 confirmado para catálogo; revisar regras no desenho do módulo 2 | CT20/CT24; escrita sem permissão falha; carga não duplica nem sobrescreve; responsável executa testes |
+| 2. Catálogo (em implementação) | Serviços, equipamentos e espaços; frontend/API simples e carga dos 11 serviços | Q12 confirmado; especificação autorizada para implementação | CT20/CT24; testes automatizados e básicos no navegador; testes profundos pelo responsável |
 | 3. Tarefas | CRUD de admin, consulta restrita, Kanban e transições web/API | Q03 restante, Q04, Q08 para tarefas e histórico | CT01–CT08, CT25–CT28 e equivalência web/API |
 | 4. Agenda | Agenda e proteção de conflito | Q05 restante, Q06, Q08 para reservas, Q12–Q14 e banco | CT09–CT15, CT19–CT20, incluindo concorrência no banco escolhido |
 | 5. AgroHub | Contrato, credencial e recebimento idempotente | Q07, dados mínimos e alterações locais | CT16–CT18, CT28–CT29 e reenvio simultâneo |
@@ -155,6 +155,6 @@ As 15 skills de [obra/superpowers](https://github.com/obra/superpowers) foram in
 - [x] Elaborar plano e definir execução com as skills pertinentes.
 - [x] Implementar, verificar fluxo web/API e atualizar documentação da primeira etapa.
 - [x] Receber autorização do responsável para avançar de identidade para catálogo.
-- [ ] Definir e entregar catálogo com telas simples; execução dos testes pelo responsável.
+- [ ] Entregar catálogo com telas simples, testes automatizados e básicos no navegador; aguardar testes profundos pelo responsável.
 
 O processo `brainstorming` exige revisão do design antes de implementar. Esta revisão documental prepara uma proposta concreta; a aprovação de uma regra de negócio não transforma todo o desenho técnico em especificação aprovada.

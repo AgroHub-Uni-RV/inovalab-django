@@ -90,11 +90,11 @@ Listagem paginada: `count`, `next`, `previous`, `results`; 25 itens por página 
 
 Não adicionar autenticação por token, login API, CORS público ou consumidores externos nesta etapa.
 
-## Entrega e testes pelo responsável
+## Entrega e verificação
 
-Preparar testes automatizados relevantes de modelos, carga, permissões e fluxos web/API, sem executá-los. Essa instrução do responsável prevalece sobre os ciclos de execução de testes das skills. Não iniciar navegador para testar. Revisar código e documentação estaticamente e informar claramente que os testes não foram executados pelo agente.
+Preparar e executar testes automatizados relevantes de modelos, carga, permissões e fluxos web/API, além dos testes básicos no navegador. O responsável revogou a orientação anterior de não executar testes e assumiu somente os testes mais profundos após a entrega. Informar comandos, resultados e limitações reais.
 
-Documentar os comandos de instalação já existentes, `migrate`, `carregar_servicos_iniciais` e servidor. Não apagar o SQLite nem criar contas/pessoas fictícias no banco do responsável. As migrações desta nova etapa serão aplicadas por ele como parte do roteiro.
+Documentar os comandos de instalação já existentes, `migrate`, `carregar_servicos_iniciais` e servidor. Aplicar migrações aditivas ao banco local, sem apagar o SQLite ou dados existentes. Contas temporárias de verificação serão removidas ao final; não cadastrar pessoas demonstrativas como dados definitivos.
 
 Roteiro mínimo a fornecer na entrega:
 
@@ -119,4 +119,4 @@ Comandos previstos para execução pelo responsável, após implementação:
 & .\venv\Scripts\python.exe manage.py makemigrations --check --dry-run
 ```
 
-Os comandos de catálogo acima são previstos, ainda não disponíveis no código. Não registrar resultados de testes como aprovados sem a execução pelo responsável. Concluir somente este módulo e aguardar sua depuração antes de tarefas.
+Os comandos de catálogo acima são previstos durante a implementação. Registrar resultados de testes somente após execução e conferência da saída. Concluir somente este módulo e aguardar a depuração mais profunda do responsável antes de tarefas.
