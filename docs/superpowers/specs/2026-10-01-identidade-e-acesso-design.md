@@ -1,6 +1,6 @@
 # Módulo 1 — Identidade e acesso
 
-01/10/2026 • Especificação aprovada pelo responsável em 01/10/2026. Base: RF01, RF23/RF24, CT25, arquitetura do arquivo 05 e decisão do responsável sobre Q11. Este módulo será entregue sozinho; após testes automatizados e roteiro manual, aguardar o responsável debugar antes de iniciar outro módulo. O [plano de implementação](../plans/2026-10-01-identidade-e-acesso.md) aguarda revisão e definição do método de execução.
+01/10/2026 • Especificação e implementação aprovadas pelo responsável em 01/10/2026. Base: RF01, RF23/RF24, CT25, arquitetura do arquivo 05 e decisão do responsável sobre Q11. O [plano de implementação](../plans/2026-10-01-identidade-e-acesso.md) foi executado diretamente. O módulo foi implementado e verificado; o [guia da entrega](../../modules/01-identidade-e-acesso.md) reúne execução e roteiro manual. Aguardar o responsável debugar antes de iniciar outro módulo.
 
 ## Objetivo e limites
 

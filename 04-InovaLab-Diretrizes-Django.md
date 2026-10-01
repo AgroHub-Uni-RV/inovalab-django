@@ -1,6 +1,6 @@
 # InovaLab — Diretrizes de modelagem para Django
 
-Versão 0.2 • 01/10/2026. Recomendações técnicas, não código implementado. Django, frontend básico e endpoints de API são objetivos confirmados. O ambiente local usa Python 3.14.3 e Django 6.1.1; compatibilidade das bibliotecas, banco e hospedagem serão definidos na implementação. A proposta de arquitetura e o diagnóstico estão no arquivo 05.
+Versão 0.3 • 01/10/2026. Diretrizes para os módulos futuros; identidade e acesso já implementados conforme o [guia da entrega](docs/modules/01-identidade-e-acesso.md). O primeiro módulo foi verificado com Python 3.14.3, Django 6.1.1 e DRF 3.18.1, usando SQLite local. Banco da agenda e hospedagem serão definidos em suas etapas. A proposta de arquitetura e o diagnóstico histórico estão no arquivo 05.
 
 ## 1. Organização sugerida
 
@@ -14,7 +14,7 @@ Versão 0.2 • 01/10/2026. Recomendações técnicas, não código implementado
 | conteudo | Banners e publicação |
 | integracoes | Contrato e autenticação AgroHub; adaptação ao domínio |
 
-O app local `auth` atualmente colide com o rótulo de `django.contrib.auth`: `manage.py check` falha antes de iniciar. Propor substituí-lo por `accounts`, inspecionando migrações e banco antes da mudança. `core` deve concentrar apenas elementos compartilhados e a composição do painel.
+A colisão inicial entre o app local `auth` e `django.contrib.auth` foi corrigida no módulo 1: o scaffold local foi substituído por `accounts`, com usuário baseado em `AbstractUser`, grupo `Administradores` e migrações próprias. `manage.py check` passa. `core` permanece sem funcionalidades de negócio; futuramente deve concentrar elementos compartilhados e a composição do painel.
 
 Separar regras compartilhadas da interface. A API e os formulários devem chamar as mesmas operações de domínio para reservar, editar e excluir. Não implementar uma validação de conflito diferente em cada entrada.
 

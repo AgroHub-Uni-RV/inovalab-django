@@ -1,6 +1,6 @@
 # InovaLab — Revisão e proposta de arquitetura
 
-Versão 0.1 • 01/10/2026 • Proposta para discussão. Este arquivo registra diagnóstico, alternativas e etapas; não é uma especificação aprovada nem uma declaração de funcionalidades implementadas. C/D/P e F1–F4 são definidos no arquivo 01.
+Versão 0.2 • 01/10/2026 • Proposta de arquitetura com atualização da primeira entrega. O diagnóstico inicial permanece histórico; identidade e acesso foram aprovados e implementados em especificação própria. Os demais módulos continuam propostos. C/D/P e F1–F4 são definidos no arquivo 01.
 
 ## 1. Resultado esperado
 
@@ -27,7 +27,7 @@ Números, nomes, fotos, cores e datas são exemplos visuais. Não carregar essas
 
 ## 3. Diagnóstico do repositório
 
-Verificação executada no ambiente local em 01/10/2026:
+Verificação inicial executada no ambiente local em 01/10/2026, antes da implementação:
 
 | Item | Evidência | Ação proposta |
 | --- | --- | --- |
@@ -46,6 +46,8 @@ Comando de diagnóstico:
 
 Essa é a linha de base com falha. Não houve servidor iniciado, implantação, alteração de banco nem testes funcionais bem-sucedidos nesta revisão documental.
 
+**Atualização após o módulo 1:** `accounts` substitui o scaffold local `auth`, sem remover a autenticação nativa. Dependências diretas estão versionadas, configuração usa variáveis de ambiente e hosts locais por padrão. Migrações aplicadas no SQLite local; `check`, verificação de migrações e dependências passam. A entrega inclui contas no admin, login/logout, página privada e API de identidade, cobertos por 35 testes e verificação no Chrome. Consulte o [roteiro de depuração](docs/modules/01-identidade-e-acesso.md). O responsável deve depurar esta etapa antes de iniciar catálogo.
+
 ## 4. Alternativas de arquitetura
 
 | Opção | Benefício | Custo e adequação |
@@ -54,7 +56,7 @@ Essa é a linha de base com falha. Não houve servidor iniciado, implantação, 
 | Django com frontend separado | Mais liberdade para interações complexas e evolução independente | Acrescenta build, autenticação entre origens e manutenção de duas aplicações; possível evolução com a mesma API |
 | Serviços separados por domínio | Implantação e escala independentes | Acrescenta comunicação distribuída e consistência entre serviços; necessidade não confirmada para o MVP |
 
-DRF é proposto, não instalado. PostgreSQL é recomendado para a agenda com concorrência; banco e hospedagem ainda não foram aprovados. SQLite pode apoiar exploração local, mas os testes de concorrência devem usar o banco escolhido para a agenda: `select_for_update()` não fornece bloqueio de linha em SQLite. [Referência oficial do Django](https://docs.djangoproject.com/en/6.1/ref/models/querysets/#select-for-update).
+DRF foi instalado e verificado no módulo de identidade. PostgreSQL é recomendado para a agenda com concorrência; banco da agenda e hospedagem ainda não foram aprovados. SQLite apoia a execução local de identidade, mas os testes de concorrência devem usar o banco escolhido para a agenda: `select_for_update()` não fornece bloqueio de linha em SQLite. [Referência oficial do Django](https://docs.djangoproject.com/en/6.1/ref/models/querysets/#select-for-update).
 
 ## 5. Componentes e dependências
 
@@ -96,11 +98,11 @@ Para recursos exclusivos, propõe-se bloquear o registro do recurso na transaç�
 
 ## 7. Superfície proposta da API
 
-Os caminhos abaixo são propostas, **não endpoints existentes**. Implementar por etapa e gerar contrato correspondente ao código entregue. RF23 não concede acesso externo irrestrito aos módulos internos.
+`/api/v1/me/` está entregue conforme o [contrato do módulo 1](docs/modules/01-identidade-e-acesso.md). Os demais caminhos abaixo são propostas, **não endpoints existentes**. Implementar por etapa e gerar contrato correspondente ao código entregue. RF23 não concede acesso externo irrestrito aos módulos internos.
 
 | Caminho proposto | Operação | Acesso e decisões |
 | --- | --- | --- |
-| `/api/v1/me/` | Identidade e capacidades | Usuário autenticado; sem listar contas alheias |
+| `/api/v1/me/` (entregue) | Identidade atual e classificação de administrador do laboratório | Sessão válida; somente cinco campos do contrato, sem listar contas alheias |
 | `/api/v1/servicos/` | Consultar/manter serviços | Permissões Q12; integração recebe apenas campos aprovados |
 | `/api/v1/equipamentos/`, `/api/v1/espacos/` | Consultar/manter recursos | Política do catálogo; sem revelar agenda privada |
 | `/api/v1/tarefas/` e `/{id}/` | Consultar, criar, editar e excluir | Consulta responsável/admin; escrita de campos/exclusão somente admin; sem status genérico que contorne o fluxo |
@@ -129,7 +131,7 @@ Cada módulo terá especificação e plano próprios após validação. Por inst
 
 | Etapa | Entrega proposta | Decisões necessárias | Verificação principal |
 | --- | --- | --- | --- |
-| 1. Identidade e acesso | Corrigir colisão, configuração reproduzível, usuário/papéis; contas no admin, login/logout, página privada e API de identidade | Q11 inicial definido; revisar especificação e plano do módulo | Django inicia; login/logout, CSRF, conta inativa, acesso administrativo e contrato da identidade |
+| 1. Identidade e acesso (entregue) | Colisão corrigida, configuração, usuário/papéis; contas no admin, login/logout, página privada e API de identidade | Especificação e implementação aprovadas; aguardando depuração pelo responsável | 35 testes passam; fluxo web/API e admin verificados no Chrome |
 | 2. Catálogo | Serviços, equipamentos e espaços; frontend/API e carga dos 11 serviços | Autorização Q12 e regras dos cadastros | CT20/CT24; escrita sem permissão falha; carga não duplica nem sobrescreve |
 | 3. Tarefas | CRUD de admin, consulta restrita, Kanban e transições web/API | Q03 restante, Q04, Q08 para tarefas e histórico | CT01–CT08, CT25–CT28 e equivalência web/API |
 | 4. Agenda | Agenda e proteção de conflito | Q05 restante, Q06, Q08 para reservas, Q12–Q14 e banco | CT09–CT15, CT19–CT20, incluindo concorrência no banco escolhido |
@@ -148,9 +150,10 @@ As 15 skills de [obra/superpowers](https://github.com/obra/superpowers) foram in
 - [x] Registrar decisões sobre avaliação e alvo da reserva.
 - [x] Verificar runtime e falha de inicialização.
 - [x] Comparar abordagens e preparar esta proposta.
-- [ ] Validar arquitetura e decisões da primeira etapa.
-- [ ] Escrever e revisar especificação da primeira etapa.
-- [ ] Elaborar plano e definir execução com as skills pertinentes.
-- [ ] Implementar, verificar fluxo web/API e atualizar documentação.
+- [x] Validar arquitetura e decisões da primeira etapa.
+- [x] Escrever e revisar especificação da primeira etapa.
+- [x] Elaborar plano e definir execução com as skills pertinentes.
+- [x] Implementar, verificar fluxo web/API e atualizar documentação da primeira etapa.
+- [ ] Aguardar depuração de identidade pelo responsável antes de iniciar catálogo.
 
 O processo `brainstorming` exige revisão do design antes de implementar. Esta revisão documental prepara uma proposta concreta; a aprovação de uma regra de negócio não transforma todo o desenho técnico em especificação aprovada.

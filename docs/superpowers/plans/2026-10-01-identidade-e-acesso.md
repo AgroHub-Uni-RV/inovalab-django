@@ -1,6 +1,6 @@
 # Plano de implementação — Identidade e acesso
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Entregar somente o módulo de identidade, com contas no admin, login/logout, página protegida e consulta da identidade por API; aguardar depuração pelo responsável antes do catálogo.
 
@@ -52,9 +52,9 @@ Remover somente os sete arquivos de scaffold rastreados do app local `auth`, inc
 
 ## Preparação da execução
 
-- [ ] Ler especificação e plano, verificar `git status`, banco existente e migrações; preservar alterações do responsável. Usar `using-git-worktrees` para decidir a execução isolada sem trocar ou mover seu checkout ativo.
-- [ ] Se banco/dados surgiram após a revisão, inspecionar antes de mudar usuário; não apagar ou recriar por conveniência.
-- [ ] Executar `& <python-do-venv> manage.py check` e registrar a falha inicial `duplicates: auth`. Em worktree, usar o executável do venv existente por caminho absoluto e executar os comandos no diretório do worktree.
+- [x] Ler especificação e plano, verificar `git status`, banco existente e migrações; preservar alterações do responsável. Usar `using-git-worktrees` para decidir a execução isolada sem trocar ou mover seu checkout ativo.
+- [x] Se banco/dados surgiram após a revisão, inspecionar antes de mudar usuário; não apagar ou recriar por conveniência.
+- [x] Executar `& <python-do-venv> manage.py check` e registrar a falha inicial `duplicates: auth`. Em worktree, usar o executável do venv existente por caminho absoluto e executar os comandos no diretório do worktree.
 
 ## Tarefa 1 — Inicialização, usuário e administração de contas
 
@@ -69,7 +69,7 @@ Remover somente os sete arquivos de scaffold rastreados do app local `auth`, inc
 
 Fixtures das tarefas: senha `InovaLab-Teste-2026!`; Ana tem username `ana`, first_name `Ana`, last_name `Silva`, é ativa e sem privilégios; Bruno usa username `bruno`; administrador técnico usa username `admin`, ativo, staff e superusuário. Criar fixtures com `get_user_model()` e `create_user/create_superuser`, sem IDs fixos.
 
-- [ ] **Escrever testes que falham:**
+- [x] **Escrever testes que falham:**
 
 ```python
 # test_identity.py — papéis, sem depender de IDs fixos
@@ -89,11 +89,11 @@ Em `test_admin.py`, autenticar superusuário, POST `/admin/accounts/user/add/` c
 
 Em `test_environment.py`, usar `unittest.TestCase`: ambiente vazio retorna debug true e hosts `('localhost', '127.0.0.1')`; valores true/1/yes/on e false/0/no/off são aceitos sem distinguir maiúsculas. `DJANGO_DEBUG='talvez'` e debug false sem chave lançam `ImproperlyConfigured`; chave informada é preservada e hosts separados por vírgula são aparados, ignorando itens vazios.
 
-- [ ] **Executar o ciclo vermelho:** `& <python-do-venv> -m unittest setup.tests.test_environment` e `& <python-do-venv> manage.py test accounts.tests.test_identity accounts.tests.test_admin`. Registrar import ausente/conflito de app antes da implementação.
-- [ ] **Implementar as interfaces:** pinar somente `Django==6.1.1` e `djangorestframework==3.18.1` em requisitos, instalar no venv de execução, substituir app e configurar o usuário. `read_environment` usa fallback `django-insecure-inovalab-local-development-only` apenas com debug ativo; com debug false, chave ausente/vazia é erro. Registrar `User` usando `UserAdmin` nativo; cadastro/grupos/privilégios desta entrega ficam exclusivos do superusuário, inclusive se outro staff receber permissões de usuário.
-- [ ] **Gerar e revisar migrações:** `makemigrations accounts`, criar a migração de grupo com modelos históricos e alias do schema editor; confirmar `0001` contém usuário configurável. Não atribuir permissões de outros módulos ao grupo.
-- [ ] **Executar o ciclo verde:** os comandos de teste anteriores passam; `manage.py check` sem problemas; `manage.py makemigrations --check --dry-run` sem mudanças. Testar staff com permissões `accounts.add_user/change_user/view_user` e `auth.add_group/change_group/view_group`: URLs de usuários e grupos não permitem cadastro/edição e nenhum privilégio é alterado; superusuário continua operando. Incluir esses testes em `test_admin.py` antes da implementação.
-- [ ] **Commit:** `feat (accounts): configura usuário e administração de contas.` com somente arquivos da tarefa.
+- [x] **Executar o ciclo vermelho:** `& <python-do-venv> -m unittest setup.tests.test_environment` e `& <python-do-venv> manage.py test accounts.tests.test_identity accounts.tests.test_admin`. Registrar import ausente/conflito de app antes da implementação.
+- [x] **Implementar as interfaces:** pinar somente `Django==6.1.1` e `djangorestframework==3.18.1` em requisitos, instalar no venv de execução, substituir app e configurar o usuário. `read_environment` usa fallback `django-insecure-inovalab-local-development-only` apenas com debug ativo; com debug false, chave ausente/vazia é erro. Registrar `User` usando `UserAdmin` nativo; cadastro/grupos/privilégios desta entrega ficam exclusivos do superusuário, inclusive se outro staff receber permissões de usuário.
+- [x] **Gerar e revisar migrações:** `makemigrations accounts`, criar a migração de grupo com modelos históricos e alias do schema editor; confirmar `0001` contém usuário configurável. Não atribuir permissões de outros módulos ao grupo.
+- [x] **Executar o ciclo verde:** os comandos de teste anteriores passam; `manage.py check` sem problemas; `manage.py makemigrations --check --dry-run` sem mudanças. Testar staff com permissões `accounts.add_user/change_user/view_user` e `auth.add_group/change_group/view_group`: URLs de usuários e grupos não permitem cadastro/edição e nenhum privilégio é alterado; superusuário continua operando. Incluir esses testes em `test_admin.py` antes da implementação.
+- [x] **Commit:** `feat (accounts): configura usuário e administração de contas.` com somente arquivos da tarefa.
 
 ## Tarefa 2 — Login, página protegida e logout
 
@@ -104,7 +104,7 @@ Em `test_environment.py`, usar `unittest.TestCase`: ambiente vazio retorna debug
 - Produz `accounts.views.home(request: HttpRequest) -> HttpResponse`, com `login_required` e contexto `is_business_admin`.
 - URLs nomeadas `accounts:login`, `accounts:logout`, `accounts:home`; login usa `LoginView(template_name='accounts/login.html')`, logout usa `LogoutView`; `LOGIN_URL` aponta para login, `LOGIN_REDIRECT_URL='/'`, `LOGOUT_REDIRECT_URL` aponta para login.
 
-- [ ] **Escrever testes que falham:**
+- [x] **Escrever testes que falham:**
 
 ```python
 # test_web.py — sessão e redirecionamento
@@ -121,11 +121,11 @@ Adicionar `test_wrong_credentials_and_unknown_account_have_same_message`, `test_
 
 Com `Client(enforce_csrf_checks=True)`, GET login para obter cookie CSRF; POST login sem token retorna 403; POST com token autentica. Depois ler cookie rotacionado: logout sem token retorna 403 e mantém acesso; POST com token redireciona para login e fecha página privada. Em `test_deactivation_revokes_existing_session`, autenticar, salvar `is_active=False` e confirmar redirecionamento no GET seguinte.
 
-- [ ] **Executar vermelho:** `& <python-do-venv> manage.py test accounts.tests.test_web`; confirmar rotas/templates ainda ausentes.
-- [ ] **Implementar o fluxo:** views nativas e política compartilhada; `{% csrf_token %}` em formulários, `next` como campo oculto escapado; botão Sair envia POST. Saudação e papel são dados reais do usuário; link do admin apenas para superusuário desta entrega.
-- [ ] **Implementar interface:** labels explícitos, usuário/senha com autocomplete adequado, erros genéricos em português, foco visível e layout funcional a 360 px. CSS por static tag; sem bibliotecas externas de frontend.
-- [ ] **Executar verde:** testes web e testes anteriores passam; verificar idioma, URLs nomeadas e logout sem dispensar CSRF.
-- [ ] **Commit:** `feat (accounts): adiciona login e logout com interface básica.`.
+- [x] **Executar vermelho:** `& <python-do-venv> manage.py test accounts.tests.test_web`; confirmar rotas/templates ainda ausentes.
+- [x] **Implementar o fluxo:** views nativas e política compartilhada; `{% csrf_token %}` em formulários, `next` como campo oculto escapado; botão Sair envia POST. Saudação e papel são dados reais do usuário; link do admin apenas para superusuário desta entrega.
+- [x] **Implementar interface:** labels explícitos, usuário/senha com autocomplete adequado, erros genéricos em português, foco visível e layout funcional a 360 px. CSS por static tag; sem bibliotecas externas de frontend.
+- [x] **Executar verde:** testes web e testes anteriores passam; verificar idioma, URLs nomeadas e logout sem dispensar CSRF.
+- [x] **Commit:** `feat (accounts): adiciona login e logout com interface básica.`.
 
 ## Tarefa 3 — API de identidade e entrega para depuração
 
@@ -136,7 +136,7 @@ Com `Client(enforce_csrf_checks=True)`, GET login para obter cookie CSRF; POST l
 - Produz `accounts.api.MeView(APIView)` com `SessionAuthentication`, `IsAuthenticated`, `JSONRenderer`, `get(request) -> Response` e `http_method_names=['get', 'head', 'options']`.
 - Produz `GET /api/v1/me/`, sem parametro de ID, com exatamente as cinco chaves da especificação e dados do usuário atual.
 
-- [ ] **Escrever testes que falham:**
+- [x] **Escrever testes que falham:**
 
 ```python
 # test_api.py — privacidade e contrato
@@ -152,14 +152,14 @@ self.assertEqual(response.json(), {
 
 Criar Bruno e confirmar que a resposta não muda com `?id=<bruno.pk>`. Testar classificação de grupo/staff/superusuário e não exposição de senha/e-mail. Para POST/PUT/PATCH/DELETE autenticados, enviar CSRF válido com cliente que aplica CSRF e esperar 405; sem autenticação, esperar 403. Desativação pós-login retorna 403. Logout válido da tarefa 2 também encerra acesso à API. Corpo anônimo contém `detail`, sem campos de identidade.
 
-- [ ] **Executar vermelho:** `& <python-do-venv> manage.py test accounts.tests.test_api`; confirmar endpoint ausente.
-- [ ] **Implementar API:** permissões e autenticação explícitas, política compartilhada, JSON por campos permitidos. Não criar API de listagem de contas ou login externo.
-- [ ] **Executar verde e checks finais:** `& <python-do-venv> manage.py test`, `manage.py check`, `manage.py makemigrations --check --dry-run`, `& <python-do-venv> -m pip check` e `git diff --check`, todos sem falhas.
-- [ ] **Preparar roteiro:** documentar `pip install -r requirements.txt`, `migrate`, `createsuperuser`, `runserver`, variáveis PowerShell e contrato da API; comandos usando o venv local e sem publicar senha real. Explicar que `.env` não é lido e que configuração de produção não é uma implantação validada.
-- [ ] **Verificar migração real local:** aplicar `migrate` somente ao banco local destinado à execução; confirmar que repetição não duplica grupo; não apagar banco existente. Criar conta temporária apenas para verificação, sem adicionar credenciais ao Git.
-- [ ] **Verificar no navegador:** ao iniciar dev server, usar as skills de browser/verificação; testar login, senha errada, página privada, API, admin e logout, console e static CSS. Verificar teclado e largura 360 px. Relatar limites reais caso a ferramenta não esteja disponível.
-- [ ] **Atualizar estado documental:** README/arquivo 04 deixam de apresentar a colisão como falha atual; arquivo 05 mantém o diagnóstico histórico datado e registra entrega de identidade. Especificação continua vinculada à entrega e plano marca somente passos efetivamente concluídos.
-- [ ] **Commit:** `feat (accounts): expõe identidade autenticada e documenta a entrega.`.
+- [x] **Executar vermelho:** `& <python-do-venv> manage.py test accounts.tests.test_api`; confirmar endpoint ausente.
+- [x] **Implementar API:** permissões e autenticação explícitas, política compartilhada, JSON por campos permitidos. Não criar API de listagem de contas ou login externo.
+- [x] **Executar verde e checks finais:** `& <python-do-venv> manage.py test`, `manage.py check`, `manage.py makemigrations --check --dry-run`, `& <python-do-venv> -m pip check` e `git diff --check`, todos sem falhas.
+- [x] **Preparar roteiro:** documentar `pip install -r requirements.txt`, `migrate`, `createsuperuser`, `runserver`, variáveis PowerShell e contrato da API; comandos usando o venv local e sem publicar senha real. Explicar que `.env` não é lido e que configuração de produção não é uma implantação validada.
+- [x] **Verificar migração real local:** aplicar `migrate` somente ao banco local destinado à execução; confirmar que repetição não duplica grupo; não apagar banco existente. Criar conta temporária apenas para verificação, sem adicionar credenciais ao Git.
+- [x] **Verificar no navegador:** ao iniciar dev server, usar as skills de browser/verificação; testar login, senha errada, página privada, API, admin e logout, console e static CSS. Verificar teclado e largura 360 px. Relatar limites reais caso a ferramenta não esteja disponível.
+- [x] **Atualizar estado documental:** README/arquivo 04 deixam de apresentar a colisão como falha atual; arquivo 05 mantém o diagnóstico histórico datado e registra entrega de identidade. Especificação continua vinculada à entrega e plano marca somente passos efetivamente concluídos.
+- [x] **Commit:** `feat (accounts): expõe identidade autenticada e documenta a entrega.`.
 
 ## Revisão e encerramento do módulo
 
@@ -169,4 +169,4 @@ Criar Bruno e confirmar que a resposta não muda com `?id=<bruno.pk>`. Testar cl
 
 ## Revisão do plano e método de execução
 
-Plano preparado com três tarefas que compartilham modelo, papéis e sessão. Recomenda-se execução direta, por ser um módulo pequeno com interfaces dependentes; execução por subagentes é alternativa se o responsável preferir revisões entre tarefas. Revisar este plano e escolher o método antes de implementar, conforme `writing-plans`.
+Plano preparado com três tarefas que compartilham modelo, papéis e sessão. Recomenda-se execução direta, por ser um módulo pequeno com interfaces dependentes; execução por subagentes é alternativa se o responsável preferir revisões entre tarefas. A implementação foi autorizada pelo responsável e executada diretamente no checkout ativo, na branch `feat/identidade-acesso`, com revisão independente ao final. Essa escolha mantém a entrega disponível no IDE para depuração. O ambiente Windows usa registros de progresso em PowerShell.
