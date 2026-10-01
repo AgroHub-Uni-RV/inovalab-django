@@ -2,7 +2,7 @@
 
 Sistema Django para demandas do laboratório, tarefas, agenda, materiais e banners, com frontend básico e API para futuras integrações.
 
-Os módulos **Identidade e acesso** e **Catálogo** estão implementados. O catálogo entrega serviços, equipamentos e espaços com telas simples e APIs autenticadas. Os demais módulos e seus endpoints seguem como propostas; tarefas aguardam a depuração do catálogo antes de iniciar.
+Os módulos **Identidade e acesso**, **Catálogo** e **Tarefas** estão implementados. Tarefas entrega quadro simples, administração, consulta por responsável, transições, histórico e API autenticada. Agenda e demais módulos continuam propostos; aguardar depuração de tarefas antes de avançar.
 
 ## Documentação
 
@@ -16,6 +16,7 @@ Os módulos **Identidade e acesso** e **Catálogo** estão implementados. O cat�
 | [06 — Conferência do PDF](06-InovaLab-Conferencia-do-PDF.md) | Comparação por página, cobertura dos requisitos e distinção entre PDF, decisões e propostas |
 | [Módulo 1 — Identidade e acesso](docs/modules/01-identidade-e-acesso.md) | Instalação, contas, contrato da API e roteiro para depuração |
 | [Módulo 2 — Catálogo](docs/modules/02-catalogo.md) | Cadastros, carga inicial, endpoints e testes para aprofundar |
+| [Módulo 3 — Tarefas](docs/modules/03-tarefas.md) | Quadro, permissões, fluxo de avaliação, histórico, API e depuração |
 
 Leia as classificações **C** (confirmado pela fonte), **D** (derivado) e **P** (proposta) no arquivo 01. Propostas não são decisões aprovadas. As seis telas e as três páginas de `Referencias/InovaLab - Modelagem.pdf` foram examinadas. A pasta permanece ignorada pelo Git e pode faltar em outro clone.
 
@@ -54,15 +55,17 @@ Verificação automatizada:
 & .\venv\Scripts\python.exe -m pip check
 ```
 
-73 testes passaram (38 do catálogo e 35 de identidade/configuração); checks, migrações e dependências sem pendências. Os fluxos básicos foram verificados no Chrome, incluindo layout a 360 px. Consulte os guias de [identidade](docs/modules/01-identidade-e-acesso.md) e [catálogo](docs/modules/02-catalogo.md) para contratos e roteiros. `.env` não é carregado automaticamente. Esta entrega é local; hospedagem e produção permanecem por definir.
+117 testes passaram (44 de tarefas, 38 do catálogo e 35 de identidade/configuração); checks, migrações e dependências sem pendências. Os fluxos básicos foram verificados no Chrome, incluindo layout a 360 px e teclado. Consulte os guias dos módulos para contratos, limitações e roteiros. `.env` não é carregado automaticamente. Esta entrega é local; hospedagem e produção permanecem por definir.
 
 Após entrar, use **Catálogo** ou abra `/catalogo/servicos/`. A migração cria os onze serviços do PDF; `manage.py carregar_servicos_iniciais` repete a carga preservando alterações. APIs disponíveis: `/api/v1/servicos/`, `/api/v1/equipamentos/`, `/api/v1/espacos/`, com detalhes por ID. Indisponibilização preserva registros; exclusão física não é oferecida.
+
+Use **Tarefas** ou abra `/tarefas/`. Administradores criam demandas e avaliam entregas; cada responsável vê somente suas tarefas e pode iniciar/enviar. `/api/v1/tarefas/` oferece consulta e administração; `/{id}/transicoes/` controla o fluxo e `/{id}/historico/` registra alterações. Escritas em tarefas existentes exigem `versao`; exclusão é lógica. Datas e demais escolhas do MVP estão no guia do módulo 3.
 
 ## Processo
 
 Revisar requisitos e decisões de cada etapa, validar seu desenho, preparar o plano, implementar o fluxo web/API e verificar cenários relevantes. A coleção de skills [Superpowers](https://github.com/obra/superpowers) foi instalada neste ambiente do Codex; não é dependência da aplicação e não acompanha um clone do projeto.
 
-Por decisão do responsável, entregar um módulo por vez e aguardar sua depuração antes do próximo. Identidade e catálogo seguem suas especificações e planos autorizados, com execução direta e revisão independente ao final. O [catálogo](docs/superpowers/specs/2026-10-01-catalogo-design.md) está entregue conforme seu [plano](docs/superpowers/plans/2026-10-01-catalogo.md), aguardando testes mais profundos pelo responsável antes de tarefas.
+Por decisão do responsável, entregar um módulo por vez e aguardar sua depuração antes do próximo. Identidade e catálogo seguem suas especificações e planos autorizados. Tarefas foi autorizada para implementação direta com [plano simples](docs/superpowers/plans/2026-10-01-tarefas.md), sem novas passagens de aprovação de documentos, mantendo testes e revisão independente. As escolhas para lacunas dos requisitos estão identificadas como escolhas de implementação no guia. Aguardar depuração de tarefas antes de agenda.
 
 Para as próximas entregas do MVP, usar frontend mais simples, preservando a interface atual de identidade. Executar os testes automatizados do Django e os testes básicos no navegador; o responsável realizará os testes mais profundos posteriormente. Essas orientações estão em [AGENTS.md](AGENTS.md).
 

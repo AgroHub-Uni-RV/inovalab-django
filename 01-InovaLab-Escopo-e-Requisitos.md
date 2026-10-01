@@ -160,6 +160,7 @@ O PDF lista “Óculos de realidade virtual” e “Scanner 3D manual” como se
 | 01/10/2026 | F3 — execução de testes, decisão inicial substituída | Inicialmente o responsável assumiu toda a execução | Substituída pela decisão posterior abaixo |
 | 01/10/2026 | F3 — Q12 para catálogo | Administradores do laboratório mantêm serviços/equipamentos/espaços; todos os usuários internos ativos consultam | Aplicar a mesma permissão no frontend e na API; materiais e banners continuam por definir |
 | 01/10/2026 | F3 — execução de testes, decisão vigente | Executar testes automatizados do Django e básicos no navegador; responsável realizará testes mais profundos posteriormente | Seguir fluxo normal de desenvolvimento/verificação e informar os resultados e os cenários restantes |
+| 01/10/2026 | F3 — passagem para tarefas | Implementar diretamente a próxima parte com plano simples | Módulo 3 entregue com escolhas provisórias de quadro único, datas automáticas, prazo opcional, reabertura em criação e exclusão lógica; não são respostas adicionais a Q02/Q03/Q04/Q08. Depurar antes de agenda |
 
 ## 10. Evolução sugerida, fora do escopo confirmado
 

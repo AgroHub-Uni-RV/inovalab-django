@@ -18,6 +18,8 @@ stateDiagram-v2
 
 Não há estado `re-criar`. A autoridade para reabrir está aprovada; retornar para criação é proposta. Avanço direto de demanda/criação para concluído e outras transições não estão aprovados. Datas automáticas e motivo de recusa continuam dependentes de Q04/RN11.
 
+**Atualização da entrega de tarefas:** o responsável autorizou implementação direta com plano simples. O módulo 3 adota operacionalmente esse mapa, início real automático, prazo opcional com horário, conclusão automática e reabertura que limpa a conclusão atual preservando o evento anterior. Exclusão é lógica, com histórico retido; versão antiga retorna 409. Essas são escolhas de implementação para depuração, sem reclassificar propostas como respostas confirmadas. Motivo de recusa, anexos e comentários não foram acrescentados. Consulte o [guia](docs/modules/03-tarefas.md) para testes executados e contratos.
+
 ## 2. Cenários de tarefas e acesso
 
 ### CT01 — Criar demanda e atribuir responsável
@@ -133,6 +135,8 @@ Não há estado `re-criar`. A autoridade para reabrir está aprovada; retornar p
 ### CT27 — Reabrir tarefa concluída
 
 **UC04–UC05; RF06, RN16; C para ator, P para destino.** Dada uma tarefa concluída, quando o responsável tentar reabri-la, então o servidor rejeita. Um administrador pode reabrir; o destino e o tratamento da data de conclusão precisam ser confirmados antes de testar o resultado positivo.
+
+Na implementação direta do módulo 3, o resultado positivo adotado é `criacao`, com início preservado, conclusão atual vazia e evento de aprovação anterior retido. Coberto por testes de domínio/API e verificação básica no navegador; permanece uma escolha ajustável pelo responsável.
 
 ### CT28 — Aplicar a mesma regra na interface e API
 
