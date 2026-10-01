@@ -1,0 +1,30 @@
+{% extends 'accounts/base.html' %}
+{% block title %}Minha conta · InovaLab{% endblock %}
+{% block content %}
+<section class="card account-card" aria-labelledby="account-title">
+    <span class="eyebrow">Minha conta</span>
+    <h2 id="account-title">Olá, {{ user.first_name|default:user.username }}.</h2>
+    <p class="subtitle">Bem-vindo ao InovaLab.</p>
+    <div class="account-heading">
+        <span class="avatar" aria-hidden="true">{{ user.username|first|upper }}</span>
+        <div>
+            <strong>{{ user.get_full_name|default:user.username }}</strong>
+            <span class="account-username">{{ user.username }}</span>
+        </div>
+    </div>
+    <dl class="account-details">
+        <dt>Perfil de acesso</dt>
+        <dd>{% if is_business_admin %}Administrador do laboratório{% else %}Usuário interno{% endif %}</dd>
+        <dt>Conta</dt><dd><span class="status-dot" aria-hidden="true"></span> Ativa</dd>
+    </dl>
+    <div class="account-actions">
+        {% if user.is_superuser %}
+        <a class="button primary" href="{% url 'admin:index' %}">Administrar contas <span aria-hidden="true">↗</span></a>
+        {% endif %}
+        <form action="{% url 'accounts:logout' %}" method="post">
+            {% csrf_token %}
+            <button class="button secondary" type="submit">Sair da conta</button>
+        </form>
+    </div>
+</section>
+{% endblock %}
