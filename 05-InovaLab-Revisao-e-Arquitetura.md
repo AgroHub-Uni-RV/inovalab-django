@@ -125,17 +125,19 @@ Entregar login, painel simples, catálogo, quadro/detalhe de tarefas, agenda/for
 
 ## 9. Etapas e critérios de entrega
 
-Cada etapa terá especificação e plano próprios após validação, evitando pressupor resolvidas todas as perguntas de negócio.
+Cada módulo terá especificação e plano próprios após validação. Por instrução do responsável, concluir e entregar um módulo, aguardar sua depuração e só então avançar. A fundação de identidade foi separada do catálogo para respeitar esse ritmo.
 
 | Etapa | Entrega proposta | Decisões necessárias | Verificação principal |
 | --- | --- | --- | --- |
-| 1. Fundação e serviços | Corrigir colisão, configuração reproduzível, usuário/permissões; login, frontend de serviços, API e carga dos 11 serviços | Arquitetura, provisionamento Q11, autorização de serviços Q12 | Django inicia; login/logout; escrita sem permissão falha; carga repetida não duplica/sobrescreve; contrato acompanha API |
-| 2. Tarefas | CRUD de admin, consulta restrita, Kanban e transições web/API | Q03 restante, Q04, Q08 para tarefas e histórico | CT01–CT08, CT25–CT28 e equivalência web/API |
-| 3. Agenda | Equipamentos/espaços, agenda e proteção de conflito | Q05 restante, Q06, Q08 para reservas, Q12–Q14 e banco | CT09–CT15, CT19–CT20, incluindo concorrência no banco escolhido |
-| 4. AgroHub | Contrato, credencial e recebimento idempotente | Q07, dados mínimos e alterações locais | CT16–CT18, CT28–CT29 e reenvio simultâneo |
-| 5. Materiais e conteúdo | Cadastros, publicação e APIs acordadas | Q09/Q10/Q12 e itens pertinentes de Q15 | CT21–CT23; WebP real; sem movimentações implícitas |
+| 1. Identidade e acesso | Corrigir colisão, configuração reproduzível, usuário/papéis; contas no admin, login/logout, página privada e API de identidade | Q11 inicial definido; revisar especificação e plano do módulo | Django inicia; login/logout, CSRF, conta inativa, acesso administrativo e contrato da identidade |
+| 2. Catálogo | Serviços, equipamentos e espaços; frontend/API e carga dos 11 serviços | Autorização Q12 e regras dos cadastros | CT20/CT24; escrita sem permissão falha; carga não duplica nem sobrescreve |
+| 3. Tarefas | CRUD de admin, consulta restrita, Kanban e transições web/API | Q03 restante, Q04, Q08 para tarefas e histórico | CT01–CT08, CT25–CT28 e equivalência web/API |
+| 4. Agenda | Agenda e proteção de conflito | Q05 restante, Q06, Q08 para reservas, Q12–Q14 e banco | CT09–CT15, CT19–CT20, incluindo concorrência no banco escolhido |
+| 5. AgroHub | Contrato, credencial e recebimento idempotente | Q07, dados mínimos e alterações locais | CT16–CT18, CT28–CT29 e reenvio simultâneo |
+| 6. Materiais | Cadastro e API acordada | Q09/Q12 e itens pertinentes de Q15 | CT21; sem movimentações implícitas |
+| 7. Conteúdo | Banners, publicação e API acordada | Q10/Q12/Q15 | CT22–CT23; WebP real |
 
-Na primeira etapa, propõe-se provisionar contas pelo admin Django, se aprovado em Q11. Contrato AgroHub, calendário institucional e estoque não bloqueiam começar o núcleo. Produção exige configuração própria, recuperação de banco/arquivos e metas RNF aprovadas; hospedagem não foi escolhida.
+Na primeira etapa, provisionar contas pelo Django Admin, conforme Q11 confirmado. A especificação está em `docs/superpowers/specs/2026-10-01-identidade-e-acesso-design.md`. Contrato AgroHub, calendário institucional e estoque não bloqueiam começar identidade. Produção exige configuração própria, recuperação de banco/arquivos e metas RNF aprovadas; hospedagem não foi escolhida.
 
 ## 10. Processo de trabalho
 

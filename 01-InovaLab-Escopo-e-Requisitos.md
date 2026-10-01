@@ -140,7 +140,7 @@ O PDF lista “Óculos de realidade virtual” e “Scanner 3D manual” como se
 | Q08 | Excluir significa apagar ou cancelar/arquivar? Agendamento exige aprovação? | Auditoria e ciclo da reserva |
 | Q09 | Quais categorias, status, unidades e significado de “fonte” dos materiais? Haverá entradas, saídas e consumo por tarefa? | Cadastro simples versus estoque |
 | Q10 | Quais datas controlam banner agendado? Haverá ordem e vários banners por local? | Publicação automática |
-| Q11 | Administrador gerencia contas? Haverá recuperação de senha ou login institucional? | Identidade e acesso |
+| Q11 | Decidido em F3: administrador cadastra contas pelo Django Admin e login inicial usa usuário/senha. Recuperação por e-mail e login institucional ficam fora da primeira entrega; evolução ainda a definir | Provisionamento inicial definido; separação de papéis detalhada na especificação de identidade |
 | Q12 | Quem administra serviços, espaços, equipamentos, materiais e banners? | Permissões ainda não documentadas |
 | Q13 | Qual horário de funcionamento, antecedência, duração mínima/máxima e política de feriados? | Validação de reservas |
 | Q14 | Quantas pessoas usarão a reserva? É necessário verificar a capacidade do espaço? | Campo ausente para aplicar capacidade |
@@ -153,6 +153,8 @@ O PDF lista “Óculos de realidade virtual” e “Scanner 3D manual” como se
 | 01/10/2026 | F3 — solicitação | Frontend básico e API para futuras integrações | RF23/RF24; revisar a orientação anterior de restringir API ao AgroHub |
 | 01/10/2026 | F3 — resposta a Q03 | Somente administradores aprovam, recusam e reabrem | RN16; UC04/UC05 e cenários de transição devem testar essa autorização |
 | 01/10/2026 | F3 — resposta a Q05 | Cada reserva seleciona um único serviço, equipamento ou espaço no MVP | RN04; três referências opcionais e exatamente uma preenchida; sem alocações compostas no MVP |
+| 01/10/2026 | F3 — resposta a Q11 | Administrador cadastra contas no Django Admin; login por usuário/senha | Primeira entrega de identidade sem cadastro público ou SSO |
+| 01/10/2026 | F3 — execução por módulos | Concluir um módulo e aguardar depuração pelo responsável antes do próximo | Entregar identidade separadamente do catálogo; respeitar essa passagem em todas as etapas |
 
 ## 10. Evolução sugerida, fora do escopo confirmado
 

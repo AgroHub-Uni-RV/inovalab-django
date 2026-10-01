@@ -83,6 +83,8 @@ Para banners, validar o conteúdo real do arquivo. WebP é o formato confirmado;
 
 ## 8. Ordem sugerida de implementação
 
+Entregar um módulo por vez e aguardar depuração pelo responsável antes de avançar. Identidade e acesso precedem catálogo; a divisão atualizada está no arquivo 05.
+
 1. Usar a revisão das seis telas F4 e a autoridade confirmada em Q03; validar a primeira etapa da arquitetura e as decisões necessárias a ela. Resolver Q05/Q07 antes da agenda integrada e Q12 antes dos cadastros específicos.
 2. Implementar identidade, autorização e cadastros básicos.
 3. Implementar tarefas e transições aprovadas, com quadro Kanban conforme referência F4.
