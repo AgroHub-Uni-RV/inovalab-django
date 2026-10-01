@@ -96,6 +96,19 @@ git diff --check
 
 35 testes automatizados passaram no runtime local Python 3.14.3, Django 6.1.1 e DRF 3.18.1. Eles cobrem criação/edição de contas, hash e validação de senha, privilégios, configuração, sessão, CSRF, redirecionamento, inativação e contrato JSON. Migração local aplicada e repetida sem alterações pendentes.
 
-No Chrome automatizado foram verificados login com erro e sucesso, envio por teclado, página privada, API antes/depois do logout, acesso ao admin e cadastro de conta. Login e página privada foram inspecionados a 360 px; CSS carregado e nenhuma exceção de página registrada. As consultas sem sessão à API retornaram 403, como previsto. Contas temporárias de verificação removidas; não ficou conta provisionada no banco local.
+No Chrome automatizado foram verificados login com erro e sucesso, envio por teclado, página privada, API antes/depois do logout, acesso ao admin e cadastro de conta. Login e página privada foram inspecionados a 360 px; CSS carregado e nenhuma exceção de página registrada. A revisão independente encontrou rolagem horizontal na saudação de usuários com identificadores longos: corrigida a quebra de texto e confirmada largura de 360 px mesmo com username de 150 caracteres. Os 35 testes passaram novamente após o ajuste. As consultas sem sessão à API retornaram 403, como previsto. Contas temporárias de verificação removidas; não ficou conta provisionada no banco local.
+
+## Revisão e decisões de execução
+
+A revisão independente examinou código, testes, documentação e os cinco focos do plano. Não encontrou falhas de autorização ou sessão. O problema visual foi tratado como impeditivo para a entrega responsiva, reproduzido antes da correção e verificado depois. A entrega permanece na branch local `feat/identidade-acesso`, no checkout do IDE, aguardando depuração do responsável.
+
+- Execução no checkout ativo em branch própria: atende à implementação no sistema e facilita depuração; custo de isolamento menor, pois as alterações ficaram visíveis durante o trabalho.
+- Registros de progresso em PowerShell: substituem os auxiliares Bash indisponíveis neste ambiente; custo de acompanhamento manual, com evidências de testes e commits registradas.
+- Django Admin mantém o favicon nativo ausente: pendência cosmética que produz um 404 em `/favicon.ico`, sem afetar login, estilos ou cadastro.
+- Hospedagem, HTTPS, proteção contra tentativas repetidas e validação de produção ficam para a implantação: este módulo foi verificado para desenvolvimento local; não há garantia de operação pública.
+- SSO, recuperação por e-mail e autenticação de sistemas externos continuam fora deste módulo, conforme a especificação; essas capacidades exigem entregas posteriores.
+- Escrita por sessão sem CSRF válido pode retornar 403 antes de 405: preservada a proteção do DRF; clientes devem tratar os dois estados conforme o contrato.
+
+Nenhum merge ou push foi executado; os commits e a aplicação permanecem disponíveis localmente para os testes do responsável.
 
 [Especificação aprovada](../superpowers/specs/2026-10-01-identidade-e-acesso-design.md) · [Plano de implementação](../superpowers/plans/2026-10-01-identidade-e-acesso.md).

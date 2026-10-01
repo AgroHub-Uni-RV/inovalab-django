@@ -38,6 +38,7 @@ button, a, input { -webkit-tap-highlight-color: transparent; }
 .card { background: white; border: 1px solid #e5e9f2; border-radius: 18px; padding: clamp(24px, 4vw, 48px); width: min(100%, 480px); box-shadow: 0 12px 40px #20254405; }
 .card > .eyebrow { color: var(--blue); }
 h2 { margin: 16px 0 10px; font-size: clamp(26px, 2.4vw, 32px); font-weight: 650; letter-spacing: -.8px; }
+.account-card h2 { overflow-wrap: anywhere; }
 .subtitle { color: var(--muted); font-size: 14px; line-height: 1.65; margin: 0 0 32px; }
 .field { margin-bottom: 20px; }
 label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 9px; }
