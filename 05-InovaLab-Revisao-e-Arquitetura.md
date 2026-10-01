@@ -154,6 +154,7 @@ As 15 skills de [obra/superpowers](https://github.com/obra/superpowers) foram in
 - [x] Escrever e revisar especificação da primeira etapa.
 - [x] Elaborar plano e definir execução com as skills pertinentes.
 - [x] Implementar, verificar fluxo web/API e atualizar documentação da primeira etapa.
-- [ ] Aguardar depuração de identidade pelo responsável antes de iniciar catálogo.
+- [x] Receber autorização do responsável para avançar de identidade para catálogo.
+- [ ] Definir e entregar catálogo com telas simples; execução dos testes pelo responsável.
 
 O processo `brainstorming` exige revisão do design antes de implementar. Esta revisão documental prepara uma proposta concreta; a aprovação de uma regra de negócio não transforma todo o desenho técnico em especificação aprovada.

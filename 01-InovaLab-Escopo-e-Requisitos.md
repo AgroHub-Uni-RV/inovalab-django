@@ -155,6 +155,9 @@ O PDF lista “Óculos de realidade virtual” e “Scanner 3D manual” como se
 | 01/10/2026 | F3 — resposta a Q05 | Cada reserva seleciona um único serviço, equipamento ou espaço no MVP | RN04; três referências opcionais e exatamente uma preenchida; sem alocações compostas no MVP |
 | 01/10/2026 | F3 — resposta a Q11 | Administrador cadastra contas no Django Admin; login por usuário/senha | Primeira entrega de identidade sem cadastro público ou SSO |
 | 01/10/2026 | F3 — execução por módulos | Concluir um módulo e aguardar depuração pelo responsável antes do próximo | Entregar identidade separadamente do catálogo; respeitar essa passagem em todas as etapas |
+| 01/10/2026 | F3 — passagem para catálogo | Responsável autorizou avançar de identidade para catálogo | Preparar somente o segundo módulo; aguardar nova depuração antes de tarefas |
+| 01/10/2026 | F3 — simplicidade do MVP | Preservar o frontend de identidade e simplificar as próximas telas | Listas, formulários e ações básicas; refinamento visual posterior |
+| 01/10/2026 | F3 — execução de testes | O responsável executará os testes das próximas entregas | Preparar comandos e cenários; não executar suítes ou verificações funcionais no navegador pelo agente |
 
 ## 10. Evolução sugerida, fora do escopo confirmado
 

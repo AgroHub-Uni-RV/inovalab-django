@@ -166,7 +166,7 @@ Criar Bruno e confirmar que a resposta não muda com `?id=<bruno.pk>`. Testar cl
 - [x] Conferir cada critério de aceite da especificação contra testes e navegador; revisar vazamento de dados, CSRF e privilégios. Revisão independente concluída; rolagem horizontal com username longo corrigida e verificada no navegador, seguida de 35 testes passando.
 - [x] Registrar commits, verificações executadas, caminhos locais e roteiro manual no guia da entrega; preservar a aplicação no checkout ativo, na branch `feat/identidade-acesso`.
 - [x] Encerrar a implementação aguardando depuração do responsável. Catálogo não iniciado.
-- [ ] Receber a validação do responsável e indicação para avançar ao próximo módulo.
+- [x] Receber indicação do responsável para avançar ao próximo módulo: catálogo autorizado em 01/10/2026.
 
 ## Revisão do plano e método de execução
 
