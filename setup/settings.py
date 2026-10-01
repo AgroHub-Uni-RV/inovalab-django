@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'core',
     'accounts.apps.AccountsConfig',
+    'catalogo.apps.CatalogoConfig',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
