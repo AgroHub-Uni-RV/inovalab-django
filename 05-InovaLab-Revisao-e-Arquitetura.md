@@ -1,6 +1,6 @@
 # InovaLab — Revisão e proposta de arquitetura
 
-Versão 0.4 • 02/10/2026 • Arquitetura com identidade, catálogo, tarefas e agenda interna entregues. O diagnóstico inicial permanece histórico; os módulos seguintes continuam propostos. C/D/P e F1–F4 são definidos no arquivo 01.
+Versão 0.5 • 02/10/2026 • Identidade, catálogo, tarefas, agenda e adaptador local de recebimento externo entregues. O diagnóstico inicial permanece histórico; os módulos seguintes continuam propostos. C/D/P e F1–F4 são definidos no arquivo 01.
 
 ## 1. Resultado esperado
 
@@ -98,7 +98,7 @@ Na agenda entregue, todos os serviços/equipamentos/espaços são exclusivos, co
 
 ## 7. Superfície proposta da API
 
-Identidade, catálogo, tarefas e agenda estão entregues conforme os contratos dos [módulos 1](docs/modules/01-identidade-e-acesso.md), [2](docs/modules/02-catalogo.md), [3](docs/modules/03-tarefas.md) e [4](docs/modules/04-agenda.md). Os caminhos dos demais módulos abaixo são propostas, **não endpoints existentes**. RF23 não concede acesso externo irrestrito aos módulos internos.
+Identidade, catálogo, tarefas, agenda e recebimento externo estão entregues conforme os contratos dos [módulos 1](docs/modules/01-identidade-e-acesso.md), [2](docs/modules/02-catalogo.md), [3](docs/modules/03-tarefas.md), [4](docs/modules/04-agenda.md) e [5](docs/modules/05-integracoes.md). Os caminhos dos demais módulos abaixo são propostas, **não endpoints existentes**. RF23 não concede acesso externo irrestrito aos módulos internos.
 
 | Caminho proposto | Operação | Acesso e decisões |
 | --- | --- | --- |
@@ -109,16 +109,17 @@ Identidade, catálogo, tarefas e agenda estão entregues conforme os contratos d
 | `/api/v1/tarefas/{id}/transicoes/` (entregue) | Iniciar, enviar, aprovar, recusar ou reabrir | RN16; mapa operacional do módulo 3, com escolhas restantes identificadas como provisórias |
 | `/api/v1/tarefas/{id}/historico/` e `/api/v1/tarefas/responsaveis/` (entregues) | Eventos autorizados e opções de atribuição | Histórico no mesmo escopo da tarefa; opções de contas ativas somente admin |
 | `/api/v1/agendamentos/`, `/{id}/`, `/{id}/historico/` (entregues) | Agenda interna e eventos | Administrador ativo/superusuário; sessão/CSRF, versão, cancelamento lógico e conflitos 409 |
-| `/api/v1/integracoes/agendamentos/` | Receber pedido externo | Credencial, requerente e idempotência; payload Q07 |
+| `/api/v1/integracoes/agendamentos/` (entregue) | Receber pedido externo por POST | Token próprio, requerente/pedido externos, idempotência por cliente; consumidor real/Q07 ainda por validar |
+| `/api/v1/integracoes/catalogo/` (entregue) | IDs/nomes reserváveis por categoria | Mesmo token; somente leitura paginada, sem agenda privada |
 | `/api/v1/materiais/` | Consultar/manter materiais | Vocabulários Q09 e permissões Q12 |
 | `/api/v1/banners/` | Administrar banners | Permissões Q12; programação/ordem Q10/Q15 |
 | `/api/v1/publico/banners/` | Banners publicados por local | Leitura pública proposta com campos mínimos; sem rascunhos ou programação futura |
 
-Para navegador, recomenda-se sessão Django e CSRF, inclusive nas chamadas JavaScript de escrita. [Autenticação por sessão no DRF](https://www.django-rest-framework.org/api-guide/authentication/#sessionauthentication). Login deve preservar a proteção CSRF do Django. Token, OAuth/OIDC ou outra credencial de integração dependem de Q07; “Bearer” sozinho não define um protocolo. Login institucional e sincronização de usuários não estão confirmados.
+Para navegador, usar sessão Django e CSRF, inclusive nas chamadas JavaScript de escrita. [Autenticação por sessão no DRF](https://www.django-rest-framework.org/api-guide/authentication/#sessionauthentication). Login preserva a proteção CSRF do Django. A API externa entregue usa Bearer opaco próprio, com token aleatório, digest SHA-256 e revogação/renovação administrativas; o contrato está no módulo 5. OAuth/OIDC, login institucional e sincronização de usuários não estão confirmados.
 
 O contrato deve especificar JSON, paginação, campos permitidos por ação, timestamps com fuso, identificadores estáveis e erros com código legível por máquina. Propostas: `400` para dados inválidos, `403` para operação proibida, `404` para objeto fora do escopo e `409` para conflito de horário, versão ou idempotência. Para ausência de credencial, documentar o autenticador escolhido: sessão no DRF pode retornar `403`; outros autenticadores usam `401`.
 
-Idempotência externa proposta: chave única por origem, conteúdo normalizado e reserva persistidos atomicamente; reenvio idêntico retorna a reserva anterior; conteúdo diferente com a mesma chave gera conflito. Definir resposta após edição/cancelamento local antes de publicar esse contrato.
+Idempotência externa entregue: chave única por cliente, conteúdo normalizado e reserva persistidos atomicamente; reenvio idêntico retorna a mesma reserva, com versão/estado atuais mesmo após edição ou cancelamento local. Conteúdo diferente com a mesma chave gera conflito 409. Reenvio não edita nem restaura a reserva.
 
 ## 8. Frontend básico
 
@@ -128,7 +129,7 @@ Entregar login, painel simples, catálogo, quadro/detalhe de tarefas, agenda/for
 
 ## 9. Etapas e critérios de entrega
 
-Por instrução do responsável, concluir e entregar um módulo, aguardar sua depuração e autorização de avanço. Identidade e catálogo têm especificações e planos próprios; tarefas foi autorizada para execução direta com plano simples e escolhas provisórias documentadas, preservando testes e revisão independente.
+Por instrução do responsável, concluir e entregar um módulo, aguardar sua depuração e autorização de avanço. Identidade e catálogo têm especificações e planos próprios; tarefas, agenda e integrações seguem execução direta com planos simples e escolhas provisórias documentadas, preservando testes e revisão independente.
 
 | Etapa | Entrega proposta | Decisões necessárias | Verificação principal |
 | --- | --- | --- | --- |
@@ -136,7 +137,7 @@ Por instrução do responsável, concluir e entregar um módulo, aguardar sua de
 | 2. Catálogo (entregue) | Serviços, equipamentos e espaços; frontend/API simples e carga dos 11 serviços | Responsável autorizou avanço para tarefas | 38 testes do catálogo; serviço referenciado por tarefa protegido; reservas serão tratadas na agenda |
 | 3. Tarefas (entregue) | CRUD de admin, exclusão lógica, consulta restrita, quadro simples, transições e histórico web/API | Implementação direta autorizada; escolhas de datas, reabertura e exclusão para depuração | 44 testes de tarefas e suíte de 117 passando; revisão independente, fluxo completo básico no Chrome, teclado e 360 px |
 | 4. Agenda (entregue) | Calendário mensal, CRUD/cancelamento lógico, histórico e API; proteção de sobreposição/versão | Q05 confirmada; escolhas Q06/Q08/Q13/Q14 para depuração; aguardar avanço para AgroHub | 42 testes de agenda, suíte159; conexões reais SQLite, revisão independente e Chrome, teclado/360 px |
-| 5. AgroHub | Contrato, credencial e recebimento idempotente | Q07, dados mínimos e alterações locais | CT16–CT18, CT28–CT29 e reenvio simultâneo |
+| 5. Recebimento externo (entregue localmente) | Credencial, administração e recebimento idempotente preparados para AgroHub | F3 escolheu preparar API primeiro; validar consumidor real, ambiente e demais lacunasQ07 | 35 testes, suíte194, conexões reaisSQLite, revisão independente/Chrome; depurar antes de materiais |
 | 6. Materiais | Cadastro e API acordada | Q09/Q12 e itens pertinentes de Q15 | CT21; sem movimentações implícitas |
 | 7. Conteúdo | Banners, publicação e API acordada | Q10/Q12/Q15 | CT22–CT23; WebP real |
 
@@ -161,6 +162,8 @@ As 15 skills de [obra/superpowers](https://github.com/obra/superpowers) foram in
 - [x] Entregar tarefas, executar testes automatizados/básicos no navegador e revisão independente.
 - [x] Receber autorização de avanço para agenda e decisão de exclusividade dos serviços.
 - [x] Entregar agenda interna com testes automatizados, concorrência SQLite, navegador e revisão independente.
-- [ ] Aguardar depuração da agenda e autorização antes de iniciar AgroHub.
+- [x] Receber autorização para preparar API de recebimento, com credencial própria/idempotência.
+- [x] Entregar adaptador local, gestão de integradores, testes/revisão/navegador e contrato.
+- [ ] Aguardar depuração do módulo5 e autorização antes de materiais; conectar AgroHub real em etapa acordada.
 
 O processo padrão de design exige revisão antes de implementar; instruções do responsável prevalecem. Para tarefas e agenda, a execução direta com plano simples substituiu as passagens de aprovação de novos artefatos. As lacunas resolvidas durante a execução estão identificadas como escolhas provisórias nos guias/planos, sem serem apresentadas como novas respostas confirmadas. A revisão da agenda encontrou um Important corrigido com regressões RED/GREEN e um Minor histórico de horário de verão adiado, descrito no guia.

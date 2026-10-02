@@ -1,6 +1,6 @@
 # InovaLab — Diretrizes de modelagem para Django
 
-Versão 0.5 • 02/10/2026. Diretrizes para módulos futuros e contratos entregues de [identidade](docs/modules/01-identidade-e-acesso.md), [catálogo](docs/modules/02-catalogo.md), [tarefas](docs/modules/03-tarefas.md) e [agenda](docs/modules/04-agenda.md), verificados com Python 3.14.3, Django 6.1.1 e DRF 3.18.1 no SQLite local. Banco/hospedagem de produção continuam pendentes. O diagnóstico histórico está no arquivo 05.
+Versão 0.6 • 02/10/2026. Diretrizes para módulos futuros e contratos entregues de [identidade](docs/modules/01-identidade-e-acesso.md), [catálogo](docs/modules/02-catalogo.md), [tarefas](docs/modules/03-tarefas.md), [agenda](docs/modules/04-agenda.md) e [recebimento externo](docs/modules/05-integracoes.md), verificados com Python 3.14.3, Django 6.1.1 e DRF 3.18.1 no SQLite local. Banco/hospedagem de produção continuam pendentes. O diagnóstico histórico está no arquivo 05.
 
 ## 1. Organização sugerida
 
@@ -67,13 +67,15 @@ F3 resolveu a autoridade de Q03: somente administradores aprovam, recusam e reab
 
 **Implementação da agenda local:** início/fim com fuso, Brasília na interface, intervalo `[início,fim)`, datas passadas e virada de dia permitidas; sem margem/capacidade/funcionamento não confirmados. `save_booking` e `cancel_booking` abrem transação cuja primeira operação é UPDATE sem alteração do status dos alvos em ordem estável. No SQLite isso adquire escrita antes de consultar versão/conflitos; não depender de `select_for_update`. Eventos compartilham a transação, versões usam UPDATE condicionado e busy/locked retorna 409. Testes com conexões reais foram executados no SQLite; implantação/PostgreSQL ainda exigem verificação própria. [Transações SQLite](https://www.sqlite.org/lang_transaction.html), [limitações SQLite/Django](https://docs.djangoproject.com/en/6.0/ref/databases/#sqlite-notes).
 
-## 6. Contrato AgroHub a definir
+## 6. Recebimento externo e lacunas do contrato AgroHub
 
 Documentar direção do fluxo, autenticação, versão, identificador externo do pedido, identificação do requerente, categoria, referência ao objeto, motivo, início, fim e fuso. Devolver identificador local e resultado inequívoco.
 
 Propor unicidade de `(origem, id_externo)`. Persistir chave e reserva de forma atômica; repetir pedido idêntico retorna o resultado anterior. Chave repetida com conteúdo diferente deve ser conflito, não uma edição implícita.
 
 Definir se edição/exclusão local precisa de notificação ao AgroHub. Não implementar sincronização bidirecional, webhooks ou aprovação automática como fatos confirmados.
+
+**Entrega do módulo5:** F3 escolheu preparar a API de recebimento. `ClienteIntegracao` guarda UUID/ativo/digest de token e versão, sem simular usuário interno. `PedidoIntegracao` guarda cliente/chave/requerente externos/digest do conteúdo/reserva protegida, com unicidade(cliente,id_externo). Canonicalização de textos/UTC/ordem JSON distingue reenvio equivalente de conteúdo diferente. PrimeiroSQL na transação bloqueia cliente e revalida digest/ativo; núcleo compartilhado da agenda grava reserva/evento antes do pedido na mesma transação. Reenvio após editar/cancelar devolve mesmoID/estado atual, sem restaurar. Autenticação Bearer customizada é exclusiva dessa API; gestão web usa papéis/CSRF/version existentes. [Contrato e verificações locais](docs/modules/05-integracoes.md). Consumidor real, sincronização, retenção, HTTPS/produção e migração histórica seguem pendentes.
 
 ## 7. Integridade e publicação
 

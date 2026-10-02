@@ -1,8 +1,8 @@
 # InovaLab — Casos de uso
 
-Versão 0.3 • 01/10/2026. Ler as classificações e questões de `01-InovaLab-Escopo-e-Requisitos.md`. Base: PDF original conferido integralmente, decisões F3 e seis telas locais F4 examinadas. Divergências das telas estão no arquivo 05; a conferência do PDF está no arquivo 06.
+Versão 0.4 • 02/10/2026. Ler as classificações e questões de `01-InovaLab-Escopo-e-Requisitos.md`. Base: PDF original conferido integralmente, decisões F3 e seis telas locais F4 examinadas. Divergências das telas estão no arquivo 05; a conferência do PDF está no arquivo 06.
 
-Todos os casos têm escopo no sistema InovaLab e nível de objetivo do usuário, exceto UC09, que representa integração. Fluxos detalhados são uma elaboração derivada/proposta, mesmo quando o objetivo é confirmado. Não há implementação entregue.
+Todos os casos têm escopo no sistema InovaLab e nível de objetivo do usuário, exceto UC09, que representa integração. Fluxos detalhados são uma elaboração derivada/proposta, mesmo quando o objetivo é confirmado. Os contratos efetivamente entregues dos módulos 1–5 estão em `docs/modules/`; os demais fluxos continuam propostos.
 
 ## UC01 — Acessar o sistema
 
@@ -82,10 +82,12 @@ Todos os casos têm escopo no sistema InovaLab e nível de objetivo do usuário,
 - **Base:** C para integração; P para contrato e idempotência. RF14–RF16, RF22.
 - **Ator primário:** solicitante no AgroHub. **Ator de suporte:** sistema AgroHub.
 - **Interesse:** solicitar uso do laboratório pelo sistema já utilizado.
-- **Pré-condições:** integração autenticada, contrato aprovado e alvo reconhecido no InovaLab. A direção exata da integração depende de Q07; este fluxo assume envio do AgroHub ao InovaLab.
+- **Pré-condições:** integração autenticada e alvo reconhecido no InovaLab. F3 confirmou preparar recebimento no InovaLab; o contrato implementado deve ser validado com o consumidor AgroHub antes da conexão real.
 - **Fluxo principal:** 1. Solicitante preenche pedido no AgroHub. 2. AgroHub envia dados e identificador externo. 3. InovaLab valida credencial, requerente e payload. 4. Aplica as mesmas regras de UC08. 5. Persiste a reserva e vínculo externo. 6. Retorna identificador e resultado para o AgroHub apresentar ao solicitante.
 - **Alternativas:** credencial inválida é rejeitada; campos inválidos geram erro identificável; conflito não cria reserva; repetição da mesma chave e conteúdo retorna o registro anterior; mesma chave com conteúdo diferente gera conflito; perda de resposta permite reenvio seguro.
 - **Pós-condição:** no máximo uma reserva por solicitação externa. Edição/cancelamento bidirecional não está confirmado.
+
+**Entrega local do módulo5:** F3 escolheu preparar recebimento no InovaLab. `POST /api/v1/integracoes/agendamentos/` exige credencial Bearer do integrador, `id_externo`, `requerente_id` e campos da agenda. Novo pedido201; reenvio equivalente200 com mesmoID/estado atual; outra carga na chave409. Cancelamento/edição local não é revertido pelo reenvio. Administradores gerenciam integradores/segredos e consultam pedidos em `/integracoes/`; catálogo externo mínimo somente leitura. Credencial externa não autentica APIs internas. [Contrato e depuração](docs/modules/05-integracoes.md); fluxo na instalação real do AgroHub ainda não foi conectado/verificado.
 
 ## UC10 — Administrar materiais
 

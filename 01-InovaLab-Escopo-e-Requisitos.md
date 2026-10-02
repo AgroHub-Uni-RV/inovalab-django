@@ -1,6 +1,6 @@
 # InovaLab — Escopo e requisitos
 
-Versão 0.4 • 02/10/2026 • PDF original conferido; decisões do responsável identificadas por fonte.
+Versão 0.5 • 02/10/2026 • PDF original conferido; decisões do responsável identificadas por fonte.
 
 ## 1. Fontes e limites
 
@@ -9,7 +9,9 @@ Versão 0.4 • 02/10/2026 • PDF original conferido; decisões do responsável
 - **F3:** solicitação do responsável em 01/10/2026: revisar a documentação, projetar a arquitetura e desenvolver frontend básico e endpoints de API para futuras integrações. Na mesma conversa, definiu que somente administradores aprovam, recusam e reabrem tarefas; o responsável executa e envia para avaliação. Também definiu um único serviço, equipamento ou espaço como alvo de cada reserva no MVP.
 - **F4:** seis telas examinadas em `Referencias/`: `ADM - Agendamentos.png`, `ADM - Dashboard.png`, `ADM - Estoque.png`, `ADM - Tarefas.png`, `Banners.png` e `Usuarios.png`. Não foi estabelecida correspondência com os antigos nomes `1.png` a `6.png`.
 
-Atualização F3 em 02/10/2026: responsável autorizou o próximo módulo e confirmou uma reserva por serviço em cada horário, com equipamentos/espaços exclusivos. Agenda interna entregue; integração externa ainda pendente.
+Atualização F3 em 02/10/2026: responsável autorizou a agenda e confirmou uma reserva por serviço em cada horário, com equipamentos/espaços exclusivos. Naquela entrega, a agenda interna estava concluída e o adaptador externo era a etapa seguinte.
+
+Na passagem seguinte, F3 autorizou o módulo5 e escolheu preparar a API de recebimento no InovaLab com credencial própria e proteção contra pedidos duplicados. Adaptador local entregue; contrato de campos é escolha de implementação para validar com o consumidor. Conexão a um AgroHub real, hospedagem, sincronização e migração continuam pendentes.
 
 Classificação usada em todos os arquivos: **C = confirmado pela fonte**, **D = derivado da fonte para permitir funcionamento coerente**, **P = proposta a validar**. Uma regra D ou P não representa aprovação do responsável. Uma observação C de uma tela confirma o elemento visual, sem aprovar automaticamente suas regras de negócio. Prioridades são propostas: **MVP**, **seguinte** e **condicional**.
 
@@ -138,7 +140,7 @@ O PDF lista “Óculos de realidade virtual” e “Scanner 3D manual” como se
 | Q04 | Quais campos são obrigatórios? Início é previsto ou real? Prazo contém horário? | Validações e datas das tarefas |
 | Q05 | Decidido em F3: um único serviço, equipamento ou espaço por reserva, sem bloqueio automático de outros alvos; em 02/10 confirmado um atendimento por serviço/horário, com equipamentos/espaços exclusivos | Modelo e exclusividade definidos para o MVP |
 | Q06 | Status ocupado é manual ou calculado? Indisponibilidade pode ter período? | Consistência da agenda |
-| Q07 | Quem hospeda a API? Qual contrato, autenticação e ID do requerente o AgroHub oferece? Edição/exclusão deve voltar ao AgroHub? Haverá migração de agendamentos existentes e como tratar `data_hora` sem fim no modelo Figma? | Direção da integração, fonte oficial dos dados e eventual migração |
+| Q07 | F3 escolheu preparar primeiro API de recebimento no InovaLab, com credencial própria/idempotência. Validar payload e IDs com consumidor AgroHub, hospedagem/HTTPS, edição/exclusão, sincronização e migração de agendamentos antigos sem fim | Direção inicial definida; adaptador local entregue, conexão real e demais políticas pendentes |
 | Q08 | Excluir significa apagar ou cancelar/arquivar? Agendamento exige aprovação? | Auditoria e ciclo da reserva |
 | Q09 | Quais categorias, status, unidades e significado de “fonte” dos materiais? Haverá entradas, saídas e consumo por tarefa? | Cadastro simples versus estoque |
 | Q10 | Quais datas controlam banner agendado? Haverá ordem e vários banners por local? | Publicação automática |
@@ -165,8 +167,9 @@ O PDF lista “Óculos de realidade virtual” e “Scanner 3D manual” como se
 | 01/10/2026 | F3 — passagem para tarefas | Implementar diretamente a próxima parte com plano simples | Módulo 3 entregue com escolhas provisórias de quadro único, datas automáticas, prazo opcional, reabertura em criação e exclusão lógica; não são respostas adicionais a Q02/Q03/Q04/Q08. Depurar antes de agenda |
 | 02/10/2026 | F3 — passagem para agenda | Responsável autorizou o próximo módulo, mantendo execução fracionada | Módulo 4 entregue com calendário, API interna e proteção de conflitos; aguardar depuração antes de AgroHub |
 | 02/10/2026 | F3 — exclusividade Q05 | Uma reserva por serviço em cada horário; equipamentos e espaços exclusivos | Sobreposição rejeitada nas três categorias; objetos distintos podem usar o mesmo horário |
+| 02/10/2026 | F3 — passagem para integrações/Q07 | Preparar a API de recebimento com credencial própria e proteção contra pedidos duplicados | Módulo5 entrega adaptador, gestão de integradores, catálogo externo mínimo e idempotência; depurar antes de materiais; AgroHub real não conectado |
 
-As escolhas da agenda sobre cancelamento lógico/histórico, ocupado manual, datas passadas, funcionamento e capacidade estão no [guia do módulo 4](docs/modules/04-agenda.md). São escolhas de implementação para depuração, sem novas respostas confirmadas a Q06/Q08/Q13/Q14. Q07 permanece pendente; a API por sessão entregue não constitui integração AgroHub.
+As escolhas da agenda sobre cancelamento lógico/histórico, ocupado manual, datas passadas, funcionamento e capacidade estão no [guia do módulo 4](docs/modules/04-agenda.md). São escolhas de implementação para depuração, sem novas respostas confirmadas a Q06/Q08/Q13/Q14. A API por sessão não constitui acesso AgroHub; o [módulo5](docs/modules/05-integracoes.md) tem credencial/contrato próprios, ainda sujeitos à validação no consumidor real e demais lacunas Q07.
 
 ## 10. Evolução sugerida, fora do escopo confirmado
 

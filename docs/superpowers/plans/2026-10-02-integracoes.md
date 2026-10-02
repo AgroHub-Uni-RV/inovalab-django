@@ -42,10 +42,10 @@
 
 ## 3. Entrega
 
-- [ ] Migração aditiva e Chrome com fixtures identificadas: cadastro/token único, envio/reenvio/conflito por fetch, origem na agenda, catálogo, renovação/revogação e usuário negado; teclado/360px; limpar somente fixtures conhecidas.
-- [ ] Revisão independente única; Important/Critical uma passada RED/GREEN e suíte; menores registrados.
-- [ ] `test`, `check`, drift, `pip check`, `git diff --check`; guia `docs/modules/05-integracoes.md`, README e docs01/02/03/04/05. Não alegar integração real implantada; comandos/limites/depuração explícitos.
-- [ ] Commit de documentação e limpeza do scratch deste plano; manter branch local e aguardar responsável antes de materiais. Sem push/merge automático.
+- [x] Migração aditiva e Chrome com fixtures identificadas: cadastro/token único, envio/reenvio/conflito por fetch, origem na agenda, catálogo, renovação/revogação e usuário negado; teclado/360px; limpar somente fixtures conhecidas.
+- [x] Revisão independente única; Important/Critical uma passada RED/GREEN e suíte; menores registrados.
+- [x] `test`, `check`, drift, `pip check`, `git diff --check`; guia `docs/modules/05-integracoes.md`, README e docs01/02/03/04/05. Não alegar integração real implantada; comandos/limites/depuração explícitos.
+- [x] Commit de documentação e limpeza do scratch deste plano; manter branch local e aguardar responsável antes de materiais. Sem push/merge automático.
 
 ## Foco de revisão
 
@@ -56,3 +56,16 @@
 5. Cliente antigo/rascunho não sobrescreve ativo/digest ao renovar/editar; catálogo só leitura, consulta de pedidos só administrador.
 
 Referências primárias: [autenticação customizada DRF](https://www.django-rest-framework.org/api-guide/authentication/#custom-authentication), [segredos Python](https://docs.python.org/3/library/secrets.html), [transações SQLite](https://www.sqlite.org/lang_transaction.html).
+
+## Registro final de decisões e verificação
+
+- Plano direto e contrato próprio seguem o fluxo autorizado e a escolha F3 de recebimento/credencial/idempotência. Custo: validar campos, IDs e semântica do reenvio com o consumidor real.
+- SQLite e checkout ativo `feat/integracoes`, derivados da agenda entregue. Custo: implantação, PostgreSQL e instalação real do AgroHub ainda não verificados.
+- Núcleo privado da agenda compartilhado pela fachada administrativa e pelo adaptador autenticado; ator externo nulo com nome de origem explícito. Custo: manter autorização nas entradas que chamam esse núcleo.
+- Registros de execução em PowerShell substituem os auxiliares Bash. Custo: registro manual das decisões e resultados.
+
+Verificação final: 35 testes de integrações (13 serviços, 4 concorrência, 10 API, 8 web); suíte completa de 194 testes passou em 14,737 s. `check`, migrações pendentes, dependências e espaços no diff sem problemas. Experimento retirando o bloqueio provocou falha no teste correspondente; implementação restaurada antes dos testes finais.
+
+Revisão independente de `926b925..35092e8`: nenhum achado Critical/Important/Minor; mais 14 testes de API/concorrência passaram. Nenhum achado menor adiado neste módulo. A limitação histórica de horário de verão da API interna da agenda permanece documentada no módulo 4.
+
+Chrome verificou cadastro, segredo único, envio/reenvio/conflitos, catálogo, origem/pedidos, renovação/revogação, cancelamento sem recriação, usuário negado, teclado e 360 px. Removidas apenas as fixtures próprias por IDs/prefixos conhecidos; servidor e navegadores encerrados. Guia do módulo 5 contém comandos, cenários restantes e limites. Aguardar depuração antes de materiais.
