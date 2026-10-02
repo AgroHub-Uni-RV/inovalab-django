@@ -99,6 +99,27 @@ class BookingWebTests(TestCase):
         self.assertEqual((booking.inicio.microsecond, booking.fim.microsecond), (123456, 654321))
         self.assertEqual(set(booking.eventos.get(acao='editar').alteracoes), {'motivo'})
 
+    def test_refresh_options_keeps_stale_version_and_cannot_overwrite_other_session(self):
+        booking = self.create()
+        other_client = Client()
+        other_client.force_login(self.admin)
+        url = f'/agenda/{booking.pk}/editar/'
+        self.assertEqual(other_client.post(url, {**self.data, 'versao': 1, 'motivo': 'Outra sessão'}).status_code, 302)
+        response = self.client.post(url, {**self.data, 'versao': 1, 'motivo': 'Rascunho antigo', 'atualizar': '1'})
+        refreshed_version = response.context['form']['versao'].value()
+        self.assertEqual(str(refreshed_version), '1')
+        response = self.client.post(url, {**self.data, 'versao': refreshed_version, 'motivo': 'Rascunho antigo'})
+        self.assertEqual(response.status_code, 409)
+        booking.refresh_from_db()
+        self.assertEqual((booking.motivo, booking.versao, booking.eventos.count()), ('Outra sessão', 2, 2))
+
+    def test_refresh_options_never_supplies_missing_or_invalid_edit_version(self):
+        booking = self.create()
+        url = f'/agenda/{booking.pk}/editar/'
+        for value in ('', 'inválida'):
+            response = self.client.post(url, {**self.data, 'atualizar': '1', 'versao': value})
+            self.assertEqual(response.context['form']['versao'].value(), value)
+
     def test_month_calendar_counts_cross_midnight_and_all_pages_with_half_open_intervals(self):
         self.create(inicio='2026-10-31T23:00:00', fim='2026-11-01T01:00:00')
         self.create(inicio='2026-11-01T02:00:00', fim='2026-11-02T00:00:00')

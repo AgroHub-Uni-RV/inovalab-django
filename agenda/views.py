@@ -65,6 +65,8 @@ class BookingWriteView(AgendaAccessMixin, View):
         if request.POST.get('atualizar') == '1':
             # POST keeps names, reasons and CSRF tokens out of URL/history/logs.
             initial = {key: request.POST[key] for key in PUBLIC_FIELDS if key in request.POST}
+            if booking:
+                initial['versao'] = request.POST.get('versao', '')
             initial.pop('objeto', None)
             if booking and initial.get('categoria') != booking.categoria:
                 initial['objeto'] = None
