@@ -3,7 +3,6 @@ from datetime import datetime
 from threading import Barrier
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
 from django.db import connection, connections
 from django.test import TransactionTestCase
 

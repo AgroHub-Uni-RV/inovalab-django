@@ -1,0 +1,17 @@
+{% extends 'agenda/base.html' %}
+{% block content %}
+<h1>{% if booking %}Editar agendamento #{{ booking.pk }}{% else %}Novo agendamento{% endif %}</h1>
+<p>Escolha a categoria e use “Atualizar opções” para carregar os objetos. Cada objeto permite uma reserva por horário.</p>
+<form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {{ form.versao }}{{ form.versao.errors }}
+    <p>{{ form.categoria.label_tag }}{{ form.categoria }}{{ form.categoria.errors }}</p>
+    <p><button type="submit" name="atualizar" value="1" formnovalidate>Atualizar opções</button></p>
+    {% for field in form.visible_fields %}{% if field.name != 'categoria' %}
+    <p>{{ field.label_tag }}{{ field }}{{ field.errors }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</p>
+    {% endif %}{% endfor %}
+    <div class="actions"><button type="submit">Salvar agendamento</button>
+    {% if booking %}<a href="{% url 'agenda:detail' booking.pk %}">Voltar</a>{% else %}<a href="{% url 'agenda:list' %}">Voltar</a>{% endif %}</div>
+</form>
+{% endblock %}

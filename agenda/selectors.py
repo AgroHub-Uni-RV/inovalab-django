@@ -1,5 +1,13 @@
+import calendar
+import re
+from datetime import datetime, timedelta
+
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+
 from accounts.policies import is_business_admin
 from agenda.models import Agendamento
+from agenda.models import CATEGORIES
 
 
 def visible_bookings(actor):
@@ -7,3 +15,42 @@ def visible_bookings(actor):
         'servico', 'equipamento', 'espaco', 'criado_por',
     )
     return queryset if is_business_admin(actor) else queryset.none()
+
+
+def month_bounds(value):
+    if not isinstance(value, str) or not re.fullmatch(r'[0-9]{4}-[0-9]{2}', value):
+        raise ValidationError({'mes': 'Informe o mês no formato AAAA-MM.'})
+    year, month = map(int, value.split('-'))
+    try:
+        start = datetime(year, month, 1)
+        end = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
+    except ValueError as error:
+        raise ValidationError({'mes': 'Informe um mês válido.'}) from error
+    return timezone.make_aware(start), timezone.make_aware(end)
+
+
+def filter_bookings(queryset, *, month=None, category=None):
+    if category:
+        if category not in CATEGORIES:
+            raise ValidationError({'categoria': 'Selecione uma categoria válida.'})
+        queryset = queryset.filter(**{category + '__isnull': False})
+    if month:
+        start, end = month_bounds(month)
+        queryset = queryset.filter(inicio__lt=end, fim__gt=start)
+    return queryset
+
+
+def calendar_weeks(queryset, month):
+    start, end = month_bounds(month)
+    # Count from the entire filtered month, independently of table pagination.
+    counts = {}
+    for first, last in queryset.values_list('inicio', 'fim').iterator():
+        first, last = max(first, start), min(last, end)
+        day = timezone.localtime(first).date()
+        final_day = timezone.localtime(last - timedelta(microseconds=1)).date()
+        while day <= final_day:
+            counts[day] = counts.get(day, 0) + 1
+            day += timedelta(days=1)
+    weeks = calendar.Calendar(firstweekday=0).monthdatescalendar(start.year, start.month)
+    return [[{'date': day, 'in_month': day.month == start.month, 'count': counts.get(day, 0)}
+             for day in week] for week in weeks]

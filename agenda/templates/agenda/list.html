@@ -1,0 +1,28 @@
+{% extends 'agenda/base.html' %}
+{% block content %}
+<h1>Agenda interna</h1>
+<p>Reservas de serviços, equipamentos e espaços. Horários de Brasília.</p>
+<p><a class="button" href="{% url 'agenda:create' %}">Novo agendamento</a></p>
+<form method="get" class="agenda-filters">
+    <div><label for="mes">Mês</label><input id="mes" name="mes" type="month" value="{{ month }}" required></div>
+    <div><label for="categoria">Categoria</label><select id="categoria" name="categoria"><option value="">Todas</option>{% for value,label in categories %}<option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <button type="submit">Filtrar</button>
+</form>
+<h2>Calendário · {{ month }}</h2>
+<div class="agenda-calendar" role="table" aria-label="Reservas por dia">
+    <div class="agenda-week" role="row"><span role="columnheader">Seg</span><span role="columnheader">Ter</span><span role="columnheader">Qua</span><span role="columnheader">Qui</span><span role="columnheader">Sex</span><span role="columnheader">Sáb</span><span role="columnheader">Dom</span></div>
+    {% for week in weeks %}<div class="agenda-week" role="row">{% for day in week %}<div role="cell" {% if not day.in_month %}class="outside-month"{% endif %}>
+        <time datetime="{{ day.date|date:'Y-m-d' }}">{{ day.date|date:'d' }}</time>{% if day.in_month and day.count %}<span class="agenda-count" aria-label="{{ day.count }} reservas">{{ day.count }}</span>{% endif %}
+    </div>{% endfor %}</div>{% endfor %}
+</div>
+<p>As contagens incluem todas as reservas do filtro; cada página da lista mostra até 25.</p>
+<h2>Reservas · {{ paginator.count }}</h2>
+<div class="table-wrapper"><table><thead><tr><th>Objeto</th><th>Período</th><th>Requerente</th></tr></thead><tbody>
+{% for booking in object_list %}<tr>
+    <td><a href="{% url 'agenda:detail' booking.pk %}">{{ booking.objeto_nome }}</a><br>{{ booking.categoria }}</td>
+    <td>{{ booking.inicio|date:'d/m/Y H:i:s' }}<br>até {{ booking.fim|date:'d/m/Y H:i:s' }}</td>
+    <td>{{ booking.requerente }}</td>
+</tr>{% empty %}<tr><td colspan="3">Nenhum agendamento neste filtro.</td></tr>{% endfor %}
+</tbody></table></div>
+{% include 'agenda/pagination.html' %}
+{% endblock %}

@@ -1,0 +1,9 @@
+.agenda-filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-block: 24px; }
+.agenda-filters > div { flex: 1; min-width: 130px; }
+.agenda-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.agenda-week > * { border: 1px solid #ddd; padding: 8px; min-height: 44px; }
+.agenda-count { display: block; font-weight: bold; color: #29328b; }
+.outside-month { color: #777; background: #f6f6f6; }
+.agenda-event { border-bottom: 1px solid #ddd; padding-block: 12px; }
+.agenda-event h2 { font-size: 1.1rem; }
+@media (max-width: 480px) { .agenda-week > * { padding: 4px; font-size: .8rem; } }

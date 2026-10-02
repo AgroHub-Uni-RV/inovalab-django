@@ -1,0 +1,140 @@
+from datetime import datetime
+
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
+from django.test import Client, TestCase
+
+from agenda.models import Agendamento
+from agenda.services import cancel_booking, save_booking
+from catalogo.models import Equipamento, Espaco, Servico
+
+
+class BookingWebTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.admin = get_user_model().objects.create_user('gestor')
+        cls.admin.groups.add(Group.objects.get(name='Administradores'))
+        cls.user = get_user_model().objects.create_user('comum', is_staff=True)
+        cls.service = Servico.objects.first()
+        cls.equipment = Equipamento.objects.create(nome='Impressora')
+        cls.space = Espaco.objects.create(nome='Sala', capacidade_maxima_de_pessoas=5)
+
+    def setUp(self):
+        self.client.force_login(self.admin)
+        self.data = {'categoria': 'servico', 'objeto': self.service.pk, 'requerente': 'Ana', 'motivo': 'Protótipo',
+                     'inicio': '2026-11-01T14:00:00', 'fim': '2026-11-01T15:00:00'}
+
+    def create(self, **overrides):
+        data = {**self.data, **overrides}
+        data['inicio'] = datetime.fromisoformat(data['inicio'] + '-03:00')
+        data['fim'] = datetime.fromisoformat(data['fim'] + '-03:00')
+        return save_booking(actor=self.admin, data=data)
+
+    def test_login_redirect_and_non_admin_denial_for_all_pages(self):
+        booking = self.create()
+        urls = ['/agenda/', '/agenda/novo/', f'/agenda/{booking.pk}/', f'/agenda/{booking.pk}/editar/',
+                f'/agenda/{booking.pk}/cancelar/', f'/agenda/{booking.pk}/historico/']
+        self.client.logout()
+        for url in urls:
+            self.assertEqual(self.client.get(url).status_code, 302)
+        self.client.force_login(self.user)
+        for url in urls:
+            self.assertEqual(self.client.get(url).status_code, 403)
+        self.assertEqual(self.client.post('/agenda/novo/', self.data).status_code, 403)
+
+    def test_admin_can_create_each_category_edit_view_history_and_cancel(self):
+        for category, target in (('servico', self.service), ('equipamento', self.equipment), ('espaco', self.space)):
+            response = self.client.post('/agenda/novo/', {**self.data, 'categoria': category, 'objeto': target.pk})
+            booking = Agendamento.objects.get(**{category + '_id': target.pk})
+            self.assertRedirects(response, f'/agenda/{booking.pk}/')
+            self.assertContains(self.client.get(response.url), target.nome)
+            response = self.client.post(f'/agenda/{booking.pk}/editar/', {**self.data, 'categoria': category,
+                                        'objeto': target.pk, 'versao': 1, 'motivo': 'Corrigido'})
+            self.assertRedirects(response, f'/agenda/{booking.pk}/')
+            self.assertContains(self.client.get(f'/agenda/{booking.pk}/historico/'), 'Corrigido')
+            self.assertContains(self.client.get(f'/agenda/{booking.pk}/cancelar/'), 'Confirmar cancelamento')
+            self.assertRedirects(self.client.post(f'/agenda/{booking.pk}/cancelar/', {'versao': 2}), '/agenda/')
+            self.assertEqual(self.client.get(f'/agenda/{booking.pk}/').status_code, 404)
+            self.assertEqual(Agendamento.objects.get(pk=booking.pk).eventos.count(), 3)
+
+    def test_form_options_follow_selected_category_and_reject_foreign_or_disabled_target(self):
+        response = self.client.get('/agenda/novo/', {'categoria': 'espaco'})
+        self.assertEqual(list(response.context['form'].fields['objeto'].queryset), [self.space])
+        self.space.status = 'indisponivel'
+        self.space.save()
+        response = self.client.post('/agenda/novo/', {**self.data, 'categoria': 'espaco', 'objeto': self.space.pk})
+        self.assertContains(response, 'Faça uma escolha válida')
+
+    def test_refresh_options_preserves_unsaved_fields_without_validation_or_writing(self):
+        response = self.client.post('/agenda/novo/', {'categoria': 'espaco', 'requerente': 'Nome temporário',
+                                   'motivo': 'Texto ainda em edição', 'atualizar': '1'})
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['form'].errors)
+        self.assertContains(response, 'Texto ainda em edição')
+        self.assertEqual(list(response.context['form'].fields['objeto'].queryset), [self.space])
+        self.assertFalse(Agendamento.objects.exists())
+        response = self.client.post('/agenda/novo/', {**self.data, 'categoria': 'equipamento', 'objeto': 999999})
+        self.assertEqual(Agendamento.objects.count(), 0)
+        self.assertContains(response, 'Faça uma escolha válida')
+
+    def test_overlap_and_stale_edit_or_cancellation_show_409(self):
+        booking = self.create()
+        self.assertContains(self.client.post('/agenda/novo/', self.data), 'Já existe uma reserva', status_code=409)
+        save_booking(actor=self.admin, booking_id=booking.pk, expected_version=1, data={'motivo': 'Atualizado'})
+        self.assertContains(self.client.post(f'/agenda/{booking.pk}/editar/', {**self.data, 'versao': 1}),
+                            'O agendamento foi alterado', status_code=409)
+        self.assertContains(self.client.post(f'/agenda/{booking.pk}/cancelar/', {'versao': 1}),
+                            'O agendamento foi alterado', status_code=409)
+        booking.refresh_from_db()
+        self.assertEqual((booking.motivo, booking.versao), ('Atualizado', 2))
+
+    def test_unchanged_web_dates_preserve_api_seconds_and_fractional_precision(self):
+        booking = self.create(inicio='2026-11-01T14:00:37.123456', fim='2026-11-01T15:00:41.654321')
+        response = self.client.get(f'/agenda/{booking.pk}/editar/')
+        self.assertContains(response, '2026-11-01T14:00:37')
+        response = self.client.post(f'/agenda/{booking.pk}/editar/', {**self.data, 'versao': 1,
+                                   'inicio': '2026-11-01T14:00:37', 'fim': '2026-11-01T15:00:41', 'motivo': 'Editado'})
+        self.assertEqual(response.status_code, 302)
+        booking.refresh_from_db()
+        self.assertEqual((booking.inicio.microsecond, booking.fim.microsecond), (123456, 654321))
+        self.assertEqual(set(booking.eventos.get(acao='editar').alteracoes), {'motivo'})
+
+    def test_month_calendar_counts_cross_midnight_and_all_pages_with_half_open_intervals(self):
+        self.create(inicio='2026-10-31T23:00:00', fim='2026-11-01T01:00:00')
+        self.create(inicio='2026-11-01T02:00:00', fim='2026-11-02T00:00:00')
+        for index in range(25):
+            target = Servico.objects.create(nome=f'Serviço {index}')
+            self.create(objeto=target.pk)
+        response = self.client.get('/agenda/', {'mes': '2026-11'})
+        self.assertEqual((response.context['paginator'].count, len(response.context['object_list'])), (27, 25))
+        days = {day['date'].day: day['count'] for week in response.context['weeks'] for day in week if day['in_month']}
+        self.assertEqual((days[1], days[2]), (27, 0))
+        self.assertContains(response, 'Próxima')
+        self.assertEqual(len(self.client.get('/agenda/', {'mes': '2026-11', 'page': 2}).context['object_list']), 2)
+
+    def test_category_filter_and_invalid_filters(self):
+        self.create()
+        self.create(categoria='espaco', objeto=self.space.pk)
+        response = self.client.get('/agenda/', {'mes': '2026-11', 'categoria': 'espaco'})
+        self.assertEqual(response.context['paginator'].count, 1)
+        for fields in ({'mes': '2026-13'}, {'categoria': 'outro'}):
+            self.assertEqual(self.client.get('/agenda/', fields).status_code, 400)
+
+    def test_unknown_fields_missing_version_and_get_cancellation_do_not_change_data(self):
+        booking = self.create()
+        self.client.get(f'/agenda/{booking.pk}/cancelar/')
+        for fields in ({'cancelado_em': '2026-11-01'}, {'versao': ''}):
+            response = self.client.post(f'/agenda/{booking.pk}/editar/', {**self.data, 'versao': 1, **fields})
+            self.assertEqual(response.status_code, 200)
+        booking.refresh_from_db()
+        self.assertEqual((booking.versao, booking.cancelado_em, booking.eventos.count()), (1, None, 1))
+
+    def test_csrf_required_and_cancellation_releases_calendar_slot(self):
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.admin)
+        self.assertEqual(client.post('/agenda/novo/', self.data).status_code, 403)
+        booking = self.create()
+        cancel_booking(actor=self.admin, booking_id=booking.pk, expected_version=1)
+        response = self.client.get('/agenda/', {'mes': '2026-11'})
+        self.assertEqual(response.context['paginator'].count, 0)
+        self.assertRedirects(self.client.post('/agenda/novo/', self.data), f'/agenda/{Agendamento.objects.latest("pk").pk}/')

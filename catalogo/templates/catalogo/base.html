@@ -1,4 +1,5 @@
-{% load static %}
+{% load static agenda_access %}
+{% can_access_agenda user as agenda_access %}
 <!doctype html>
 <html lang="pt-br">
 <head>
@@ -7,6 +8,7 @@
     <title>{% block title %}Catálogo{% endblock %} · InovaLab</title>
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="{% static 'catalogo/style.css' %}">
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
     <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
@@ -17,6 +19,7 @@
             <a href="{% url 'catalogo:equipamentos-list' %}" {% if category == 'equipamentos' %}aria-current="page"{% endif %}>Equipamentos</a>
             <a href="{% url 'catalogo:espacos-list' %}" {% if category == 'espacos' %}aria-current="page"{% endif %}>Espaços</a>
             <a href="{% url 'tarefas:board' %}">Tarefas</a>
+            {% if agenda_access %}<a href="{% url 'agenda:list' %}">Agenda</a>{% endif %}
             <a href="{% url 'accounts:home' %}">Minha conta</a>
         </nav>
     </header>

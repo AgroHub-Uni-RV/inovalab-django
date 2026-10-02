@@ -1,0 +1,12 @@
+{% extends 'agenda/base.html' %}
+{% block content %}
+<p><a href="{% url 'agenda:detail' booking.pk %}">Voltar ao agendamento</a></p>
+<h1>Histórico do agendamento #{{ booking.pk }}</h1>
+{% for event in object_list %}<article class="agenda-event">
+    <h2>{{ event.get_acao_display }} · {{ event.ator_nome }}</h2>
+    <p>{{ event.instante|date:'d/m/Y H:i:s' }} · Horário de Brasília.</p>
+    <dl>{% for field,values in event.alteracoes.items %}<dt>{{ field }}</dt><dd>{{ values.anterior|default_if_none:'—' }} → {{ values.novo|default_if_none:'—' }}</dd>{% endfor %}</dl>
+</article>{% empty %}<p>Nenhum evento.</p>{% endfor %}
+<p>Os valores de data nas alterações usam ISO 8601 em UTC.</p>
+{% include 'agenda/pagination.html' %}
+{% endblock %}

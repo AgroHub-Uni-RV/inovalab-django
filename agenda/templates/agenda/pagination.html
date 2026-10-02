@@ -1,0 +1,5 @@
+{% if is_paginated %}<nav class="pagination" aria-label="Paginação">
+{% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}{% if month %}&amp;mes={{ month|urlencode }}&amp;categoria={{ selected_category|urlencode }}{% endif %}">Anterior</a>{% endif %}
+<span>Página {{ page_obj.number }} de {{ paginator.num_pages }}</span>
+{% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if month %}&amp;mes={{ month|urlencode }}&amp;categoria={{ selected_category|urlencode }}{% endif %}">Próxima</a>{% endif %}
+</nav>{% endif %}
