@@ -24,10 +24,10 @@
 
 **Interface:** `save_material(*, actor, data, material_id=None, expected_version=None) -> Material`; `MaterialConflict` para 409; `visible_materials(actor) -> QuerySet`. Campos públicos: nome, categoria, quantidade, unidade, status, fonte.
 
-- [ ] RED: criação normalizada/fração/zero; quantidade negativa/não finita/bool/extra precisão/limites; obrigatórios/status; papéis/inativo; quantidade corrigida 10→8; versão antiga/inválida/campos desconhecidos preservam todos os dados.
-- [ ] Implementar modelo/checks e serviço de validação/autorização; edição usa UPDATE onde versão = esperada, incrementa exatamente uma vez.
-- [ ] Duas conexões reais editam a mesma versão: exatamente um sucesso, outro conflito; nenhum sobrescreve vencedor. GREEN `manage.py test materiais.tests.test_services materiais.tests.test_concurrency`; suíte completa/check/drift.
-- [ ] Commit `feat (materiais): adiciona cadastro e correção com controle de versão.`.
+- [x] RED: criação normalizada/fração/zero; quantidade negativa/não finita/bool/extra precisão/limites; obrigatórios/status; papéis/inativo; quantidade corrigida 10→8; versão antiga/inválida/campos desconhecidos preservam todos os dados.
+- [x] Implementar modelo/checks e serviço de validação/autorização; edição usa UPDATE onde versão = esperada, incrementa exatamente uma vez.
+- [x] Duas conexões reais editam a mesma versão: exatamente um sucesso, outro conflito; nenhum sobrescreve vencedor. GREEN `manage.py test materiais.tests.test_services materiais.tests.test_concurrency`; suíte completa/check/drift.
+- [x] Commit `feat (materiais): adiciona cadastro e correção com controle de versão.`.
 
 ## 2. Interface e API interna
 
