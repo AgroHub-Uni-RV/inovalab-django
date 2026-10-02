@@ -9,6 +9,11 @@
     <dt>Início</dt><dd>{{ booking.inicio|date:'d/m/Y H:i:s' }}</dd>
     <dt>Término</dt><dd>{{ booking.fim|date:'d/m/Y H:i:s' }}</dd>
     <dt>Versão</dt><dd>{{ booking.versao }}</dd>
+    {% if booking.pedido_integracao %}
+    <dt>Origem externa</dt><dd>{{ booking.pedido_integracao.cliente.nome }}</dd>
+    <dt>Pedido externo</dt><dd>{{ booking.pedido_integracao.id_externo }}</dd>
+    <dt>Requerente externo</dt><dd>{{ booking.pedido_integracao.requerente_id }}</dd>
+    {% endif %}
 </dl>
 <p>Horários de Brasília.</p>
 <nav class="actions" aria-label="Ações do agendamento">

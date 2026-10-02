@@ -37,8 +37,8 @@
 
 **Arquivos:** `integracoes/{authentication,serializers,api,api_urls,forms,views,urls}.py`, templates/testes web/API; URLs, navegação, detalhe da agenda.
 
-- [ ] RED: autenticação real por header, 401/revogação/CSRF por sessão, não aceitar sessão na API externa/token na interna; JSON estrito,201/200/409, campo ausente/fuso, privacidade/métodos405, catálogo paginado; telas403/CSRF/version, segredo uma vez/no-store, histórico do pedido/origem.
-- [ ] Implementar e GREEN; suíte completa; commit `feat (integracoes): disponibiliza API externa e gestão de integradores.`.
+- [x] RED: autenticação real por header, 401/revogação/CSRF por sessão, não aceitar sessão na API externa/token na interna; JSON estrito,201/200/409, campo ausente/fuso, privacidade/métodos405, catálogo paginado; telas403/CSRF/version, segredo uma vez/no-store, histórico do pedido/origem.
+- [x] Implementar e GREEN; suíte completa; commit `feat (integracoes): disponibiliza API externa e gestão de integradores.`.
 
 ## 3. Entrega
 

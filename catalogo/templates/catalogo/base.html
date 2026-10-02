@@ -20,6 +20,7 @@
             <a href="{% url 'catalogo:espacos-list' %}" {% if category == 'espacos' %}aria-current="page"{% endif %}>Espaços</a>
             <a href="{% url 'tarefas:board' %}">Tarefas</a>
             {% if agenda_access %}<a href="{% url 'agenda:list' %}">Agenda</a>{% endif %}
+            {% if agenda_access %}<a href="{% url 'integracoes:list' %}">Integrações</a>{% endif %}
             <a href="{% url 'accounts:home' %}">Minha conta</a>
         </nav>
     </header>

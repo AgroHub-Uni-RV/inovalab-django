@@ -1,0 +1,7 @@
+{% extends 'integracoes/base.html' %}
+{% block content %}
+<p><a href="{% url 'integracoes:list' %}">Voltar às integrações</a></p>
+<h1>{{ integration.nome }}</h1>
+<dl><dt>Estado</dt><dd>{{ integration.ativo|yesno:'Ativo,Inativo' }}</dd><dt>Credencial</dt><dd>{% if integration.ativo and integration.token_digest %}Gerada{% else %}Sem credencial ativa{% endif %}</dd><dt>Versão</dt><dd>{{ integration.versao }}</dd></dl>
+<nav class="actions" aria-label="Ações do integrador"><a href="{% url 'integracoes:update' integration.pk %}">Editar integrador</a><a href="{% url 'integracoes:credential' integration.pk %}">Gerar nova credencial</a><a href="{% url 'integracoes:requests' integration.pk %}">Pedidos recebidos</a></nav>
+{% endblock %}

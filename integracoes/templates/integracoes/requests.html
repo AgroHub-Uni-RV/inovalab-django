@@ -1,0 +1,10 @@
+{% extends 'integracoes/base.html' %}
+{% block content %}
+<p><a href="{% url 'integracoes:detail' integration.pk %}">Voltar ao integrador</a></p>
+<h1>Pedidos recebidos · {{ integration.nome }}</h1>
+<div class="table-wrapper"><table><thead><tr><th>Pedido externo</th><th>Requerente externo</th><th>Reserva</th></tr></thead><tbody>
+{% for receipt in object_list %}<tr><td>{{ receipt.id_externo }}</td><td>{{ receipt.requerente_id }}</td><td>{% if receipt.agendamento.cancelado_em %}#{{ receipt.agendamento_id }} · Cancelada{% else %}<a href="{% url 'agenda:detail' receipt.agendamento_id %}">#{{ receipt.agendamento_id }}</a>{% endif %}</td></tr>
+{% empty %}<tr><td colspan="3">Nenhum pedido recebido.</td></tr>{% endfor %}
+</tbody></table></div>
+{% include 'agenda/pagination.html' %}
+{% endblock %}

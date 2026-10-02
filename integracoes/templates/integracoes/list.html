@@ -1,0 +1,11 @@
+{% extends 'integracoes/base.html' %}
+{% block content %}
+<h1>Integrações</h1>
+<p>Sistemas autorizados a consultar o catálogo e enviar pedidos de reserva.</p>
+<p><a class="button" href="{% url 'integracoes:create' %}">Novo integrador</a></p>
+<div class="table-wrapper"><table><thead><tr><th>Sistema</th><th>Estado</th></tr></thead><tbody>
+{% for integration in object_list %}<tr><td><a href="{% url 'integracoes:detail' integration.pk %}">{{ integration.nome }}</a></td><td>{{ integration.ativo|yesno:'Ativo,Inativo' }}</td></tr>
+{% empty %}<tr><td colspan="2">Nenhum integrador cadastrado.</td></tr>{% endfor %}
+</tbody></table></div>
+{% include 'agenda/pagination.html' %}
+{% endblock %}
