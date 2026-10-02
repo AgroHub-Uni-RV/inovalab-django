@@ -28,10 +28,10 @@
 
 **Interfaces:** `create_client(*, actor, name) -> (client, token)`; `update_client(*, actor, client_id, data, expected_version)`; `rotate_credential(*, actor, client_id, expected_version) -> (client,token)`; `authenticate_token(token) -> IntegrationPrincipal`; `receive_booking(*, principal, data) -> (booking,pedido,repeated)`; `visible_clients(actor)`. Núcleo `_save_booking(*,actor,actor_name,data,booking_id=None,expected_version=None)` continua privado; `save_booking` administrativo mantém autorização. Evento aceita actorNone com nome explícito, apenas no adaptador autenticado.
 
-- [ ] RED: digest/rotação/desativação/reativação, sem conta interna; autorização/version; três alvos; chave por cliente, normalização/fuso, reenvio após alterações, protegido/indisponível/conflito; falha ao salvar pedido reverte reserva/evento.
-- [ ] Implementar e GREEN `manage.py test integracoes.tests.test_services agenda.tests`.
-- [ ] Conexões reais: mesma chave/mesmo alvo e mesma chave/alvos diferentes não duplicam; chave diferente/mesmo intervalo conflita; primeiroSQLbloqueia cliente. RED de retirada da proteção e GREEN `test integracoes.tests.test_concurrency`.
-- [ ] Suíte completa/check/drift; commit `feat (integracoes): adiciona credenciais e recebimento idempotente de reservas.`.
+- [x] RED: digest/rotação/desativação/reativação, sem conta interna; autorização/version; três alvos; chave por cliente, normalização/fuso, reenvio após alterações, protegido/indisponível/conflito; falha ao salvar pedido reverte reserva/evento.
+- [x] Implementar e GREEN `manage.py test integracoes.tests.test_services agenda.tests`.
+- [x] Conexões reais: mesma chave/mesmo alvo e mesma chave/alvos diferentes não duplicam; chave diferente/mesmo intervalo conflita; primeiroSQLbloqueia cliente. RED de retirada da proteção e GREEN `test integracoes.tests.test_concurrency`.
+- [x] Suíte completa/check/drift; commit `feat (integracoes): adiciona credenciais e recebimento idempotente de reservas.`.
 
 ## 2. API e administração simples
 

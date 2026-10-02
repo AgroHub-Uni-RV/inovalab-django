@@ -74,10 +74,10 @@ def _snapshot(booking):
             for name, value in values.items()}
 
 
-def _record(actor, booking, action, before):
+def _record(actor, booking, action, before, actor_name=None):
     changes = {name: {'anterior': before.get(name), 'novo': value}
                for name, value in _snapshot(booking).items() if before.get(name) != value}
-    EventoAgendamento.objects.create(agendamento=booking, ator=actor, ator_nome=actor.username,
+    EventoAgendamento.objects.create(agendamento=booking, ator=actor, ator_nome=actor_name or actor.username,
                                     acao=action, alteracoes=changes)
 
 
@@ -93,6 +93,12 @@ def _persist_existing(booking, version):
 @_busy_as_conflict
 def save_booking(*, actor, data, booking_id=None, expected_version=None):
     _require_admin(actor)
+    return _save_booking(actor=actor, actor_name=actor.username, data=data,
+                         booking_id=booking_id, expected_version=expected_version)
+
+
+def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=None):
+    # Trusted core: administrative facade or authenticated integration adapter only.
     unknown = set(data) - PUBLIC_FIELDS
     if unknown:
         raise ValidationError({name: 'Este campo não pode ser alterado.' for name in unknown})
@@ -133,7 +139,7 @@ def save_booking(*, actor, data, booking_id=None, expected_version=None):
             _persist_existing(booking, expected_version)
         else:
             booking.save()
-        _record(actor, booking, 'editar' if previous else 'criar', before)
+        _record(actor, booking, 'editar' if previous else 'criar', before, actor_name=actor_name)
     return booking
 
 
