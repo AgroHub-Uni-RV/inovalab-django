@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'accounts.apps.AccountsConfig',
     'catalogo.apps.CatalogoConfig',
     'tarefas.apps.TarefasConfig',
+    'agenda.apps.AgendaConfig',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
