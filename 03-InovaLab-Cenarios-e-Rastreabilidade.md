@@ -1,6 +1,6 @@
 # InovaLab — Cenários base e rastreabilidade
 
-Versão 0.2 • 01/10/2026. Cenários escritos para orientar validação e futuros testes, não como testes já executados. Dados e nomes são exemplos fictícios. C/D/P e Q01–Q15 estão definidos em `01-InovaLab-Escopo-e-Requisitos.md`.
+Versão 0.3 • 02/10/2026. Cenários base para orientar validação; a cobertura executada da agenda está na seção 7. Dados e nomes são exemplos fictícios. C/D/P e Q01–Q15 estão definidos em `01-InovaLab-Escopo-e-Requisitos.md`.
 
 ## 1. Fluxo proposto das tarefas
 
@@ -62,11 +62,11 @@ Não há estado `re-criar`. A autoridade para reabrir está aprovada; retornar p
 
 ### CT10 — Categoria e objeto incompatíveis
 
-**UC08–UC09; RF15; D.** Quando uma solicitação declarar categoria equipamento e referenciar um espaço, então deve ser rejeitada sem gravar. O servidor valida isso mesmo que a interface filtre corretamente as opções.
+**UC08–UC09; RF15; D.** Quando uma solicitação declarar categoria equipamento com ID inexistente nessa categoria, então deve ser rejeitada sem gravar. O servidor resolve o ID exclusivamente no catálogo da categoria e valida mesmo que a interface filtre corretamente as opções. IDs numéricos iguais em categorias distintas não representam o mesmo objeto; o contrato não usa uma referência genérica entre tabelas.
 
 ### CT11 — Conflito de horários
 
-**UC08–UC09; RF16; P.** Dada uma reserva exclusiva de 14h a 15h, quando outra solicitação para o mesmo recurso usar 14h30 a 15h30, então deve ser recusada. Um recurso diferente pode aceitar o mesmo horário. Para serviços, a regra depende de Q05.
+**UC08–UC09; RF16; exclusividade C — F3 em 02/10, proteção D.** Dada uma reserva de 14h a 15h, quando outra solicitação para o mesmo serviço, equipamento ou espaço usar 14h30 a 15h30, então deve ser recusada. Um objeto diferente pode aceitar o mesmo horário. Q05 confirmou exclusividade também para serviços.
 
 ### CT12 — Limite entre reservas
 
@@ -176,3 +176,18 @@ Na implementação direta do módulo 3, o resultado positivo adotado é `criacao
 | RF24 | Casos internos entregues por etapa | CT28; respectivos cenários pela interface |
 
 Esta matriz indica cobertura base, não cobertura exaustiva. Os RNFs têm verificação própria no arquivo 01. Casos detalhados de campos obrigatórios, carga, recuperação e permissões dos cadastros dependem das decisões abertas.
+
+## 7. Cobertura executada — agenda interna
+
+Em 02/10/2026: 42 testes da agenda e suíte completa de 159 passaram no SQLite local. [Guia e comandos](docs/modules/04-agenda.md).
+
+| Cenários | Cobertura desta entrega |
+| --- | --- |
+| CT09–CT10 | Web/API das três categorias, seleção de alvo válido na categoria, exatamente uma FK; IDs iguais em categorias diferentes são objetos distintos |
+| CT11–CT12 | Conflitos nas três categorias, objetos distintos livres e intervalos adjacentes aceitos |
+| CT13 | Duas conexões reais/threads: uma criação conflitante confirma; edições da mesma versão não sobrescrevem nem duplicam eventos; ordem SQL de bloqueio verificada |
+| CT14–CT15 | Edição sem conflito próprio; atualização conflitante sem gravação parcial; fim/fuso inválido, indisponibilidade e ocupado manual |
+| CT19–CT20 | Cancelamento libera intervalo e preserva eventos; referências ao catálogo protegidas, inclusive após cancelar |
+| CT28–CT29 | Mesmas operações web/API; sessão/CSRF, 403, payload estrito, 409, paginação e contrato documentado |
+
+Chrome verificou cadastro, edição, histórico, conflito, adjacência, cancelamento/liberação, API, acesso negado, versão antiga após refresh, teclado e 360 px. CT16–CT18 e idempotência externa ainda dependem do módulo AgroHub; verificar negação na API interna não valida a autenticação futura do integrador. PostgreSQL/carga/produção e o caso histórico de horário de verão conhecido não foram validados como concluídos.

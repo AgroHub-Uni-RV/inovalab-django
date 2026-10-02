@@ -1,6 +1,6 @@
 # InovaLab — Diretrizes de modelagem para Django
 
-Versão 0.4 • 01/10/2026. Diretrizes para os módulos futuros; [identidade](docs/modules/01-identidade-e-acesso.md) e [catálogo](docs/modules/02-catalogo.md) implementados e verificados com Python 3.14.3, Django 6.1.1 e DRF 3.18.1, usando SQLite local. Banco da agenda e hospedagem serão definidos em suas etapas. A proposta de arquitetura e o diagnóstico histórico estão no arquivo 05.
+Versão 0.5 • 02/10/2026. Diretrizes para módulos futuros e contratos entregues de [identidade](docs/modules/01-identidade-e-acesso.md), [catálogo](docs/modules/02-catalogo.md), [tarefas](docs/modules/03-tarefas.md) e [agenda](docs/modules/04-agenda.md), verificados com Python 3.14.3, Django 6.1.1 e DRF 3.18.1 no SQLite local. Banco/hospedagem de produção continuam pendentes. O diagnóstico histórico está no arquivo 05.
 
 ## 1. Organização sugerida
 
@@ -43,7 +43,7 @@ F3 confirma um único alvo por reserva no MVP. Proposta técnica: três referên
 
 Evitar apenas `categoria + id_objeto` sem integridade referencial. A alternativa de recurso agendável comum pode ser melhor se houver calendários, capacidades e indisponibilidades compartilhadas; não é necessária antes de esclarecer Q05.
 
-F3 deixa alocações compostas fora do MVP: uma reserva de serviço não bloqueia automaticamente equipamentos, espaços ou operadores. Se isso se tornar necessário, será preciso modelar alocações associadas e verificar todas numa transação. Atendimento simultâneo por serviço permanece pendente em Q05.
+F3 deixa alocações compostas fora do MVP: uma reserva de serviço não bloqueia automaticamente equipamentos, espaços ou operadores. Se isso se tornar necessário, será preciso modelar alocações associadas e verificar todas numa transação. Em 02/10 F3 confirmou uma reserva por serviço/horário, com equipamentos/espaços exclusivos; a regra foi implementada nas três categorias.
 
 ## 4. Estados e permissões
 
@@ -65,6 +65,8 @@ F3 resolveu a autoridade de Q03: somente administradores aprovam, recusam e reab
 - Ao editar, excluir a própria reserva da busca de conflitos; manter proteção de concorrência.
 - Não alterar permanentemente um equipamento para “ocupado” só por existir uma reserva futura. Definir cálculo por instante ou separar estado operacional de ocupação.
 
+**Implementação da agenda local:** início/fim com fuso, Brasília na interface, intervalo `[início,fim)`, datas passadas e virada de dia permitidas; sem margem/capacidade/funcionamento não confirmados. `save_booking` e `cancel_booking` abrem transação cuja primeira operação é UPDATE sem alteração do status dos alvos em ordem estável. No SQLite isso adquire escrita antes de consultar versão/conflitos; não depender de `select_for_update`. Eventos compartilham a transação, versões usam UPDATE condicionado e busy/locked retorna 409. Testes com conexões reais foram executados no SQLite; implantação/PostgreSQL ainda exigem verificação própria. [Transações SQLite](https://www.sqlite.org/lang_transaction.html), [limitações SQLite/Django](https://docs.djangoproject.com/en/6.0/ref/databases/#sqlite-notes).
+
 ## 6. Contrato AgroHub a definir
 
 Documentar direção do fluxo, autenticação, versão, identificador externo do pedido, identificação do requerente, categoria, referência ao objeto, motivo, início, fim e fuso. Devolver identificador local e resultado inequívoco.
@@ -76,6 +78,8 @@ Definir se edição/exclusão local precisa de notificação ao AgroHub. Não im
 ## 7. Integridade e publicação
 
 Proteger serviços, usuários e recursos referenciados contra exclusões em cascata que eliminem registros operacionais. Preferir desativação de cadastros; exclusão de tarefas e reservas continua dependente de Q08, pois é uma ação expressamente solicitada no PDF.
+
+Na agenda entregue, excluir cancela logicamente, libera o período e preserva eventos/FKs; canceladas não aparecem nas consultas operacionais. Essa escolha provisória, sem nova resposta a Q08, está no guia do módulo 4. Metadados de uma reserva podem ser corrigidos após desativar seu objeto; alvo/período novo exige disponibilidade. Não há restauração nesta etapa.
 
 Para materiais, não deduzir estoque disponível apenas de um status cujo vocabulário não foi definido. Se entradas/saídas forem aprovadas, criar movimentos e histórico em vez de somente sobrescrever o saldo.
 

@@ -1,6 +1,6 @@
 # InovaLab — Revisão e proposta de arquitetura
 
-Versão 0.3 • 01/10/2026 • Arquitetura com identidade, catálogo e tarefas entregues. O diagnóstico inicial permanece histórico; os módulos seguintes continuam propostos. C/D/P e F1–F4 são definidos no arquivo 01.
+Versão 0.4 • 02/10/2026 • Arquitetura com identidade, catálogo, tarefas e agenda interna entregues. O diagnóstico inicial permanece histórico; os módulos seguintes continuam propostos. C/D/P e F1–F4 são definidos no arquivo 01.
 
 ## 1. Resultado esperado
 
@@ -56,7 +56,7 @@ Essa é a linha de base com falha. Não houve servidor iniciado, implantação, 
 | Django com frontend separado | Mais liberdade para interações complexas e evolução independente | Acrescenta build, autenticação entre origens e manutenção de duas aplicações; possível evolução com a mesma API |
 | Serviços separados por domínio | Implantação e escala independentes | Acrescenta comunicação distribuída e consistência entre serviços; necessidade não confirmada para o MVP |
 
-DRF foi instalado e verificado no módulo de identidade. PostgreSQL é recomendado para a agenda com concorrência; banco da agenda e hospedagem ainda não foram aprovados. SQLite apoia a execução local de identidade, mas os testes de concorrência devem usar o banco escolhido para a agenda: `select_for_update()` não fornece bloqueio de linha em SQLite. [Referência oficial do Django](https://docs.djangoproject.com/en/6.1/ref/models/querysets/#select-for-update).
+DRF foi instalado e verificado no módulo de identidade. Agenda local usa SQLite com UPDATE do alvo antes das leituras na transação e testes de conexões reais; `select_for_update()` sozinho não fornece bloqueio de linha nesse banco. PostgreSQL continua recomendado para produção com maior concorrência; banco e hospedagem de produção não foram aprovados/testados. Estratégia, limitações e referências estão no [guia da agenda](docs/modules/04-agenda.md).
 
 ## 5. Componentes e dependências
 
@@ -94,11 +94,11 @@ Representar administrador do negócio por grupo/permissões, sem exigir superusu
 
 Para reservas, três FKs opcionais e uma restrição de exatamente um alvo preservam Q05. Requerente externo usa dados mínimos acordados com o integrador, sem exigir usuário local. Categoria da API é validada contra o alvo; não usar tipo e ID sem referência íntegra no banco.
 
-Para recursos exclusivos, propõe-se bloquear o registro do recurso na transação, consultar conflitos e gravar. Criação e edição seguem essa operação; troca de alvo bloqueia os recursos envolvidos em ordem estável. Política final depende de Q05/Q06/Q08. Verificar com duas conexões reais ao banco que pedidos conflitantes produzem no máximo um sucesso.
+Na agenda entregue, todos os serviços/equipamentos/espaços são exclusivos, conforme Q05 confirmada. Criação, edição e cancelamento bloqueiam alvos em ordem estável antes de revalidar versão/conflitos e gravar evento. Dois pedidos conflitantes produziram um sucesso nos testes de conexões reais no SQLite. Cancelamento lógico e tratamento de indisponibilidade são escolhas provisórias para Q06/Q08.
 
 ## 7. Superfície proposta da API
 
-Identidade, catálogo e tarefas estão entregues conforme os contratos dos [módulos 1](docs/modules/01-identidade-e-acesso.md), [2](docs/modules/02-catalogo.md) e [3](docs/modules/03-tarefas.md). Os caminhos dos demais módulos abaixo são propostas, **não endpoints existentes**. RF23 não concede acesso externo irrestrito aos módulos internos.
+Identidade, catálogo, tarefas e agenda estão entregues conforme os contratos dos [módulos 1](docs/modules/01-identidade-e-acesso.md), [2](docs/modules/02-catalogo.md), [3](docs/modules/03-tarefas.md) e [4](docs/modules/04-agenda.md). Os caminhos dos demais módulos abaixo são propostas, **não endpoints existentes**. RF23 não concede acesso externo irrestrito aos módulos internos.
 
 | Caminho proposto | Operação | Acesso e decisões |
 | --- | --- | --- |
@@ -108,7 +108,7 @@ Identidade, catálogo e tarefas estão entregues conforme os contratos dos [mód
 | `/api/v1/tarefas/` e `/{id}/` (entregues) | Consultar, criar, editar e excluir logicamente | Consulta responsável/admin; campos/exclusão só admin; versão obrigatória; status protegido |
 | `/api/v1/tarefas/{id}/transicoes/` (entregue) | Iniciar, enviar, aprovar, recusar ou reabrir | RN16; mapa operacional do módulo 3, com escolhas restantes identificadas como provisórias |
 | `/api/v1/tarefas/{id}/historico/` e `/api/v1/tarefas/responsaveis/` (entregues) | Eventos autorizados e opções de atribuição | Histórico no mesmo escopo da tarefa; opções de contas ativas somente admin |
-| `/api/v1/agendamentos/` e `/{id}/` | Agenda interna | Administrador no escopo atual; exclusão/cancelamento Q08 |
+| `/api/v1/agendamentos/`, `/{id}/`, `/{id}/historico/` (entregues) | Agenda interna e eventos | Administrador ativo/superusuário; sessão/CSRF, versão, cancelamento lógico e conflitos 409 |
 | `/api/v1/integracoes/agendamentos/` | Receber pedido externo | Credencial, requerente e idempotência; payload Q07 |
 | `/api/v1/materiais/` | Consultar/manter materiais | Vocabulários Q09 e permissões Q12 |
 | `/api/v1/banners/` | Administrar banners | Permissões Q12; programação/ordem Q10/Q15 |
@@ -135,7 +135,7 @@ Por instrução do responsável, concluir e entregar um módulo, aguardar sua de
 | 1. Identidade e acesso (entregue) | Colisão corrigida, configuração, usuário/papéis; contas no admin, login/logout, página privada e API de identidade | Responsável autorizou avançar para catálogo em 01/10/2026 | 35 testes passaram na entrega; fluxo web/API e admin verificados no Chrome |
 | 2. Catálogo (entregue) | Serviços, equipamentos e espaços; frontend/API simples e carga dos 11 serviços | Responsável autorizou avanço para tarefas | 38 testes do catálogo; serviço referenciado por tarefa protegido; reservas serão tratadas na agenda |
 | 3. Tarefas (entregue) | CRUD de admin, exclusão lógica, consulta restrita, quadro simples, transições e histórico web/API | Implementação direta autorizada; escolhas de datas, reabertura e exclusão para depuração | 44 testes de tarefas e suíte de 117 passando; revisão independente, fluxo completo básico no Chrome, teclado e 360 px |
-| 4. Agenda | Agenda e proteção de conflito | Q05 restante, Q06, Q08 para reservas, Q12–Q14 e banco | CT09–CT15, CT19–CT20, incluindo concorrência no banco escolhido |
+| 4. Agenda (entregue) | Calendário mensal, CRUD/cancelamento lógico, histórico e API; proteção de sobreposição/versão | Q05 confirmada; escolhas Q06/Q08/Q13/Q14 para depuração; aguardar avanço para AgroHub | 42 testes de agenda, suíte159; conexões reais SQLite, revisão independente e Chrome, teclado/360 px |
 | 5. AgroHub | Contrato, credencial e recebimento idempotente | Q07, dados mínimos e alterações locais | CT16–CT18, CT28–CT29 e reenvio simultâneo |
 | 6. Materiais | Cadastro e API acordada | Q09/Q12 e itens pertinentes de Q15 | CT21; sem movimentações implícitas |
 | 7. Conteúdo | Banners, publicação e API acordada | Q10/Q12/Q15 | CT22–CT23; WebP real |
@@ -159,6 +159,8 @@ As 15 skills de [obra/superpowers](https://github.com/obra/superpowers) foram in
 - [x] Entregar catálogo com telas simples, testes automatizados e básicos no navegador.
 - [x] Receber autorização de avanço para tarefas com implementação direta e plano simples.
 - [x] Entregar tarefas, executar testes automatizados/básicos no navegador e revisão independente.
-- [ ] Aguardar depuração de tarefas e autorização antes de iniciar agenda.
+- [x] Receber autorização de avanço para agenda e decisão de exclusividade dos serviços.
+- [x] Entregar agenda interna com testes automatizados, concorrência SQLite, navegador e revisão independente.
+- [ ] Aguardar depuração da agenda e autorização antes de iniciar AgroHub.
 
-O processo padrão de design exige revisão antes de implementar; instruções do responsável prevalecem. Para tarefas, o pedido de execução direta com plano simples substituiu as passagens de aprovação de novos artefatos. As lacunas resolvidas durante a execução estão identificadas como escolhas provisórias no guia e plano, sem serem apresentadas como novas respostas confirmadas.
+O processo padrão de design exige revisão antes de implementar; instruções do responsável prevalecem. Para tarefas e agenda, a execução direta com plano simples substituiu as passagens de aprovação de novos artefatos. As lacunas resolvidas durante a execução estão identificadas como escolhas provisórias nos guias/planos, sem serem apresentadas como novas respostas confirmadas. A revisão da agenda encontrou um Important corrigido com regressões RED/GREEN e um Minor histórico de horário de verão adiado, descrito no guia.
