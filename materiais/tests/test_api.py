@@ -1,3 +1,5 @@
+import json
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.test import Client, TestCase
@@ -76,6 +78,24 @@ class MaterialApiTests(TestCase):
         self.assertEqual(response.json()['quantidade'], '999999999.999')
         material = Material.objects.get(pk=response.json()['id'])
         self.assertEqual(str(material.quantidade), '999999999.999')
+
+    def test_raw_json_numbers_keep_precision_until_validation(self):
+        self.client.force_login(self.admin)
+        for number in ('0.10000000000000001', '999999999.99900001', '123456789.1234'):
+            with self.subTest(number=number):
+                raw = json.dumps({**DATA, 'quantidade': '__numeric__'}).replace('"__numeric__"', number)
+                response = self.client.post('/api/v1/materiais/', raw, content_type='application/json')
+                self.assertEqual(response.status_code, 400, response.content)
+        self.assertEqual(Material.objects.count(), 1)
+
+    def test_invalid_raw_number_patch_preserves_material(self):
+        self.client.force_login(self.admin)
+        raw = '{"nome":"Não salvar","quantidade":999999999.99900001,"versao":1}'
+        response = self.client.patch(self.path, raw, content_type='application/json')
+        self.assertEqual(response.status_code, 400, response.content)
+        self.material.refresh_from_db()
+        self.assertEqual((self.material.nome, str(self.material.quantidade), self.material.versao),
+                         ('Filamento', '10.000', 1))
 
     def test_version_is_required_strict_and_server_assigned_at_creation(self):
         self.client.force_login(self.admin)

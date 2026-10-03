@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
@@ -26,8 +26,15 @@ class Material(models.Model):
         for field in ('nome', 'categoria', 'unidade', 'fonte'):
             if field not in excluded and isinstance(getattr(self, field), str):
                 setattr(self, field, getattr(self, field).strip())
-        if 'quantidade' not in excluded and isinstance(self.quantidade, bool):
-            raise ValidationError({'quantidade': 'Informe uma quantidade decimal.'})
+        if 'quantidade' not in excluded:
+            if isinstance(self.quantidade, bool):
+                raise ValidationError({'quantidade': 'Informe uma quantidade decimal.'})
+            if self.quantidade is not None:
+                try:
+                    # Django rounds float inputs to max_digits before running DecimalValidator.
+                    self.quantidade = Decimal(str(self.quantidade))
+                except (InvalidOperation, ValueError):
+                    raise ValidationError({'quantidade': 'Informe uma quantidade decimal.'})
         super().clean_fields(exclude=exclude)
 
     def __str__(self):

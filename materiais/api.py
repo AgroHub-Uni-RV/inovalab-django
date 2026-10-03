@@ -1,12 +1,12 @@
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.parsers import JSONParser
 from rest_framework.permissions import BasePermission, IsAuthenticated, SAFE_METHODS
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from accounts.policies import is_business_admin
+from materiais.parsers import DecimalJSONParser
 from materiais.selectors import visible_materials
 from materiais.serializers import MaterialSerializer
 from materiais.services import MaterialConflict
@@ -26,7 +26,7 @@ class MaterialPagination(PageNumberPagination):
 class MaterialViewSet(ModelViewSet):
     authentication_classes = [SessionAuthentication]
     permission_classes = [IsAuthenticated, CanMaintainMaterials]
-    parser_classes = [JSONParser]
+    parser_classes = [DecimalJSONParser]
     renderer_classes = [JSONRenderer]
     pagination_class = MaterialPagination
     serializer_class = MaterialSerializer

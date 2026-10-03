@@ -49,6 +49,19 @@ class MaterialServiceTests(TestCase):
                     self.create(quantidade=value)
                 self.assertEqual(Material.objects.count(), 0)
 
+    def test_float_precision_is_validated_before_model_conversion(self):
+        for value in (999999999.9991, 123456789.1234):
+            with self.subTest(value=value):
+                with self.assertRaises(ValidationError):
+                    self.create(quantidade=value)
+        self.assertEqual(Material.objects.count(), 0)
+        material = self.create()
+        with self.assertRaises(ValidationError):
+            save_material(actor=self.admin, material_id=material.pk, expected_version=1,
+                          data={'nome': 'Não salvar', 'quantidade': 123456789.1234})
+        material.refresh_from_db()
+        self.assertEqual((material.nome, str(material.quantidade), material.versao), ('Filamento', '10.000', 1))
+
     def test_required_text_and_status_are_validated(self):
         for field, value in (('nome', ' '), ('categoria', ''), ('unidade', ' '), ('fonte', ''),
                              ('status', 'emprestado'), ('nome', 'a' * 151),
