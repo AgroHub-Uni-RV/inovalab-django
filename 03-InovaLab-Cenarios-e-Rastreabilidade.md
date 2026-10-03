@@ -1,6 +1,6 @@
 # InovaLab — Cenários base e rastreabilidade
 
-Versão 0.4 • 02/10/2026. Cenários base para orientar validação; cobertura executada da agenda/recebimento externo nas seções7–8. Dados e nomes são exemplos fictícios. C/D/P e Q01–Q15 estão definidos em `01-InovaLab-Escopo-e-Requisitos.md`.
+Versão 0.5 • 02/10/2026. Cenários base para orientar validação; cobertura executada da agenda/recebimento externo/materiais nas seções 7–9. Dados e nomes são exemplos fictícios. C/D/P e Q01–Q15 estão definidos em `01-InovaLab-Escopo-e-Requisitos.md`.
 
 ## 1. Fluxo proposto das tarefas
 
@@ -108,7 +108,7 @@ Não há estado `re-criar`. A autoridade para reabrir está aprovada; retornar p
 
 ### CT21 — Cadastrar e corrigir material
 
-**UC10; RF17, RN10; C/P.** Dado um material com quantidade 10 na unidade a definir, quando o ator autorizado corrigir a quantidade para 8, então o cadastro reflete 8. Valor negativo é rejeitado. Este cenário não presume baixa automática por execução de tarefa.
+**UC10; RF17, RN10; C/P.** Dado um material com quantidade 10 e unidade informada, quando o administrador corrigir a quantidade para 8 com a versão atual, então o cadastro reflete 8. Valor negativo ou precisão acima de 3 casas é rejeitado. Usuários internos ativos consultam; não há baixa automática por execução de tarefa, conforme F3/Q09/Q12.
 
 ### CT22 — Publicar banner no local correto
 
@@ -204,3 +204,16 @@ Em 02/10/2026, módulo5:35 testes e suíte completa194 passaram. [Contrato/coman
 | CT28–CT29 | Gestão web administrativa com CSRF/version, segredo uma vez/no-store, origem na agenda e contrato publicado no guia; operações de reserva compartilhadas |
 
 Chrome verificou envio/reenvio/conflitos, renovação/revogação, pedidos, origem, cancelamento sem recriação, staff negado, teclado/360px. Revisão independente não identificou achados. Falha no INSERT do pedido reverte reserva/evento, e a retirada do bloqueio fez o teste de concorrência/ordem SQL falhar. Esta cobertura valida o adaptador no InovaLab, não a instalação real do AgroHub, PostgreSQL ou carga de produção.
+
+## 9. Cobertura executada — materiais
+
+Em 02/10/2026: 40 testes de materiais e suíte completa de 234 passaram no SQLite local. [Contrato, comandos e depuração](docs/modules/06-materiais.md).
+
+| Cenários | Verificação |
+| --- | --- |
+| CT21 | Cadastro/correção 10→8, quantidade decimal/zero/limite, obrigatórios, status e fonte; nenhuma movimentação implícita |
+| CT28 | Consulta interna e escrita administrativa web/API; staff não mantém, inativo sem acesso; sessão/CSRF, token externo não autentica |
+| CT29 | JSON/decimal estritos, paginação, PUT/PATCH/version, campos protegidos e códigos 400/403/404/409/405/415; contrato publicado |
+| Concorrência derivada | Duas conexões reais/editando a mesma versão: um vencedor, sem sobrescrita parcial; retirada da condição de versão detectada pelo teste |
+
+Chrome verificou cadastro com vírgula, correção, rejeição de negativo, versão antiga, zero/indisponibilidade, máximo via API, precisão excedente 400, consulta e negação de escrita, teclado/360 px. Revisão encontrou um Important de arredondamento anterior à validação, corrigido com três regressões RED/GREEN e suíte completa. Produção/PostgreSQL/carga ficam para o ambiente escolhido; não há movimentações/auditoria de estoque.

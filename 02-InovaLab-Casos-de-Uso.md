@@ -1,8 +1,8 @@
 # InovaLab — Casos de uso
 
-Versão 0.4 • 02/10/2026. Ler as classificações e questões de `01-InovaLab-Escopo-e-Requisitos.md`. Base: PDF original conferido integralmente, decisões F3 e seis telas locais F4 examinadas. Divergências das telas estão no arquivo 05; a conferência do PDF está no arquivo 06.
+Versão 0.5 • 02/10/2026. Ler as classificações e questões de `01-InovaLab-Escopo-e-Requisitos.md`. Base: PDF original conferido integralmente, decisões F3 e seis telas locais F4 examinadas. Divergências das telas estão no arquivo 05; a conferência do PDF está no arquivo 06.
 
-Todos os casos têm escopo no sistema InovaLab e nível de objetivo do usuário, exceto UC09, que representa integração. Fluxos detalhados são uma elaboração derivada/proposta, mesmo quando o objetivo é confirmado. Os contratos efetivamente entregues dos módulos 1–5 estão em `docs/modules/`; os demais fluxos continuam propostos.
+Todos os casos têm escopo no sistema InovaLab e nível de objetivo do usuário, exceto UC09, que representa integração. Fluxos detalhados são uma elaboração derivada/proposta, mesmo quando o objetivo é confirmado. Os contratos efetivamente entregues dos módulos 1–6 estão em `docs/modules/`; os demais fluxos continuam propostos.
 
 ## UC01 — Acessar o sistema
 
@@ -91,12 +91,14 @@ Todos os casos têm escopo no sistema InovaLab e nível de objetivo do usuário,
 
 ## UC10 — Administrar materiais
 
-- **Base:** C para campos; P para CRUD e permissões. RF17.
-- **Ator proposto:** administrador. **Interesse:** consultar os materiais disponíveis.
-- **Pré-condição:** permissão de materiais e vocabulários de Q09 definidos.
-- **Fluxo principal:** 1. Ator cadastra nome, categoria, quantidade, status e fonte. 2. Sistema valida quantidade e valores. 3. Salva. 4. Disponibiliza para consulta.
-- **Alternativas:** edição altera dados; quantidade negativa é rejeitada pela proposta RN10; exclusão segue a política de vínculos e histórico.
-- **Pós-condição:** cadastro atualizado. Movimentações, reserva e consumo de estoque não estão confirmados.
+- **Base:** C para campos — F1; C para cadastro simples/permissões — F3/Q09/Q12. RF17.
+- **Atores confirmados em F3:** administrador mantém; usuário interno ativo consulta. **Interesse:** consultar e corrigir o cadastro simples.
+- **Pré-condição:** conta interna ativa; papel administrativo para escrita. Q09/Q12 confirmados para o cadastro simples.
+- **Fluxo principal:** 1. Administrador cadastra nome, categoria, quantidade, unidade, status e fonte. 2. Sistema valida quantidade e valores. 3. Salva. 4. Disponibiliza para consulta interna.
+- **Alternativas:** edição altera dados com versão; quantidade negativa/precisão excedente rejeitadas; indisponibilização preserva o cadastro. Exclusão física não é oferecida nesta etapa.
+- **Pós-condição:** cadastro atualizado. Movimentações, reserva e consumo de estoque não estão incluídos na escolha F3 para o MVP.
+
+**Entrega do módulo 6:** web `/materiais/` e API `/api/v1/materiais/`, por sessão/CSRF, com os seis campos do cadastro e quantidade não negativa até 3 casas. Edição exige versão e não sobrescreve outra correção; versão antiga 409. Campos desconhecidos, precisão excedente e valores não finitos rejeitados. Consulta inclui indisponíveis; zero não altera status. [Contrato, decisões técnicas e depuração](docs/modules/06-materiais.md).
 
 ## UC11 — Administrar banners
 

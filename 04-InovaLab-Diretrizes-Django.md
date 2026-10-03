@@ -1,6 +1,6 @@
 # InovaLab — Diretrizes de modelagem para Django
 
-Versão 0.6 • 02/10/2026. Diretrizes para módulos futuros e contratos entregues de [identidade](docs/modules/01-identidade-e-acesso.md), [catálogo](docs/modules/02-catalogo.md), [tarefas](docs/modules/03-tarefas.md), [agenda](docs/modules/04-agenda.md) e [recebimento externo](docs/modules/05-integracoes.md), verificados com Python 3.14.3, Django 6.1.1 e DRF 3.18.1 no SQLite local. Banco/hospedagem de produção continuam pendentes. O diagnóstico histórico está no arquivo 05.
+Versão 0.7 • 02/10/2026. Diretrizes para módulos futuros e contratos entregues de [identidade](docs/modules/01-identidade-e-acesso.md), [catálogo](docs/modules/02-catalogo.md), [tarefas](docs/modules/03-tarefas.md), [agenda](docs/modules/04-agenda.md), [recebimento externo](docs/modules/05-integracoes.md) e [materiais](docs/modules/06-materiais.md), verificados com Python 3.14.3, Django 6.1.1 e DRF 3.18.1 no SQLite local. Banco/hospedagem de produção continuam pendentes. O diagnóstico histórico está no arquivo 05.
 
 ## 1. Organização sugerida
 
@@ -29,7 +29,7 @@ Separar regras compartilhadas da interface. A API e os formulários devem chamar
 | Espaço | nome, capacidade_maxima_de_pessoas, status — C | Capacidade positiva — P; participantes por reserva ausentes na fonte |
 | Tarefa | servico, descricao, responsavel, status, data_inicio, prazo_final, data_conclusao — C | Título curto opcional — P; não é campo existente na fonte |
 | Agendamento | AgroHub: categoria, objeto_agendadado, motivo, data, horario_inicio, horario_fim; Figma: servico, data_hora, requerente — C | Unificação/normalização dos campos — D; origem, id_externo, criado_por, timestamps e versão — P |
-| Material | nome, categoria, quantidade, status, fonte — C | Unidade e precisão numérica — P; significado de fonte em aberto |
+| Material | nome, categoria, quantidade, status, fonte — C/F1; unidade e até 3 casas não negativas, categoria/fonte livres, disponível/indisponível — C/F3 | Limites, fonte como descrição de origem e versão — escolhas técnicas do módulo 6 |
 | Banner | titulo, banner_img WebP, status, local — C | inicio_exibicao, fim_exibicao e texto_alternativo — P |
 | Evento de histórico | Não consta | Ator, entidade, instante, operação e mudanças — P |
 
@@ -83,7 +83,7 @@ Proteger serviços, usuários e recursos referenciados contra exclusões em casc
 
 Na agenda entregue, excluir cancela logicamente, libera o período e preserva eventos/FKs; canceladas não aparecem nas consultas operacionais. Essa escolha provisória, sem nova resposta a Q08, está no guia do módulo 4. Metadados de uma reserva podem ser corrigidos após desativar seu objeto; alvo/período novo exige disponibilidade. Não há restauração nesta etapa.
 
-Para materiais, não deduzir estoque disponível apenas de um status cujo vocabulário não foi definido. Se entradas/saídas forem aprovadas, criar movimentos e histórico em vez de somente sobrescrever o saldo.
+Para materiais, F3 confirmou cadastro simples, sem entradas/saídas, com disponível/indisponível e quantidade não negativa até 3 casas/unidade informada. Status e zero permanecem independentes. `DecimalJSONParser` preserva números JSON; modelo converte para Decimal antes da validação, evitando arredondamento prévio de float. `save_material` valida o cadastro e atualiza todos os campos com uma única escrita condicionada à versão. [Contrato e verificação](docs/modules/06-materiais.md). Se movimentações forem solicitadas futuramente, especificar movimentos/histórico antes de substituir esse fluxo.
 
 Para banners, validar o conteúdo real do arquivo. WebP é o formato confirmado; conversão automática não é obrigatória. O estado agendado exige período de exibição, ausente na modelagem original. A seleção por data na leitura pode cumprir a publicação sem exigir um agendador de tarefas.
 

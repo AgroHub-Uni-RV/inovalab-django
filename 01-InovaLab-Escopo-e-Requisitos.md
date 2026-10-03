@@ -1,6 +1,6 @@
 # InovaLab — Escopo e requisitos
 
-Versão 0.5 • 02/10/2026 • PDF original conferido; decisões do responsável identificadas por fonte.
+Versão 0.6 • 02/10/2026 • PDF original conferido; decisões do responsável identificadas por fonte.
 
 ## 1. Fontes e limites
 
@@ -37,7 +37,7 @@ Não são requisitos confirmados: cobrança, pagamentos, projetos hierárquicos,
 | Sistema AgroHub | Participar da integração de agendamento por API; envio ao InovaLab é o fluxo proposto | Integração C — F1 p. 2; direção D/P, Q07 |
 | Visitante do site | Visualizar banners publicados em home/sobre | D — F1 p. 3 |
 
-O PDF não define responsáveis pelos cadastros. F3 confirmou contas pelo administrador técnico e, na passagem para catálogo, manutenção de serviços/equipamentos/espaços pelos administradores do laboratório, com consulta por todos os usuários internos ativos. Gestão de materiais e banners permanece a definir em Q12. Não conceder acesso global ao usuário interno por analogia com o Trello.
+O PDF não define responsáveis pelos cadastros. F3 confirmou contas pelo administrador técnico e manutenção de serviços/equipamentos/espaços pelos administradores do laboratório, com consulta por todos os usuários internos ativos. Na passagem para materiais, confirmou a mesma autoridade e consulta para o cadastro simples; banners permanecem a definir em Q12. Não conceder acesso global ao usuário interno por analogia com o Trello.
 
 ## 4. Requisitos funcionais
 
@@ -61,7 +61,7 @@ Os critérios abaixo são a especificação operacional proposta; onde o comport
 | RF14 | Viabilizar agendamento via API para o usuário do AgroHub; propor recebimento no InovaLab | Integração C — F1 p. 2; direção/contrato D/P, Q07 | MVP | No fluxo proposto, solicitação válida cria um registro na agenda unificada e devolve seu identificador |
 | RF15 | Registrar categoria, objeto, motivo, data, início, fim e requerente no agendamento unificado | Campos C; união D — F1 p. 2–3 | MVP | Preserva a informação dos modelos originais, inclusive `data_hora` na representação unificada; categoria e alvo correspondem; requerente sem conta local é derivação a detalhar |
 | RF16 | Impedir sobreposição para serviços, equipamentos e espaços exclusivos | Exclusividade C — F3 em 02/10; proteção D | MVP | Dois pedidos concorrentes para o mesmo objeto e intervalo não geram duas reservas; Q05 definida |
-| RF17 | Consultar e manter materiais com nome, categoria, quantidade, status e fonte | Campos C; manutenção P — F1 p. 2 | MVP | Dados persistem; unidade e vocabulários dependem de Q09 |
+| RF17 | Consultar e manter materiais com nome, categoria, quantidade, status e fonte | Campos C — F1 p. 2; manutenção/quantidade/unidade/status C — F3/Q09/Q12 | MVP | Dados persistem; quantidade não negativa até 3 casas/unidade informada, categoria/fonte livres, disponível/indisponível, manutenção administrativa e consulta interna ativa |
 | RF18 | Consultar e manter banners com título, imagem WebP, status e local | Campos C; manutenção P — F1 p. 3 | MVP | Status ativo/inativo/agendado e local home/sobre são preservados |
 | RF19 | Publicar banners conforme local e período de exibição | D/P — F1 p. 3 | Condicional | Inativo não aparece; agendado aparece apenas no período definido em Q10 |
 | RF20 | Filtrar tarefas por status, serviço, responsável e prazo | P | Seguinte | Filtros nunca ampliam as permissões de RF02 |
@@ -122,7 +122,7 @@ O PDF lista “Óculos de realidade virtual” e “Scanner 3D manual” como se
 | RN07 | Intervalos são tratados como [início, fim); reservas adjacentes são permitidas | P |
 | RN08 | Recurso indisponível não aceita nova reserva; reservas existentes exigem tratamento explícito | P |
 | RN09 | Estado “ocupado agora” não basta para determinar disponibilidade futura | D |
-| RN10 | Quantidade de material não pode ser negativa; unidade e precisão devem ser definidas | P |
+| RN10 | Quantidade de material não pode ser negativa; unidade informada e até 3 casas decimais | C — F3/Q09 |
 | RN11 | Ao concluir uma tarefa, o sistema registra a conclusão; ao reabrir, preserva o evento no histórico | P |
 | RN12 | Remoção de cadastros referenciados não pode deixar tarefas ou reservas sem referência | D |
 | RN13 | A API e a interface aplicam as mesmas validações de agenda | D |
@@ -142,10 +142,10 @@ O PDF lista “Óculos de realidade virtual” e “Scanner 3D manual” como se
 | Q06 | Status ocupado é manual ou calculado? Indisponibilidade pode ter período? | Consistência da agenda |
 | Q07 | F3 escolheu preparar primeiro API de recebimento no InovaLab, com credencial própria/idempotência. Validar payload e IDs com consumidor AgroHub, hospedagem/HTTPS, edição/exclusão, sincronização e migração de agendamentos antigos sem fim | Direção inicial definida; adaptador local entregue, conexão real e demais políticas pendentes |
 | Q08 | Excluir significa apagar ou cancelar/arquivar? Agendamento exige aprovação? | Auditoria e ciclo da reserva |
-| Q09 | Quais categorias, status, unidades e significado de “fonte” dos materiais? Haverá entradas, saídas e consumo por tarefa? | Cadastro simples versus estoque |
+| Q09 | F3 confirmou cadastro simples: quantidade não negativa até 3 casas e unidade informada; categoria/fonte em texto; status disponível/indisponível; sem movimentações | Cadastro definido para o MVP; limites e fonte como descrição de origem são escolhas técnicas do módulo 6 |
 | Q10 | Quais datas controlam banner agendado? Haverá ordem e vários banners por local? | Publicação automática |
 | Q11 | Decidido em F3: administrador cadastra contas pelo Django Admin e login inicial usa usuário/senha. Recuperação por e-mail e login institucional ficam fora da primeira entrega; evolução ainda a definir | Provisionamento inicial definido; separação de papéis detalhada na especificação de identidade |
-| Q12 | Catálogo decidido em F3: administradores do laboratório mantêm serviços/equipamentos/espaços; todos os usuários internos ativos consultam. Falta definir manutenção e consulta de materiais/banners | Política de catálogo definida; demais cadastros ainda pendentes |
+| Q12 | F3 confirmou que administradores do laboratório mantêm catálogo e materiais; usuários internos ativos consultam. Falta definir manutenção/consulta de banners | Catálogo e materiais definidos; banners pendentes |
 | Q13 | Qual horário de funcionamento, antecedência, duração mínima/máxima e política de feriados? | Validação de reservas |
 | Q14 | Quantas pessoas usarão a reserva? É necessário verificar a capacidade do espaço? | Campo ausente para aplicar capacidade |
 | Q15 | “Eventos/Reuniões”, recessos/feriados e gestão de “usuários do AgroHub” nas telas ampliam o escopo? A ordem de banners precisa ser editável? | Divergências e elementos visuais adicionais registrados no arquivo 05 |
@@ -168,6 +168,7 @@ O PDF lista “Óculos de realidade virtual” e “Scanner 3D manual” como se
 | 02/10/2026 | F3 — passagem para agenda | Responsável autorizou o próximo módulo, mantendo execução fracionada | Módulo 4 entregue com calendário, API interna e proteção de conflitos; aguardar depuração antes de AgroHub |
 | 02/10/2026 | F3 — exclusividade Q05 | Uma reserva por serviço em cada horário; equipamentos e espaços exclusivos | Sobreposição rejeitada nas três categorias; objetos distintos podem usar o mesmo horário |
 | 02/10/2026 | F3 — passagem para integrações/Q07 | Preparar a API de recebimento com credencial própria e proteção contra pedidos duplicados | Módulo5 entrega adaptador, gestão de integradores, catálogo externo mínimo e idempotência; depurar antes de materiais; AgroHub real não conectado |
+| 02/10/2026 | F3 — passagem para materiais/Q09/Q12 | Cadastro simples com consulta interna; administradores mantêm, quantidade não negativa até 3 casas/unidade informada, categoria/fonte em texto e disponível/indisponível; sem movimentações | Módulo 6 entregue com frontend/API e versão para correção segura; depurar antes de banners |
 
 As escolhas da agenda sobre cancelamento lógico/histórico, ocupado manual, datas passadas, funcionamento e capacidade estão no [guia do módulo 4](docs/modules/04-agenda.md). São escolhas de implementação para depuração, sem novas respostas confirmadas a Q06/Q08/Q13/Q14. A API por sessão não constitui acesso AgroHub; o [módulo5](docs/modules/05-integracoes.md) tem credencial/contrato próprios, ainda sujeitos à validação no consumidor real e demais lacunas Q07.
 

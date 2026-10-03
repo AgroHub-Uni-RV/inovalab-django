@@ -39,10 +39,10 @@
 
 ## 3. Entrega
 
-- [ ] Migração aditiva e Chrome com fixtures próprias: cadastro, correção 10→8, quantidade negativa, indisponibilidade/zero, consulta comum/escrita negada, API e versão antiga; teclado/360 px. Remover somente fixtures identificadas; encerrar navegador/servidor.
-- [ ] Revisão independente única de toda a branch; corrigir Important/Critical com RED/GREEN, menores registrados.
-- [ ] Suíte completa, check, drift, pip check, diff check; `docs/modules/06-materiais.md`, README e docs 01–05 atualizadas com fontes/decisões/cenários restantes.
-- [ ] Commit de documentação, registrar decisões/resultados e limpar scratch próprio; manter branch local, aguardar depuração antes de banners. Sem push/merge automático.
+- [x] Migração aditiva e Chrome com fixtures próprias: cadastro, correção 10→8, quantidade negativa, indisponibilidade/zero, consulta comum/escrita negada, API e versão antiga; teclado/360 px. Remover somente fixtures identificadas; encerrar navegador/servidor.
+- [x] Revisão independente única de toda a branch; corrigir Important/Critical com RED/GREEN, menores registrados.
+- [x] Suíte completa, check, drift, pip check, diff check; `docs/modules/06-materiais.md`, README e docs 01–05 atualizadas com fontes/decisões/cenários restantes.
+- [x] Commit de documentação, registrar decisões/resultados e limpar scratch próprio; manter branch local, aguardar depuração antes de banners. Sem push/merge automático.
 
 ## Foco de revisão
 
@@ -50,6 +50,22 @@
 2. Duas edições da mesma versão, inclusive nome/unidade diferentes, produzem somente um vencedor sem sobrescrita parcial.
 3. Formulário português aceita vírgula decimal; API exige ponto e preserva 3 casas na resposta.
 4. Usuário comum/staff/inativo e token externo não podem manter materiais; campos desconhecidos/ID/versão inicial não passam pelas entradas.
-5. Zero e indisponibilidade permanecem independentes; origem/categoria/unidade livres são escolhas provisórias, sem movimentação implícita.
+5. Zero e indisponibilidade permanecem independentes; categoria/unidade livres confirmadas, fonte como descrição de origem é escolha técnica; sem movimentação implícita.
 
 Referências: [DecimalField Django](https://docs.djangoproject.com/en/6.0/ref/models/fields/#decimalfield), [DecimalField DRF](https://www.django-rest-framework.org/api-guide/fields/#decimalfield).
+
+## Registro final
+
+Decisões e custos registrados durante a execução:
+
+1. Plano simples/direto segue autorização já estabelecida; o cadastro foi preparado enquanto a pergunta opcional Q09/Q12 aguardava resposta. Custo inicialmente previsto: validar política/vocabulários. Resolvido pela confirmação F3 do cadastro simples com consulta interna; limites/obrigatoriedade/fonte como origem continuam escolhas técnicas para depuração.
+2. Checkout ativo `feat/materiais`, derivado de `6ab0ac0`, e SQLite local preservados. Custo: banco/hospedagem de produção permanecem não verificados.
+3. Ledger em PowerShell substituiu os auxiliares Bash. Custo: registros manuais de decisões/resultados.
+4. O revisor deixou o comportamento em produção fora do julgamento; aceito o limite local já acordado. Custo: PostgreSQL/carga exigem verificação posterior no ambiente escolhido.
+5. O revisor deixou navegador e documentação para o executor; concluídos antes da entrega. Custo: essas partes foram verificadas pelo autor, além da revisão independente do código.
+
+Resultado final: 40 testes de materiais (12 serviços, 1 concorrência, 17 API, 10 web) e suíte completa de 234 passaram em 19,816 s; checks/migrações/dependências/diff sem pendências. No primeiro teste completo do domínio, a fixture do grupo havia sido removida pelo flush de outro TransactionTestCase; fixture própria corrigida e suíte retomou GREEN. Experimento removendo a condição de versão provocou a falha esperada, com restauração da proteção antes das verificações finais.
+
+Revisão única de `6ab0ac0..4194794`: um Important de perda de precisão antes da validação, nenhum Critical/Minor; o revisor executou 37 testes. Uma passada de correção com três regressões RED/GREEN preservou Decimal no parser JSON e na validação do modelo; suíte completa e Chrome verificaram a rejeição sem persistência parcial. Nenhum menor adiado neste módulo; o caso histórico de horário de verão da agenda continua no guia do módulo 4.
+
+Chrome: cadastro com vírgula, correção 10→8, negativo, CSRF, API, precisão excedente, máximo exato, conflito de versão web/API, zero/indisponibilidade e consulta interna/escrita negada. Tabela em 360 px com rolagem interna acessível por teclado e foco visível; página sem overflow horizontal. Removidos apenas dois materiais, duas contas e suas sessões por identificação prévia; servidor/navegadores encerrados. Documentação e roteiro publicados; aguardar depuração antes de banners.
