@@ -1,10 +1,11 @@
 {% extends 'catalogo/base.html' %}
 {% block title %}Materiais{% endblock %}
+{% block extra_head %}<style>.materials-table { min-width: 560px; }</style>{% endblock %}
 {% block content %}
 <h1>Materiais</h1>
 {% if can_manage %}<p><a class="button" href="{% url 'materiais:create' %}">Novo material</a></p>{% endif %}
-<div class="table-wrapper">
-<table>
+<div class="table-wrapper" role="region" aria-label="Lista de materiais" tabindex="0">
+<table class="materials-table">
     <thead><tr><th>Material</th><th>Categoria</th><th>Quantidade</th><th>Status</th></tr></thead>
     <tbody>{% for material in object_list %}
         <tr><td><a href="{% url 'materiais:detail' material.pk %}">{{ material.nome }}</a></td>
