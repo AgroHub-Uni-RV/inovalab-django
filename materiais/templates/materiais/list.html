@@ -1,0 +1,17 @@
+{% extends 'catalogo/base.html' %}
+{% block title %}Materiais{% endblock %}
+{% block content %}
+<h1>Materiais</h1>
+{% if can_manage %}<p><a class="button" href="{% url 'materiais:create' %}">Novo material</a></p>{% endif %}
+<div class="table-wrapper">
+<table>
+    <thead><tr><th>Material</th><th>Categoria</th><th>Quantidade</th><th>Status</th></tr></thead>
+    <tbody>{% for material in object_list %}
+        <tr><td><a href="{% url 'materiais:detail' material.pk %}">{{ material.nome }}</a></td>
+            <td>{{ material.categoria }}</td><td>{{ material.quantidade }} {{ material.unidade }}</td>
+            <td>{{ material.get_status_display }}</td></tr>
+    {% empty %}<tr><td colspan="4">Nenhum material cadastrado.</td></tr>{% endfor %}</tbody>
+</table>
+</div>
+{% include 'agenda/pagination.html' %}
+{% endblock %}

@@ -20,6 +20,7 @@
     <div class="account-actions">
         <a class="button secondary" href="{% url 'catalogo:servicos-list' %}">Catálogo</a>
         <a class="button secondary" href="{% url 'tarefas:board' %}">Tarefas</a>
+        <a class="button secondary" href="{% url 'materiais:list' %}">Materiais</a>
         {% if is_business_admin %}<a class="button secondary" href="{% url 'agenda:list' %}">Agenda</a>{% endif %}
         {% if is_business_admin %}<a class="button secondary" href="{% url 'integracoes:list' %}">Integrações</a>{% endif %}
         {% if user.is_superuser %}

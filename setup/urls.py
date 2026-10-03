@@ -25,10 +25,12 @@ urlpatterns = [
     path('api/v1/', include('catalogo.api_urls')),
     path('api/v1/', include('tarefas.api_urls')),
     path('api/v1/', include('agenda.api_urls')),
+    path('api/v1/', include('materiais.api_urls')),
     path('api/v1/integracoes/', include('integracoes.api_urls')),
     path('catalogo/', include('catalogo.urls')),
     path('tarefas/', include('tarefas.urls')),
     path('agenda/', include('agenda.urls')),
     path('integracoes/', include('integracoes.urls')),
+    path('materiais/', include('materiais.urls')),
     path('', include('accounts.urls')),
 ]

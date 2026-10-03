@@ -4,7 +4,7 @@
 
 **Objetivo:** consultar e corrigir o cadastro de materiais do laboratório pela interface e API, sem presumir movimentações ou consumo automático.
 
-**Fontes:** RF17/RF23/RF24, UC10, CT21, RN10 e lacunas Q09/Q12. O responsável autorizou o próximo módulo. Cadastro simples é a base documentada; escolhas abaixo são provisórias para depuração enquanto não houver resposta diferente à pergunta sobre Q09/Q12.
+**Fontes:** RF17/RF23/RF24, UC10, CT21 e RN10. F3 confirmou Q09/Q12: cadastro simples, administradores mantêm e usuários internos ativos consultam; quantidade não negativa até 3 casas e unidade informada; categoria/fonte em texto e status disponível/indisponível, sem movimentações. Limites de tamanho, obrigatoriedade, versão e exclusão abaixo são escolhas técnicas para depuração.
 
 **Arquitetura:** app `materiais`, dependente da política de `accounts`. Modelo `Material`, serviço `save_material`, telas simples e API interna por sessão/CSRF. Sem novas dependências; SQLite e checkout ativo `feat/materiais`, base `6ab0ac0`.
 
@@ -33,9 +33,9 @@
 
 **Arquivos:** `materiais/{forms,serializers,api,api_urls,views,urls}.py`, templates, testes web/API; URLs, menu e página inicial.
 
-- [ ] RED: web/API anônimo/inativo, leitura interna, staff sem escrita, admin sem staff escreve; sessão/CSRF, contrato decimal/paginação/JSON estrito, 405 DELETE/415, PUT/PATCH/version/conflito; formulário vírgula decimal/obrigatórios/status/versão antiga e links corretos.
-- [ ] Implementar telas simples reutilizando CSS existente, sem alterar identidade; API JSON por sessão. Form/API chamam somente `save_material`.
-- [ ] GREEN testes do módulo e suíte completa/check/drift; commit `feat (materiais): disponibiliza telas e API do cadastro.`.
+- [x] RED: web/API anônimo/inativo, leitura interna, staff sem escrita, admin sem staff escreve; sessão/CSRF, contrato decimal/paginação/JSON estrito, 405 DELETE/415, PUT/PATCH/version/conflito; formulário vírgula decimal/obrigatórios/status/versão antiga e links corretos.
+- [x] Implementar telas simples reutilizando CSS existente, sem alterar identidade; API JSON por sessão. Form/API chamam somente `save_material`.
+- [x] GREEN testes do módulo e suíte completa/check/drift; commit `feat (materiais): disponibiliza telas e API do cadastro.`.
 
 ## 3. Entrega
 

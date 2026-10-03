@@ -19,6 +19,7 @@
             <a href="{% url 'catalogo:equipamentos-list' %}" {% if category == 'equipamentos' %}aria-current="page"{% endif %}>Equipamentos</a>
             <a href="{% url 'catalogo:espacos-list' %}" {% if category == 'espacos' %}aria-current="page"{% endif %}>Espaços</a>
             <a href="{% url 'tarefas:board' %}">Tarefas</a>
+            <a href="{% url 'materiais:list' %}" {% if category == 'materiais' %}aria-current="page"{% endif %}>Materiais</a>
             {% if agenda_access %}<a href="{% url 'agenda:list' %}">Agenda</a>{% endif %}
             {% if agenda_access %}<a href="{% url 'integracoes:list' %}">Integrações</a>{% endif %}
             <a href="{% url 'accounts:home' %}">Minha conta</a>

@@ -1,0 +1,17 @@
+{% extends 'catalogo/base.html' %}
+{% block title %}{% if object %}Editar material{% else %}Novo material{% endif %}{% endblock %}
+{% block content %}
+<h1>{% if object %}Editar material{% else %}Novo material{% endif %}</h1>
+<form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+        {% if field.is_hidden %}{{ field }}{{ field.errors }}{% else %}
+        <p>{{ field.label_tag }}{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</p>
+        {% endif %}
+    {% endfor %}
+    <div class="actions"><button type="submit">Salvar material</button>
+        {% if object %}<a href="{% url 'materiais:detail' object.pk %}">Cancelar</a>{% else %}<a href="{% url 'materiais:list' %}">Cancelar</a>{% endif %}
+    </div>
+</form>
+{% endblock %}
