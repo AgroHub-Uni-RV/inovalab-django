@@ -1,0 +1,12 @@
+{% extends 'catalogo/base.html' %}
+{% block title %}Banners{% endblock %}
+{% block content %}
+<h1>Banners</h1>
+<p class="actions"><a href="{% url 'conteudo:create' %}">Novo banner</a><a href="{% url 'conteudo:public-home' %}">Ver página pública</a></p>
+<div role="region" aria-label="Lista de banners" tabindex="0" style="overflow-x:auto">
+<table><thead><tr><th scope="col">Título</th><th scope="col">Local</th><th scope="col">Status</th><th scope="col">Ordem</th></tr></thead>
+<tbody>{% for banner in object_list %}<tr><td><a href="{% url 'conteudo:detail' banner.pk %}">{{ banner.titulo }}</a></td><td>{{ banner.get_local_display }}</td><td>{{ banner.get_status_display }}</td><td>{{ banner.ordem }}</td></tr>
+{% empty %}<tr><td colspan="4">Nenhum banner cadastrado.</td></tr>{% endfor %}</tbody></table>
+</div>
+{% if is_paginated %}<nav aria-label="Páginas de banners">{% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %} <span>Página {{ page_obj.number }} de {{ paginator.num_pages }}</span> {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">Próxima</a>{% endif %}</nav>{% endif %}
+{% endblock %}

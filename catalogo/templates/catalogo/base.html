@@ -22,6 +22,7 @@
             <a href="{% url 'materiais:list' %}" {% if category == 'materiais' %}aria-current="page"{% endif %}>Materiais</a>
             {% if agenda_access %}<a href="{% url 'agenda:list' %}">Agenda</a>{% endif %}
             {% if agenda_access %}<a href="{% url 'integracoes:list' %}">Integrações</a>{% endif %}
+            {% if agenda_access %}<a href="{% url 'conteudo:list' %}" {% if category == 'banners' %}aria-current="page"{% endif %}>Banners</a>{% endif %}
             <a href="{% url 'accounts:home' %}">Minha conta</a>
         </nav>
     </header>

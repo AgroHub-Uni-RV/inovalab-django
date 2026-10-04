@@ -1,0 +1,6 @@
+{% extends 'catalogo/base.html' %}
+{% block title %}Excluir banner{% endblock %}
+{% block content %}
+<h1>Excluir banner</h1><p>Confirma a exclusão de “{{ object.titulo }}”? Ele deixará de aparecer nas páginas públicas.</p>
+<form method="post">{% csrf_token %}{{ form.non_field_errors }}{{ form.versao }}{{ form.versao.errors }}<div class="actions"><button type="submit">Confirmar exclusão</button><a href="{% url 'conteudo:detail' object.pk %}">Cancelar</a></div></form>
+{% endblock %}
