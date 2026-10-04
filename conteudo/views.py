@@ -11,7 +11,6 @@ from django.views.generic import DetailView, ListView
 
 from accounts.policies import is_business_admin
 from conteudo.forms import BannerForm, DeleteBannerForm
-from conteudo.models import Banner
 from conteudo.selectors import published_banners, visible_banners
 from conteudo.services import BannerConflict, delete_banner, save_banner
 
@@ -109,9 +108,8 @@ def public_page(request, local):
 @never_cache
 @require_safe
 def banner_image(request, pk):
-    banner = get_object_or_404(Banner, pk=pk, excluido_em__isnull=True)
-    if not is_business_admin(request.user) and not published_banners(banner.local).filter(pk=pk).exists():
-        raise Http404
+    queryset = visible_banners(request.user) if is_business_admin(request.user) else published_banners()
+    banner = get_object_or_404(queryset, pk=pk)
     try:
         stream = banner.banner_img.open('rb')
     except (FileNotFoundError, OSError):

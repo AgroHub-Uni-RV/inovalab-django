@@ -92,6 +92,26 @@ class BannerWebTests(BannerFixtures, TestCase):
                 self.assertEqual(response.status_code, status)
                 response.close()
 
+    def test_image_and_publication_are_read_from_same_version(self):
+        save_banner(actor=self.admin, banner_id=self.banner.pk, expected_version=1, data={'status': 'inativo'})
+        public_image = image_upload(color='red')
+        expected_bytes = public_image.read()
+        public_image.seek(0)
+        from conteudo.selectors import published_banners
+
+        def replace_and_publish(*args, **kwargs):
+            save_banner(actor=self.admin, banner_id=self.banner.pk, expected_version=2,
+                        data={'status': 'ativo'}, image=public_image)
+            return published_banners(*args, **kwargs)
+
+        with patch('conteudo.views.published_banners', side_effect=replace_and_publish):
+            response = self.client.get(self.image)
+            try:
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(b''.join(response.streaming_content), expected_bytes)
+            finally:
+                response.close()
+
     def test_exclusion_get_only_confirms_and_post_requires_version(self):
         self.client.force_login(self.admin)
         self.assertContains(self.client.get(self.detail+'excluir/'), DATA['titulo'])
