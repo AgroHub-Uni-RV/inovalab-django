@@ -1,6 +1,6 @@
 # InovaLab — Diretrizes de modelagem para Django
 
-Versão 0.7 • 02/10/2026. Diretrizes para módulos futuros e contratos entregues de [identidade](docs/modules/01-identidade-e-acesso.md), [catálogo](docs/modules/02-catalogo.md), [tarefas](docs/modules/03-tarefas.md), [agenda](docs/modules/04-agenda.md), [recebimento externo](docs/modules/05-integracoes.md) e [materiais](docs/modules/06-materiais.md), verificados com Python 3.14.3, Django 6.1.1 e DRF 3.18.1 no SQLite local. Banco/hospedagem de produção continuam pendentes. O diagnóstico histórico está no arquivo 05.
+Versão 0.8 • 04/10/2026. Diretrizes e contratos entregues de [identidade](docs/modules/01-identidade-e-acesso.md), [catálogo](docs/modules/02-catalogo.md), [tarefas](docs/modules/03-tarefas.md), [agenda](docs/modules/04-agenda.md), [recebimento externo](docs/modules/05-integracoes.md), [materiais](docs/modules/06-materiais.md) e [banners](docs/modules/07-conteudo.md), verificados com Python 3.14.3, Django 6.1.1, DRF 3.18.1 e Pillow 12.3.0 no SQLite local. Banco/hospedagem de produção continuam pendentes. O diagnóstico histórico está no arquivo 05.
 
 ## 1. Organização sugerida
 
@@ -30,7 +30,7 @@ Separar regras compartilhadas da interface. A API e os formulários devem chamar
 | Tarefa | servico, descricao, responsavel, status, data_inicio, prazo_final, data_conclusao — C | Título curto opcional — P; não é campo existente na fonte |
 | Agendamento | AgroHub: categoria, objeto_agendadado, motivo, data, horario_inicio, horario_fim; Figma: servico, data_hora, requerente — C | Unificação/normalização dos campos — D; origem, id_externo, criado_por, timestamps e versão — P |
 | Material | nome, categoria, quantidade, status, fonte — C/F1; unidade e até 3 casas não negativas, categoria/fonte livres, disponível/indisponível — C/F3 | Limites, fonte como descrição de origem e versão — escolhas técnicas do módulo 6 |
-| Banner | titulo, banner_img WebP, status, local — C | inicio_exibicao, fim_exibicao e texto_alternativo — P |
+| Banner | titulo, banner_img WebP, status, local — C | inicio_exibicao/fim_exibicao, texto_alternativo, ordem, versão e exclusão lógica — escolhas técnicas entregues no módulo 7 |
 | Evento de histórico | Não consta | Ator, entidade, instante, operação e mudanças — P |
 
 Usar uma identidade configurável do Django desde o início e referências ao modelo de usuário configurado. Um solicitante AgroHub pode ser representado por identificador externo e dados mínimos aprovados; não presumir ForeignKey obrigatória para usuário interno.
@@ -86,6 +86,8 @@ Na agenda entregue, excluir cancela logicamente, libera o período e preserva ev
 Para materiais, F3 confirmou cadastro simples, sem entradas/saídas, com disponível/indisponível e quantidade não negativa até 3 casas/unidade informada. Status e zero permanecem independentes. `DecimalJSONParser` preserva números JSON; modelo converte para Decimal antes da validação, evitando arredondamento prévio de float. `save_material` valida o cadastro e atualiza todos os campos com uma única escrita condicionada à versão. [Contrato e verificação](docs/modules/06-materiais.md). Se movimentações forem solicitadas futuramente, especificar movimentos/histórico antes de substituir esse fluxo.
 
 Para banners, validar o conteúdo real do arquivo. WebP é o formato confirmado; conversão automática não é obrigatória. O estado agendado exige período de exibição, ausente na modelagem original. A seleção por data na leitura pode cumprir a publicação sem exigir um agendador de tarefas.
+
+**Implementação do módulo 7:** Pillow valida WebP estático até5MiB/4096px antes de salvar UUID. `save_banner` faz UPDATE de todos os campos condicionado à versão; falha/CAS perdido limpa apenas arquivo novo. Antigos são retidos, inclusive em exclusão lógica; política de retenção/limpeza ainda necessária. `published_banners(local=None,at=None)` aplica exclusão/status/período com início inclusive/fim exclusivo. A rota de imagem lê o objeto diretamente desse queryset para visitantes, evitando autorizar estado novo e servir arquivo antigo. Preview usa queryset administrativo. HTML/API/imagem têm no-store; não servir `MEDIA_ROOT` diretamente. Autocommit nos chamadores atuais; rollback externo exige ciclo de vida adicional do arquivo. [Contrato e limitações](docs/modules/07-conteudo.md).
 
 ## 8. Ordem sugerida de implementação
 

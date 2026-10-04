@@ -1,6 +1,6 @@
 # InovaLab — Revisão e proposta de arquitetura
 
-Versão 0.6 • 02/10/2026 • Identidade, catálogo, tarefas, agenda, adaptador local de recebimento externo e materiais entregues. O diagnóstico inicial permanece histórico; banners continuam propostos. C/D/P e F1–F4 são definidos no arquivo 01.
+Versão 0.7 • 04/10/2026 • Os sete módulos têm entrega funcional local, incluindo conteúdo/banners. O diagnóstico inicial permanece histórico; escolhas de produto provisórias e ambiente de produção ainda exigem validação. C/D/P e F1–F4 são definidos no arquivo 01.
 
 ## 1. Resultado esperado
 
@@ -79,7 +79,7 @@ flowchart LR
 | `agenda` | Reservas, disponibilidade e conflitos | `accounts`, `catalogo` |
 | `integracoes` | Consumidores externos e adaptação de pedidos | `agenda`; consultas autorizadas do catálogo |
 | `materiais` | Cadastro simples e quantidade decimal, correções com versão conforme Q09/Q12 confirmados | `accounts`; sem movimentações ou consumo por tarefa |
-| `conteudo` | Banners, arquivos WebP e publicação | `accounts`; armazenamento de arquivos a escolher |
+| `conteudo` | Banners, WebP validado, gestão com versão e publicação por local/período | `accounts`, Pillow; storage local, arquivos por rota controlada; retenção/produção a definir |
 | `core` | Layout, painel e elementos compartilhados | Consultas autorizadas dos módulos; sem concentrar regras de reserva/tarefa |
 
 Separar modelos, operações (`services`), consultas (`selectors`), formulários, views, API e testes quando necessário. Não criar camadas vazias apenas para seguir um padrão.
@@ -98,7 +98,7 @@ Na agenda entregue, todos os serviços/equipamentos/espaços são exclusivos, co
 
 ## 7. Superfície proposta da API
 
-Identidade, catálogo, tarefas, agenda, recebimento externo e materiais estão entregues conforme os contratos dos [módulos 1](docs/modules/01-identidade-e-acesso.md), [2](docs/modules/02-catalogo.md), [3](docs/modules/03-tarefas.md), [4](docs/modules/04-agenda.md), [5](docs/modules/05-integracoes.md) e [6](docs/modules/06-materiais.md). Os caminhos de banners abaixo são propostas, **não endpoints existentes**. RF23 não concede acesso externo irrestrito aos módulos internos.
+Os módulos estão entregues conforme os contratos dos [módulos 1](docs/modules/01-identidade-e-acesso.md), [2](docs/modules/02-catalogo.md), [3](docs/modules/03-tarefas.md), [4](docs/modules/04-agenda.md), [5](docs/modules/05-integracoes.md), [6](docs/modules/06-materiais.md) e [7](docs/modules/07-conteudo.md). Os endpoints abaixo existem localmente; escolhas provisórias permanecem identificadas nos guias. RF23 não concede acesso externo irrestrito aos módulos internos.
 
 | Caminho proposto | Operação | Acesso e decisões |
 | --- | --- | --- |
@@ -112,8 +112,8 @@ Identidade, catálogo, tarefas, agenda, recebimento externo e materiais estão e
 | `/api/v1/integracoes/agendamentos/` (entregue) | Receber pedido externo por POST | Token próprio, requerente/pedido externos, idempotência por cliente; consumidor real/Q07 ainda por validar |
 | `/api/v1/integracoes/catalogo/` (entregue) | IDs/nomes reserváveis por categoria | Mesmo token; somente leitura paginada, sem agenda privada |
 | `/api/v1/materiais/` e `/{id}/` (entregues) | Consultar/manter cadastro simples | Sessão/CSRF; consulta interna ativa, escrita administrativa, quantidade decimal, edição exige versão; sem DELETE |
-| `/api/v1/banners/` | Administrar banners | Permissões Q12; programação/ordem Q10/Q15 |
-| `/api/v1/publico/banners/` | Banners publicados por local | Leitura pública proposta com campos mínimos; sem rascunhos ou programação futura |
+| `/api/v1/banners/` e `/{id}/` (entregues) | Gestão, multipart/JSON, versão, exclusão lógica | Sessão/CSRF administrativa; autoridade/período/ordem como escolhas iniciais Q10/Q12/Q15 |
+| `/api/v1/publico/banners/?local=home|sobre` (entregue) | Somente leitura paginada dos elegíveis | Pública com seis campos; sem rascunhos ou programação futura; imagem por rota controlada, no-store |
 
 Para navegador, usar sessão Django e CSRF, inclusive nas chamadas JavaScript de escrita. [Autenticação por sessão no DRF](https://www.django-rest-framework.org/api-guide/authentication/#sessionauthentication). Login preserva a proteção CSRF do Django. A API externa entregue usa Bearer opaco próprio, com token aleatório, digest SHA-256 e revogação/renovação administrativas; o contrato está no módulo 5. OAuth/OIDC, login institucional e sincronização de usuários não estão confirmados.
 
@@ -129,7 +129,7 @@ Entregar login, painel simples, catálogo, quadro/detalhe de tarefas, agenda/for
 
 ## 9. Etapas e critérios de entrega
 
-Por instrução do responsável, concluir e entregar um módulo, aguardar sua depuração e autorização de avanço. Identidade e catálogo têm especificações e planos próprios; tarefas, agenda, integrações e materiais seguem execução direta com planos simples e escolhas técnicas documentadas, preservando testes e revisão independente.
+Por instrução do responsável, concluir e entregar um módulo, aguardar sua depuração e autorização de avanço. Identidade e catálogo têm especificações e planos próprios; tarefas, agenda, integrações, materiais e conteúdo seguem execução direta com planos simples e escolhas técnicas documentadas, preservando testes e revisão independente.
 
 | Etapa | Entrega proposta | Decisões necessárias | Verificação principal |
 | --- | --- | --- | --- |
@@ -139,7 +139,7 @@ Por instrução do responsável, concluir e entregar um módulo, aguardar sua de
 | 4. Agenda (entregue) | Calendário mensal, CRUD/cancelamento lógico, histórico e API; proteção de sobreposição/versão | Q05 confirmada; escolhas Q06/Q08/Q13/Q14 para depuração; aguardar avanço para AgroHub | 42 testes de agenda, suíte159; conexões reais SQLite, revisão independente e Chrome, teclado/360 px |
 | 5. Recebimento externo (entregue localmente) | Credencial, administração e recebimento idempotente preparados para AgroHub | F3 escolheu preparar API primeiro; validar consumidor real, ambiente e demais lacunasQ07 | 35 testes, suíte194, conexões reaisSQLite, revisão independente/Chrome; depurar antes de materiais |
 | 6. Materiais (entregue) | Cadastro simples, consulta e correção com versão, frontend/API | F3 confirmou Q09/Q12; limites/obrigatoriedade/fonte como origem/exclusão são escolhas técnicas; depurar antes de banners | 40 testes, suíte234; conexões reais, revisão com precisão corrigida, Chrome/teclado/360 px |
-| 7. Conteúdo | Banners, publicação e API acordada | Q10/Q12/Q15 | CT22–CT23; WebP real |
+| 7. Conteúdo (entregue localmente) | Banners WebP, gestão/versão, publicação, páginas/API públicas, imagem controlada | F3 autorizou desenvolver; Q10/Q12/Q15 são escolhas iniciais para depuração, pergunta opcional sem resposta | 36 testes, suíte270; conexões reais, revisão com privacidade corrigida, Chrome/teclado/360px; Minor multipart extremo registrado |
 
 Na primeira etapa, provisionar contas pelo Django Admin, conforme Q11 confirmado. A especificação está em `docs/superpowers/specs/2026-10-01-identidade-e-acesso-design.md`. Contrato AgroHub, calendário institucional e estoque não bloqueiam começar identidade. Produção exige configuração própria, recuperação de banco/arquivos e metas RNF aprovadas; hospedagem não foi escolhida.
 
@@ -166,6 +166,8 @@ As 15 skills de [obra/superpowers](https://github.com/obra/superpowers) foram in
 - [x] Entregar adaptador local, gestão de integradores, testes/revisão/navegador e contrato.
 - [x] Receber autorização de avanço para materiais e confirmar Q09/Q12 para o cadastro simples.
 - [x] Entregar materiais, executar testes/concorrência/revisão/navegador e publicar contrato.
-- [ ] Aguardar depuração do módulo 6 e autorização antes de banners; conectar AgroHub real em etapa acordada.
+- [x] Receber autorização para desenvolver módulo 7 com plano simples.
+- [x] Entregar banners, WebP real, publicação/web/API, testes/concorrência/revisão/navegador e contrato.
+- [ ] Aguardar depuração final, validar escolhas provisórias e definir novas etapas; conectar AgroHub real em etapa acordada.
 
-O processo padrão de design exige revisão antes de implementar; instruções do responsável prevalecem. Tarefas, agenda, integrações e materiais seguem execução direta com plano simples. Decisões confirmadas e escolhas técnicas estão distinguidas nos guias/planos. A revisão da agenda encontrou um Important corrigido e um Minor histórico de horário de verão adiado, descrito no guia. Em materiais, um Important de precisão anterior à validação foi corrigido com regressões RED/GREEN; nenhum menor adiado neste módulo.
+O processo padrão de design exige revisão antes de implementar; instruções do responsável prevalecem. Tarefas, agenda, integrações, materiais e conteúdo seguem execução direta com plano simples. Decisões confirmadas e escolhas técnicas estão distinguidas nos guias/planos. A revisão da agenda encontrou um Important corrigido e um Minor histórico de horário de verão adiado. Em materiais, um Important de precisão foi corrigido RED/GREEN. Em banners, exposição da imagem anterior numa substituição concorrente foi corrigida RED/GREEN; um Minor de inteiro multipart extremo foi registrado, e o navegador confirmou a correção de títulos longos a360px. Guias registram os cenários restantes; produção e consumidores reais não são entregas concluídas.

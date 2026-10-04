@@ -1,8 +1,8 @@
 # InovaLab — Casos de uso
 
-Versão 0.5 • 02/10/2026. Ler as classificações e questões de `01-InovaLab-Escopo-e-Requisitos.md`. Base: PDF original conferido integralmente, decisões F3 e seis telas locais F4 examinadas. Divergências das telas estão no arquivo 05; a conferência do PDF está no arquivo 06.
+Versão 0.6 • 04/10/2026. Ler as classificações e questões de `01-InovaLab-Escopo-e-Requisitos.md`. Base: PDF original conferido integralmente, decisões F3 e seis telas locais F4 examinadas. Divergências das telas estão no arquivo 05; a conferência do PDF está no arquivo 06.
 
-Todos os casos têm escopo no sistema InovaLab e nível de objetivo do usuário, exceto UC09, que representa integração. Fluxos detalhados são uma elaboração derivada/proposta, mesmo quando o objetivo é confirmado. Os contratos efetivamente entregues dos módulos 1–6 estão em `docs/modules/`; os demais fluxos continuam propostos.
+Todos os casos têm escopo no sistema InovaLab e nível de objetivo do usuário, exceto UC09, que representa integração. Fluxos detalhados são uma elaboração derivada/proposta, mesmo quando o objetivo é confirmado. Os contratos efetivamente entregues dos módulos 1–7 estão em `docs/modules/`; escolhas provisórias continuam identificadas como D/P.
 
 ## UC01 — Acessar o sistema
 
@@ -109,6 +109,8 @@ Todos os casos têm escopo no sistema InovaLab e nível de objetivo do usuário,
 - **Alternativas:** arquivo inválido é rejeitado; outro formato só é aceito se uma conversão for aprovada; período inválido impede programação; administrador pode editar ou inativar.
 - **Pós-condição:** banner cadastrado, ativo, inativo ou programado. A conversão automática de imagens não foi exigida pela fonte.
 
+**Contrato entregue do módulo 7 (04/10/2026):** gestão exclusiva de administrador ativo/superusuário; arquivo WebP estático validado por conteúdo, até 5MiB/4096px; período obrigatório com fuso somente no agendado; ordem/ID, vários por local. Edição/desativação/substituição/exclusão lógica exigem versão; conflito 409 não modifica dados. `/banners/` e `/api/v1/banners/` usam o mesmo serviço e CSRF. Autoridade, período e ordenação são escolhas iniciais para Q10/Q12/Q15, ainda sujeitas à depuração. [Guia](docs/modules/07-conteudo.md).
+
 ## UC12 — Visualizar banners publicados
 
 - **Base:** D/P; RF19. **Ator:** visitante.
@@ -116,6 +118,8 @@ Todos os casos têm escopo no sistema InovaLab e nível de objetivo do usuário,
 - **Fluxo principal:** 1. Visitante abre a página. 2. Sistema seleciona banners do local elegíveis no instante atual. 3. Exibe as imagens e alternativas textuais propostas para acessibilidade.
 - **Alternativas:** sem banner elegível, página funciona sem essa seção; banner inativo ou fora do período não aparece.
 - **Pós-condição:** conteúdo exibido sem revelar banners não publicados.
+
+**Contrato entregue:** `/publico/` e `/publico/sobre/`, mais `GET /api/v1/publico/banners/?local=home|sobre`; ativo ou agendado no intervalo `[início,fim)`, excluídos/inativos ocultos. Imagens passam por rota com verificação da publicação na mesma leitura do arquivo; preview de não publicados só administrador. Todas as respostas sem cache; ausência de conteúdo mostra mensagem simples. Não há acesso direto a `/media/`.
 
 ## Relações entre casos
 

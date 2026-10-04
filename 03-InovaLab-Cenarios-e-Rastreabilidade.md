@@ -1,6 +1,6 @@
 # InovaLab — Cenários base e rastreabilidade
 
-Versão 0.5 • 02/10/2026. Cenários base para orientar validação; cobertura executada da agenda/recebimento externo/materiais nas seções 7–9. Dados e nomes são exemplos fictícios. C/D/P e Q01–Q15 estão definidos em `01-InovaLab-Escopo-e-Requisitos.md`.
+Versão 0.6 • 04/10/2026. Cenários base para orientar validação; cobertura executada da agenda/recebimento externo/materiais/banners nas seções 7–10. Dados e nomes são exemplos fictícios. C/D/P e Q01–Q15 estão definidos em `01-InovaLab-Escopo-e-Requisitos.md`.
 
 ## 1. Fluxo proposto das tarefas
 
@@ -116,7 +116,9 @@ Não há estado `re-criar`. A autoridade para reabrir está aprovada; retornar p
 
 ### CT23 — Agendar exibição de banner
 
-**UC11–UC12; RF19; P.** Dado um banner agendado para um intervalo com fuso definido, quando o relógio atingir o início, então ele se torna elegível; no fim, deixa de ser. Antes disso, não aparece. Os campos de período precisam ser adicionados e aprovados em Q10.
+**UC11–UC12; RF19; P.** Dado um banner agendado para um intervalo com fuso definido, quando o relógio atingir o início, então ele se torna elegível; no fim, deixa de ser. Antes disso, não aparece. As escolhas de período precisam ser validadas em Q10.
+
+No módulo 7, início/fim foram adicionados como escolha técnica provisória: ambos com fuso, fim posterior, comparação UTC e intervalo `[início,fim)`. A confirmação de produto Q10 continua para depuração; a cobertura executada está na seção 10.
 
 ### CT24 — Repetir carga de serviços iniciais
 
@@ -217,3 +219,17 @@ Em 02/10/2026: 40 testes de materiais e suíte completa de 234 passaram no SQLit
 | Concorrência derivada | Duas conexões reais/editando a mesma versão: um vencedor, sem sobrescrita parcial; retirada da condição de versão detectada pelo teste |
 
 Chrome verificou cadastro com vírgula, correção, rejeição de negativo, versão antiga, zero/indisponibilidade, máximo via API, precisão excedente 400, consulta e negação de escrita, teclado/360 px. Revisão encontrou um Important de arredondamento anterior à validação, corrigido com três regressões RED/GREEN e suíte completa. Produção/PostgreSQL/carga ficam para o ambiente escolhido; não há movimentações/auditoria de estoque.
+
+## 10. Cobertura executada — conteúdo e banners
+
+Em 04/10/2026: 36 testes de banners e suíte completa de 270 passaram no SQLite local. [Contrato, escolhas e comandos](docs/modules/07-conteudo.md).
+
+| Cenários | Verificação |
+| --- | --- |
+| CT22 | Upload WebP real/estático, bytes/dimensões/tamanho, nome UUID, local correto, alt, ordem/ID; inativo/excluído não publica |
+| CT23 | Início/fim completos com fuso, UTC equivalente, início inclusive/fim exclusivo; HTML/API/imagem usam mesma regra por leitura |
+| CT28 | Gestão completa somente administrador ativo; staff/comum/anon/token negados; sessão/CSRF; preview controlado, media direto 404 |
+| CT29 | Multipart/JSON, inteiros estritos, PUT/PATCH/DELETE/version, campos protegidos, paginação e contrato publicado |
+| Concorrência derivada | Duas conexões reais: vencedor único de substituição, upload perdedor removido, antigo preservado; regressão da imagem/eligibilidade consultadas na mesma versão |
+
+Chrome verificou criação/rejeição/troca, publicação/ordem/local/período, preview, inativação/exclusão, versão antiga, CSRF/acesso negado, teclado e 360 px. Revisão identificou um Important de exposição da imagem anterior numa troca concorrente, corrigido RED/GREEN; um Minor de inteiro multipart extremo ficou registrado. Título público sem espaços causava overflow a 360px; corrigido com verificação no navegador. Q10/Q12/Q15 são escolhas iniciais para depuração, não novas confirmações. Produção/retenção/consumidores reais não foram validados.

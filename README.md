@@ -2,7 +2,7 @@
 
 Sistema Django para demandas do laboratório, tarefas, agenda, materiais e banners, com frontend básico e API para futuras integrações.
 
-Os módulos **Identidade e acesso**, **Catálogo**, **Tarefas**, **Agenda interna**, **Recebimento de reservas externas** e **Materiais** estão implementados. Materiais oferece cadastro simples, quantidade decimal e correção com versão, sem movimentações de estoque. A conexão a um AgroHub real ainda depende do consumidor e ambiente. Aguardar depuração desta entrega antes de banners.
+Os sete módulos planejados estão implementados localmente: **Identidade e acesso**, **Catálogo**, **Tarefas**, **Agenda interna**, **Recebimento de reservas externas**, **Materiais** e **Conteúdo/Banners**. Banners oferece gestão administrativa, upload WebP, publicação por local/período e consulta pública por páginas/API. A conexão a um AgroHub real ainda depende do consumidor e ambiente. Aguardar depuração desta entrega antes de novas etapas.
 
 ## Documentação
 
@@ -20,6 +20,7 @@ Os módulos **Identidade e acesso**, **Catálogo**, **Tarefas**, **Agenda intern
 | [Módulo 4 — Agenda](docs/modules/04-agenda.md) | Calendário, exclusividade, cancelamento, concorrência, API e depuração |
 | [Módulo 5 — Integrações](docs/modules/05-integracoes.md) | Credenciais, recebimento, idempotência, contrato e depuração |
 | [Módulo 6 — Materiais](docs/modules/06-materiais.md) | Cadastro, quantidade decimal, versão, API e depuração |
+| [Módulo 7 — Conteúdo](docs/modules/07-conteudo.md) | Banners WebP, publicação, imagem protegida, API e depuração |
 
 Leia as classificações **C** (confirmado pela fonte), **D** (derivado) e **P** (proposta) no arquivo 01. Propostas não são decisões aprovadas. As seis telas e as três páginas de `Referencias/InovaLab - Modelagem.pdf` foram examinadas. A pasta permanece ignorada pelo Git e pode faltar em outro clone.
 
@@ -39,7 +40,7 @@ O sistema usa Django, templates e Django REST Framework, com política de papéi
 
 ## Estado do ambiente local
 
-Em 02/10/2026, a entrega foi verificada com Python 3.14.3, Django 6.1.1 e DRF 3.18.1. As dependências diretas estão em `requirements.txt`. A colisão do app local `auth` foi corrigida com `accounts`; a autenticação nativa do Django foi preservada.
+Em 04/10/2026, a entrega foi verificada com Python 3.14.3, Django 6.1.1, DRF 3.18.1 e Pillow 12.3.0 para validar WebP. As dependências diretas estão em `requirements.txt`. A colisão do app local `auth` foi corrigida com `accounts`; a autenticação nativa do Django foi preservada.
 
 Execução em PowerShell (crie `venv` com `python -m venv venv` se necessário):
 
@@ -61,7 +62,7 @@ Verificação automatizada:
 & .\venv\Scripts\python.exe -m pip check
 ```
 
-234 testes passaram (40 de materiais, 35 de integrações, 42 da agenda, 44 de tarefas, 38 do catálogo e 35 de identidade/configuração); checks, migrações e dependências sem pendências. Os fluxos básicos foram verificados no Chrome, incluindo layout a 360 px e teclado. Consulte os guias dos módulos para contratos, limitações e roteiros. `.env` não é carregado automaticamente. Esta entrega é local; hospedagem e produção permanecem por definir.
+270 testes passaram (36 de banners, 40 de materiais, 35 de integrações, 42 da agenda, 44 de tarefas, 38 do catálogo e 35 de identidade/configuração); checks, migrações e dependências sem pendências. Os fluxos básicos foram verificados no Chrome, incluindo layout a 360 px e teclado. Consulte os guias dos módulos para contratos, limitações e roteiros, inclusive os ajustes menores conhecidos de banners e horário de verão histórico da agenda. `.env` não é carregado automaticamente. Esta entrega é local; hospedagem e produção permanecem por definir.
 
 Após entrar, use **Catálogo** ou abra `/catalogo/servicos/`. A migração cria os onze serviços do PDF; `manage.py carregar_servicos_iniciais` repete a carga preservando alterações. APIs disponíveis: `/api/v1/servicos/`, `/api/v1/equipamentos/`, `/api/v1/espacos/`, com detalhes por ID. Indisponibilização preserva registros; exclusão física não é oferecida.
 
@@ -73,11 +74,13 @@ Administradores usam **Integrações** ou `/integracoes/` para cadastrar integra
 
 Use **Materiais** ou `/materiais/` para consultar; administradores cadastram/corrigem. API interna por sessão/CSRF: `/api/v1/materiais/`, com detalhes por ID e versão obrigatória em PUT/PATCH. Quantidade decimal é devolvida como string com 3 casas; versão antiga retorna 409. [Contrato e roteiro](docs/modules/06-materiais.md).
 
+Administradores usam **Banners** ou `/banners/`. API interna por sessão/CSRF: `/api/v1/banners/`, versão em edição/exclusão e upload multipart WebP. Visitantes consultam `/publico/`, `/publico/sobre/` ou `/api/v1/publico/banners/?local=home|sobre`; imagens passam por `/banners/{id}/imagem/`, sem acesso direto ao diretório `media/`. [Contrato, escolhas provisórias e retenção](docs/modules/07-conteudo.md). Administração exclusiva, leitura pública, vários banners ordenados e período obrigatório são escolhas iniciais para Q10/Q12/Q15, ainda sujeitas à validação do responsável.
+
 ## Processo
 
 Revisar requisitos e decisões de cada etapa, validar seu desenho, preparar o plano, implementar o fluxo web/API e verificar cenários relevantes. A coleção de skills [Superpowers](https://github.com/obra/superpowers) foi instalada neste ambiente do Codex; não é dependência da aplicação e não acompanha um clone do projeto.
 
-Por decisão do responsável, entregar um módulo por vez e aguardar sua depuração antes do próximo. Identidade e catálogo seguem suas especificações e planos autorizados. Tarefas, agenda, integrações e materiais seguem execução direta com planos simples ([tarefas](docs/superpowers/plans/2026-10-01-tarefas.md), [agenda](docs/superpowers/plans/2026-10-02-agenda.md), [integrações](docs/superpowers/plans/2026-10-02-integracoes.md), [materiais](docs/superpowers/plans/2026-10-02-materiais.md)), mantendo testes e revisão independente. Escolhas para lacunas dos requisitos estão identificadas nos guias. Aguardar depuração dos materiais antes de banners.
+Por decisão do responsável, entregar um módulo por vez e aguardar sua depuração antes do próximo. Identidade e catálogo seguem suas especificações e planos autorizados. Tarefas, agenda, integrações, materiais e conteúdo seguem execução direta com planos simples ([tarefas](docs/superpowers/plans/2026-10-01-tarefas.md), [agenda](docs/superpowers/plans/2026-10-02-agenda.md), [integrações](docs/superpowers/plans/2026-10-02-integracoes.md), [materiais](docs/superpowers/plans/2026-10-02-materiais.md), [conteúdo](docs/superpowers/plans/2026-10-04-conteudo.md)), mantendo testes e revisão independente. Escolhas para lacunas dos requisitos estão identificadas nos guias. Aguardar depuração do módulo 7 antes de novas funcionalidades.
 
 Para as próximas entregas do MVP, usar frontend mais simples, preservando a interface atual de identidade. Executar os testes automatizados do Django e os testes básicos no navegador; o responsável realizará os testes mais profundos posteriormente. Essas orientações estão em [AGENTS.md](AGENTS.md).
 
