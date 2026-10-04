@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponseNotFound
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
@@ -109,11 +109,12 @@ def public_page(request, local):
 @require_safe
 def banner_image(request, pk):
     queryset = visible_banners(request.user) if is_business_admin(request.user) else published_banners()
-    banner = get_object_or_404(queryset, pk=pk)
     try:
+        banner = get_object_or_404(queryset, pk=pk)
         stream = banner.banner_img.open('rb')
-    except (FileNotFoundError, OSError):
-        raise Http404 from None
-    response = FileResponse(stream, content_type='image/webp', filename=f'banner-{pk}.webp')
+    except (Http404, OSError):
+        response = HttpResponseNotFound('Imagem não encontrada.')
+    else:
+        response = FileResponse(stream, content_type='image/webp', filename=f'banner-{pk}.webp')
     response['X-Content-Type-Options'] = 'nosniff'
     return response

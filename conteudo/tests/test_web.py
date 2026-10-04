@@ -112,6 +112,18 @@ class BannerWebTests(BannerFixtures, TestCase):
             finally:
                 response.close()
 
+    def test_image_not_found_responses_cannot_cache_publication_state(self):
+        save_banner(actor=self.admin, banner_id=self.banner.pk, expected_version=1, data={'status': 'inativo'})
+        for path in (self.image, '/banners/99999/imagem/'):
+            response = self.client.get(path)
+            self.assertEqual(response.status_code, 404)
+            self.assertIn('no-store', response.get('Cache-Control', ''))
+        self.client.force_login(self.admin)
+        self.banner.banner_img.storage.delete(self.banner.banner_img.name)
+        response = self.client.get(self.image)
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('no-store', response.get('Cache-Control', ''))
+
     def test_exclusion_get_only_confirms_and_post_requires_version(self):
         self.client.force_login(self.admin)
         self.assertContains(self.client.get(self.detail+'excluir/'), DATA['titulo'])
