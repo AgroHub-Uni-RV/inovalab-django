@@ -31,7 +31,7 @@ Calendário seis meses a partir do mês atual, domingos primeiro; marcar domingo
 
 Menu só oferece rotas existentes conforme papéis: Dashboard, Agenda, Materiais, Tarefas, Usuários(admin técnico), Banners, Páginas públicas, Estrutura(catálogo), Integrações, Perfil. Relatórios e notificações interativas aguardam módulo próprio. Ícone de sino decorativo, sem contador/informação inventada. Perfil abre menu acessível; logout POST/CSRF. Títulos/IDs/fotos da referência são exemplos, substituídos pelos dados reais; avatar inicial se não há foto.
 
-Logotipos presentes nos PNGs podem ser exibidos por recorte visual CSS do arquivo original sem alterar seus bytes; as fontes PNG usadas como asset devem ser copiadas/versionadas, pois Referencias é ignorada pelo Git. Preferir assets originais se informados. Não garantir igualdade pixel a pixel de fonte/ícones nem conteúdo fictício; comparar desktop contra a referência e registrar diferenças reais.
+O responsável decidiu deixar os espaços de logotipos em branco e fornecê-los posteriormente. Manter dimensões/alinhamento dessas áreas, sem recriar ou extrair marcas dos PNGs. **Tarefa futura do responsável:** adicionar logotipos InovaLab, AgroHub e YpeTec e confirmar a fonte original. Não garantir igualdade pixel a pixel de fonte/ícones nem conteúdo fictício; comparar desktop contra a referência e registrar diferenças reais.
 
 Verificar filtros sem ampliar acesso, HTML escapado, no-store, logout/CSRF, estados vazios, texto150caracteres, 1920/1366/360px, teclado, colapso/menu e fontes/imagens carregadas; suíte Django completa e revisão independente.
 

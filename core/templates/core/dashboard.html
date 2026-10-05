@@ -1,0 +1,14 @@
+<!doctype html><html lang="pt-br"><head><title>Dashboard · InovaLab</title></head><body>
+<nav>{% for item in nav_items %}<a href="{{ item.href }}">{{ item.label }}</a>{% endfor %}</nav>
+<h1>Olá, {{ user.get_full_name|default:user.username }}</h1>
+<form action="{% url 'accounts:logout' %}" method="post">{% csrf_token %}<button>Sair</button></form>
+<section><h2>Tarefas</h2><a href="{% url 'tarefas:board' %}">Ver todos</a>
+{% for tab in task_tabs %}<a href="?{{ tab.query }}">{{ tab.label }}</a>{% endfor %}
+{% for task in tasks %}<a href="{% url 'tarefas:detail' task.pk %}">{{ task.servico.nome }} · {{ task.responsavel }}</a>{% empty %}<p>Nenhuma tarefa nesta categoria.</p>{% endfor %}
+{% if is_business_admin %}<a href="{% url 'tarefas:create' %}">Nova tarefa</a>{% endif %}</section>
+{% if is_business_admin %}<section><h2>Agendamentos</h2><a href="{% url 'agenda:list' %}">Ver todos</a>
+{% for tab in booking_tabs %}<a href="?{{ tab.query }}">{{ tab.label }}</a>{% endfor %}
+{% for booking in bookings %}<a href="{% url 'agenda:detail' booking.pk %}">{{ booking.objeto_nome }} · {{ booking.requerente }}</a>{% empty %}<p>Nenhum agendamento nesta categoria.</p>{% endfor %}
+<a href="{% url 'agenda:create' %}">Novo agendamento</a></section>{% endif %}
+<section><h2>Calendário</h2>{% for month in months %}<h3>{{ month.name }} {{ month.year }}</h3>{% endfor %}</section>
+</body></html>

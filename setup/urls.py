@@ -33,6 +33,7 @@ urlpatterns = [
     path('agenda/', include('agenda.urls')),
     path('integracoes/', include('integracoes.urls')),
     path('materiais/', include('materiais.urls')),
+    path('', include('core.urls')),
     path('', include('conteudo.urls')),
     path('', include('accounts.urls')),
 ]

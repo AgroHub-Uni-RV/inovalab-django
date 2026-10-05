@@ -9,7 +9,7 @@
 ## Restrições
 
 - Manter login/raiz de identidade; link para Dashboard. Outros módulos conservam conteúdos até sua entrega visual.
-- Fonte/logos originais não fornecidos até este registro; Montserrat/OFL local e PNGs originais via recorte CSS, escolhas técnicas com fidelidade a verificar.
+- Fonte original não identificada; Montserrat/OFL local como escolha técnica. Responsável decidiu logos em branco e futura inclusão própria; reservar áreas sem marcas inventadas.
 - Tarefas restritas por responsável/admin; reservas/calendário nunca expõem agenda ao comum. Logout POST/CSRF; no-store.
 - Sem recursos novos das imagens. Menus/abas são rotas/filtros reais; sem dados fictícios ou indicadores de feriados/recessos.
 
@@ -21,7 +21,7 @@
 
 ## 2. Base visual
 
-- [ ] Templates core/base/dashboard/sidebar/icon, core/static/core/{painel.css,painel.js,assets}; SVG próprios, Montserrat/OFL local e PNGs originais para marcas; link Dashboard identidade.
+- [ ] Templates core/base/dashboard/sidebar/icon, core/static/core/{painel.css,painel.js,assets}; SVG próprios, Montserrat/OFL local e espaços vazios para logos; link Dashboard identidade.
 - [ ] Geometria1920/sidebar79/header74/content1436/panels630, expansão283, tabs/card/footer; responsive1366/360, scroll interno e textos longos.
 - [ ] Chrome com fixtures próprias: estado real, links/filtros, sidebar/escape/teclado, perfil/logout, 1920/1366/360, comum/admin, fontes/imagens/erros. Capturar e inspecionar screenshots; apagar só fixtures próprias; fechar servidor/navegador.
 - [ ] GREEN suíte/check/drift/pip/diff; commit `feat (frontend): reproduz base visual e dashboard das referências.`.
