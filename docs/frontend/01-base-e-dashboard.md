@@ -55,4 +55,6 @@ A revisão encontrou transbordamento dos cartões em tablets com menu expandido.
 
 O arquivo original `OFL.txt` conserva um espaço final na linha 21. `git diff --check` no trabalho final não aponta alterações pendentes; comparar toda a branch com `9ac6418` sinaliza essa formatação da licença, sem efeito na aplicação.
 
+Navegador e servidor temporário foram encerrados. A limpeza de `.superpowers/sdd/2026-10-05-frontend-painel/` foi bloqueada pela aprovação automática da ferramenta (`blocked by policy`), inclusive com caminhos explícitos. Essa pasta contém somente o banco isolado e artefatos desta verificação, permanece ignorada pelo Git e pode ser removida manualmente pelo responsável após inspeção. O banco real `db.sqlite3` não foi alterado.
+
 Desenho e plano: [spec](../superpowers/specs/2026-10-05-frontend-referencias-design.md), [plano](../superpowers/plans/2026-10-05-frontend-painel.md).

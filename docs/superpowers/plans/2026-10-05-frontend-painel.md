@@ -30,7 +30,8 @@
 
 - [x] Uma revisão read-only independente; Important/Critical em uma passada RED/GREEN; menores registrados.
 - [x] Guia docs/frontend/01-base-e-dashboard.md, README e orientação visual atualizados; registrar diferenças/scope/roteiro e decisões do ledger.
-- [x] Checks finais, commit português, limpar scratch próprio; branch local, aguardar depuração.
+- [x] Checks finais, commit português; branch local, aguardar depuração.
+- [ ] Limpar scratch próprio: aprovação automática rejeitou a exclusão, mesmo por caminhos explícitos (`blocked by policy`). Pasta ignorada mantida para remoção manual; servidor e navegador encerrados.
 
 ## Foco da revisão
 
