@@ -937,6 +937,22 @@ main {
     font-size:20px;
   }
 }
+@container (max-width:650px) {
+  .calendar-scroll {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+}
+@media (min-width:761px) and (max-width:1050px) {
+  .sidebar-expanded .dashboard,
+  .sidebar-expanded .dashboard-personal {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .sidebar-expanded .calendar-panel,
+  .sidebar-expanded .dashboard-personal .calendar-panel {
+    grid-column: auto;
+    margin-left: 0;
+  }
+}
 @media(max-width:760px) {
   .month-card h2 {
     font-size:18px;
