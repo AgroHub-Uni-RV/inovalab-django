@@ -34,7 +34,9 @@ Comentários, anexos, subtarefas, participantes adicionais, CPF, consumo de mate
 & .\venv\Scripts\python.exe -m pip check
 ```
 
-12 testes novos do painel e 282 testes no total passaram. Sem alterações de modelos/migrações ou dependências. Chrome: login, filtros, abertura de tarefa, perfil por Enter, logout, menu expandido/recolhido, Escape e retorno de foco, bloqueio de dados alheios para usuário comum, nomes/serviços longos, 1920/1366/360 px. Sem rolagem horizontal nas verificações e sem falhas nos assets locais. Banco de navegador isolado: seus registros existentes não foram alterados.
+12 testes novos do painel e 282 testes no total passaram. Sem alterações de modelos/migrações ou dependências. Chrome: login, filtros, abertura de tarefa, perfil por Enter, logout, menu expandido/recolhido, Escape e retorno de foco, bloqueio de dados alheios para usuário comum, nomes/serviços longos, 1920/1366/360 px. Após a revisão independente, também foram verificados 768/820 px, com menu expandido/recolhido e ambos os papéis. Sem rolagem horizontal nas verificações e sem falhas nos assets locais. Banco de navegador isolado: seus registros existentes não foram alterados.
+
+A revisão encontrou transbordamento dos cartões em tablets com menu expandido. O [script de regressão](verificacoes/tablet.js), executado no navegador, falhou antes da correção e passou nas oito combinações de largura/papel/menu depois. A grade agora se empilha quando o menu reduz a área disponível, e o calendário adapta as colunas à largura do seu painel. Não houve segunda revisão; a correção foi validada pelo caso reproduzido e pela suíte completa.
 
 ## Depuração pelo responsável
 
@@ -49,5 +51,8 @@ Comentários, anexos, subtarefas, participantes adicionais, CPF, consumo de mate
 - [ ] **Responsável fornecer/inserir as logos** InovaLAB, AgroHub e YpêTec nos espaços reservados.
 - [ ] Confirmar a fonte original e, se disponível, substituir a escolha provisória.
 - [ ] Migrar as demais telas para a base visual, uma entrega por vez, após depuração/autorização.
+- [ ] Ajuste menor da revisão: combinar visualmente os indicadores **Hoje** e **Reserva**; atualmente a reserva vermelha prevalece, embora o texto acessível preserve ambos.
+
+O arquivo original `OFL.txt` conserva um espaço final na linha 21. `git diff --check` no trabalho final não aponta alterações pendentes; comparar toda a branch com `9ac6418` sinaliza essa formatação da licença, sem efeito na aplicação.
 
 Desenho e plano: [spec](../superpowers/specs/2026-10-05-frontend-referencias-design.md), [plano](../superpowers/plans/2026-10-05-frontend-painel.md).
