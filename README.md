@@ -21,6 +21,7 @@ Os sete módulos planejados estão implementados localmente: **Identidade e aces
 | [Módulo 5 — Integrações](docs/modules/05-integracoes.md) | Credenciais, recebimento, idempotência, contrato e depuração |
 | [Módulo 6 — Materiais](docs/modules/06-materiais.md) | Cadastro, quantidade decimal, versão, API e depuração |
 | [Módulo 7 — Conteúdo](docs/modules/07-conteudo.md) | Banners WebP, publicação, imagem protegida, API e depuração |
+| [Frontend — Base e Dashboard](docs/frontend/01-base-e-dashboard.md) | Primeira entrega visual pelas referências, logos pendentes e roteiro de depuração |
 
 Leia as classificações **C** (confirmado pela fonte), **D** (derivado) e **P** (proposta) no arquivo 01. Propostas não são decisões aprovadas. As seis telas e as três páginas de `Referencias/InovaLab - Modelagem.pdf` foram examinadas. A pasta permanece ignorada pelo Git e pode faltar em outro clone.
 
@@ -34,13 +35,13 @@ Leia as classificações **C** (confirmado pela fonte), **D** (derivado) e **P**
 - Contas internas cadastradas pelo administrador técnico, com login por usuário e senha.
 - Administradores do laboratório mantêm o catálogo; todos os usuários internos ativos consultam.
 - Materiais: cadastro simples mantido pelos administradores, consulta interna ativa, quantidade não negativa até 3 casas/unidade informada, categoria/fonte livres, status disponível/indisponível; sem movimentações.
-- Frontend mais simples no MVP, preservando identidade; testes automatizados e básicos no navegador executados, testes profundos pelo responsável.
+- Em 05/10/2026, iniciar frontend pelas imagens de referência, em entregas fracionadas, com funcionalidades atuais e áreas das logos vazias para inclusão futura pelo responsável. Login e página de identidade preservados. Testes automatizados e básicos no navegador executados; testes profundos pelo responsável.
 
 O sistema usa Django, templates e Django REST Framework, com política de papéis compartilhada entre interface e API. SQLite atende à execução local, com escrita/bloqueio do alvo antes de consultar conflitos da agenda. Banco e hospedagem de produção continuam pendentes.
 
 ## Estado do ambiente local
 
-Em 04/10/2026, a entrega foi verificada com Python 3.14.3, Django 6.1.1, DRF 3.18.1 e Pillow 12.3.0 para validar WebP. As dependências diretas estão em `requirements.txt`. A colisão do app local `auth` foi corrigida com `accounts`; a autenticação nativa do Django foi preservada.
+Em 05/10/2026, a entrega foi verificada com Python 3.14.3, Django 6.1.1, DRF 3.18.1 e Pillow 12.3.0 para validar WebP. As dependências diretas estão em `requirements.txt`. A colisão do app local `auth` foi corrigida com `accounts`; a autenticação nativa do Django foi preservada.
 
 Execução em PowerShell (crie `venv` com `python -m venv venv` se necessário):
 
@@ -62,7 +63,9 @@ Verificação automatizada:
 & .\venv\Scripts\python.exe -m pip check
 ```
 
-270 testes passaram (36 de banners, 40 de materiais, 35 de integrações, 42 da agenda, 44 de tarefas, 38 do catálogo e 35 de identidade/configuração); checks, migrações e dependências sem pendências. Os fluxos básicos foram verificados no Chrome, incluindo layout a 360 px e teclado. Consulte os guias dos módulos para contratos, limitações e roteiros, inclusive os ajustes menores conhecidos de banners e horário de verão histórico da agenda. `.env` não é carregado automaticamente. Esta entrega é local; hospedagem e produção permanecem por definir.
+282 testes passaram (12 do Dashboard e os 270 dos módulos anteriores); checks, migrações e dependências sem pendências. Os fluxos básicos foram verificados no Chrome, incluindo layout a 360 px e teclado. Consulte os guias dos módulos para contratos, limitações e roteiros, inclusive os ajustes menores conhecidos de banners e horário de verão histórico da agenda. `.env` não é carregado automaticamente. Esta entrega é local; hospedagem e produção permanecem por definir.
+
+Use **Dashboard** na página da conta ou abra `/painel/`. A primeira entrega visual inclui a base e o painel; as demais telas conservam o visual anterior. Logos vazias conforme solicitado; inclusão futura registrada no [guia do frontend](docs/frontend/01-base-e-dashboard.md).
 
 Após entrar, use **Catálogo** ou abra `/catalogo/servicos/`. A migração cria os onze serviços do PDF; `manage.py carregar_servicos_iniciais` repete a carga preservando alterações. APIs disponíveis: `/api/v1/servicos/`, `/api/v1/equipamentos/`, `/api/v1/espacos/`, com detalhes por ID. Indisponibilização preserva registros; exclusão física não é oferecida.
 
@@ -80,8 +83,8 @@ Administradores usam **Banners** ou `/banners/`. API interna por sessão/CSRF: `
 
 Revisar requisitos e decisões de cada etapa, validar seu desenho, preparar o plano, implementar o fluxo web/API e verificar cenários relevantes. A coleção de skills [Superpowers](https://github.com/obra/superpowers) foi instalada neste ambiente do Codex; não é dependência da aplicação e não acompanha um clone do projeto.
 
-Por decisão do responsável, entregar um módulo por vez e aguardar sua depuração antes do próximo. Identidade e catálogo seguem suas especificações e planos autorizados. Tarefas, agenda, integrações, materiais e conteúdo seguem execução direta com planos simples ([tarefas](docs/superpowers/plans/2026-10-01-tarefas.md), [agenda](docs/superpowers/plans/2026-10-02-agenda.md), [integrações](docs/superpowers/plans/2026-10-02-integracoes.md), [materiais](docs/superpowers/plans/2026-10-02-materiais.md), [conteúdo](docs/superpowers/plans/2026-10-04-conteudo.md)), mantendo testes e revisão independente. Escolhas para lacunas dos requisitos estão identificadas nos guias. Aguardar depuração do módulo 7 antes de novas funcionalidades.
+Por decisão do responsável, entregar um módulo por vez e aguardar sua depuração antes do próximo. Identidade e catálogo seguem suas especificações e planos autorizados. Tarefas, agenda, integrações, materiais e conteúdo seguem execução direta com planos simples ([tarefas](docs/superpowers/plans/2026-10-01-tarefas.md), [agenda](docs/superpowers/plans/2026-10-02-agenda.md), [integrações](docs/superpowers/plans/2026-10-02-integracoes.md), [materiais](docs/superpowers/plans/2026-10-02-materiais.md), [conteúdo](docs/superpowers/plans/2026-10-04-conteudo.md)), mantendo testes e revisão independente. O frontend inicia por [base e Dashboard](docs/superpowers/plans/2026-10-05-frontend-painel.md). Escolhas para lacunas dos requisitos estão identificadas nos guias. Aguardar depuração desta entrega visual antes de migrar as demais telas.
 
-Para as próximas entregas do MVP, usar frontend mais simples, preservando a interface atual de identidade. Executar os testes automatizados do Django e os testes básicos no navegador; o responsável realizará os testes mais profundos posteriormente. Essas orientações estão em [AGENTS.md](AGENTS.md).
+Para as próximas entregas visuais, seguir as referências com as funcionalidades atuais, mantendo as logos em branco até o responsável fornecê-las. Executar os testes automatizados do Django e os testes básicos no navegador; o responsável realizará os testes mais profundos posteriormente. Essas orientações estão em [AGENTS.md](AGENTS.md).
 
 Commits importantes seguem o formato em português, por exemplo `feat (docs): adiciona documentação da arquitetura do sistema.`.

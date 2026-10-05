@@ -1,0 +1,32 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Dashboard{% endblock %} | InovaLAB</title>
+  <link rel="icon" href="data:,">
+  <link rel="preload" href="{% static 'core/assets/Montserrat.ttf' %}" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="{% static 'core/painel.css' %}">
+  <script src="{% static 'core/painel.js' %}" defer></script>
+</head>
+<body class="panel-page">
+  <a class="skip-link" href="#main">Ir para o conteúdo</a>
+  {% include 'core/sidebar.html' %}
+  <div class="page-shell">
+    <header class="topbar">
+      <button class="mobile-menu" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Abrir menu">{% include 'core/icon.html' with name='menu' %}</button>
+      <div class="topbar-inner">
+        <div class="greeting"><h1>Olá, {{ user.first_name|default:user.username }}</h1><p>Bem-vindo ao painel do InovaLAB</p></div>
+        <div class="header-actions">
+          <span class="bell" aria-hidden="true">{% include 'core/icon.html' with name='bell' %}</span>
+          <details class="profile-menu">
+            <summary><span class="avatar" aria-hidden="true"></span><span class="profile-copy"><strong>{{ user.get_full_name|default:user.username }}</strong><small>{% if is_business_admin %}Administrador{% else %}Usuário interno{% endif %}</small></span>{% include 'core/icon.html' with name='chevron' %}<span class="sr-only">Menu do perfil</span></summary>
+            <div class="profile-popover"><a href="{% url 'accounts:home' %}">Meu perfil</a><form action="{% url 'accounts:logout' %}" method="post">{% csrf_token %}<button type="submit">Sair</button></form></div>
+          </details>
+        </div>
+      </div>
+    </header>
+    <main id="main" tabindex="-1">{% block content %}{% endblock %}</main>
+    <footer class="footer"><div class="footer-inner"><p>Razão Social: FESURV - UNIVERSIDADE DE RIO VERDE CNPJ: 01.815.216/0001-78</p><div class="partner-slots" aria-hidden="true"><span></span><span></span></div></div></footer>
+  </div>
+</body>
+</html>
