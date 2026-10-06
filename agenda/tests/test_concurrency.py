@@ -7,7 +7,7 @@ from django.db import connection, connections
 from django.test import TransactionTestCase
 
 from agenda.models import Agendamento, EventoAgendamento
-from agenda.services import BookingConflict, save_booking
+from agenda.services import BookingConflict, review_booking, save_booking
 from catalogo.models import Servico
 
 
@@ -65,3 +65,32 @@ class BookingConcurrencyTests(TransactionTestCase):
             save_booking(actor=self.admin, booking_id=booking.pk, expected_version=1, data={'motivo': 'Revisado'})
         first = statements[statements.index('BEGIN') + 1]
         self.assertTrue(first.startswith('UPDATE "catalogo_servico"'), first)
+
+    def test_parallel_approvals_of_overlapping_requests_confirm_only_one(self):
+        user = get_user_model().objects.create_user('solicitante')
+        requests = [save_booking(actor=user, data=self.data) for _ in range(2)]
+        results = self.run_parallel(lambda index: review_booking(actor=self.admin, booking_id=requests[index].pk,
+                                   expected_version=1, decision='aprovar'))
+        self.assertEqual(sum(isinstance(result, Agendamento) for result in results), 1)
+        self.assertEqual(sum(isinstance(result, BookingConflict) for result in results), 1)
+        self.assertEqual(Agendamento.objects.filter(situacao='confirmado').count(), 1)
+        self.assertEqual(Agendamento.objects.filter(situacao='pendente').count(), 1)
+        self.assertEqual(EventoAgendamento.objects.filter(acao='aprovar').count(), 1)
+
+    def test_parallel_approval_and_admin_creation_reserve_only_one_slot(self):
+        user = get_user_model().objects.create_user('solicitante')
+        booking = save_booking(actor=user, data=self.data)
+        results = self.run_parallel(lambda index:
+            review_booking(actor=self.admin, booking_id=booking.pk, expected_version=1, decision='aprovar')
+            if index == 0 else save_booking(actor=self.admin, data=self.data))
+        self.assertEqual(sum(isinstance(result, Agendamento) for result in results), 1)
+        self.assertEqual(Agendamento.objects.filter(situacao='confirmado').count(), 1)
+
+    def test_parallel_opposite_decisions_cannot_overwrite_each_other(self):
+        user = get_user_model().objects.create_user('solicitante')
+        booking = save_booking(actor=user, data=self.data)
+        results = self.run_parallel(lambda index: review_booking(actor=self.admin, booking_id=booking.pk,
+                                   expected_version=1, decision=('aprovar', 'rejeitar')[index]))
+        self.assertEqual(sum(isinstance(result, Agendamento) for result in results), 1)
+        booking.refresh_from_db()
+        self.assertEqual((booking.versao, booking.eventos.count()), (2, 2))

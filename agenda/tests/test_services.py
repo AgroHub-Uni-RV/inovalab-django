@@ -42,15 +42,20 @@ class BookingServiceTests(TestCase):
             self.assertEqual(booking.eventos.get().acao, 'criar')
             self.assertEqual(visible_bookings(self.admin).count(), Agendamento.objects.count())
 
-    def test_regular_staff_anonymous_and_inactive_admin_cannot_read_or_write(self):
+    def test_anonymous_and_inactive_admin_cannot_read_or_write_and_staff_cannot_manage(self):
         booking = self.create_booking()
         self.admin.is_active = False
-        for actor in (self.user, AnonymousUser(), self.admin):
+        for actor in (AnonymousUser(), self.admin):
             self.assertFalse(visible_bookings(actor).exists())
             with self.assertRaises(PermissionDenied):
                 save_booking(actor=actor, data={})
             with self.assertRaises(PermissionDenied):
                 cancel_booking(actor=actor, booking_id=booking.pk, expected_version=1)
+        self.assertFalse(visible_bookings(self.user).exists())
+        with self.assertRaises(PermissionDenied):
+            save_booking(actor=self.user, booking_id=booking.pk, expected_version=1, data={'motivo': 'Alterar'})
+        with self.assertRaises(PermissionDenied):
+            cancel_booking(actor=self.user, booking_id=booking.pk, expected_version=1)
 
     def test_required_text_is_trimmed_and_invalid_data_does_not_create_events(self):
         booking = self.create_booking(requerente='  Ana  ', motivo='  Protótipo  ')

@@ -11,6 +11,7 @@ from django.utils import timezone
 
 from accounts.policies import is_business_admin
 from agenda.models import Agendamento, EventoAgendamento
+from agenda.policies import can_access_agenda
 from catalogo.models import Equipamento, Espaco, Servico
 from materiais.models import Material
 
@@ -20,7 +21,8 @@ BASE_FIELDS = {'categoria', 'objeto', 'requerente', 'motivo', 'inicio', 'fim'}
 SERVICE_FIELDS = {'equipamentos', 'material_proprio', 'material_gasto', 'material_gasto_gramas'}
 PUBLIC_FIELDS = BASE_FIELDS | SERVICE_FIELDS
 STORED_FIELDS = ('servico_id', 'equipamento_id', 'espaco_id', 'requerente', 'motivo', 'inicio', 'fim', 'cancelado_em',
-                 'material_proprio', 'material_gasto_id', 'material_gasto_gramas')
+                 'material_proprio', 'material_gasto_id', 'material_gasto_gramas',
+                 'situacao', 'avaliado_por_id', 'avaliado_em')
 
 
 class BookingConflict(Exception):
@@ -74,9 +76,11 @@ def _lock_targets(*targets):
 
 def _snapshot(booking):
     values = {name: getattr(booking, name) for name in (
-        'requerente', 'motivo', 'inicio', 'fim', 'cancelado_em', 'material_proprio', 'material_gasto_gramas')}
+        'requerente', 'motivo', 'inicio', 'fim', 'cancelado_em', 'material_proprio', 'material_gasto_gramas',
+        'situacao', 'avaliado_em')}
     values.update(categoria=booking.categoria, objeto=booking.objeto_id)
     values['material_gasto'] = booking.material_gasto_id
+    values['avaliado_por'] = booking.avaliado_por_id
     values['equipamentos'] = sorted(booking.equipamentos.values_list('pk', flat=True))
     return {name: value.astimezone(dt_timezone.utc).isoformat() if isinstance(value, datetime) else value
             if not isinstance(value, Decimal) else format(value, '.3f')
@@ -101,17 +105,23 @@ def _persist_existing(booking, version):
 
 @_busy_as_conflict
 def save_booking(*, actor, data, booking_id=None, expected_version=None):
-    _require_admin(actor)
+    if not can_access_agenda(actor):
+        raise PermissionDenied('Entre com uma conta ativa para acessar a agenda.')
+    if booking_id is not None:
+        _require_admin(actor)
     return _save_booking(actor=actor, actor_name=actor.username, data=data,
-                         booking_id=booking_id, expected_version=expected_version)
+                         booking_id=booking_id, expected_version=expected_version,
+                         initial_status='confirmado' if is_business_admin(actor) else 'pendente')
 
 
-def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=None):
-    # Trusted core: administrative facade or authenticated integration adapter only.
+def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=None, initial_status='confirmado'):
+    # Trusted core: role-aware facade or authenticated integration adapter only.
     unknown = set(data) - PUBLIC_FIELDS
     if unknown:
         raise ValidationError({name: 'Este campo não pode ser alterado.' for name in unknown})
-    booking = _load(booking_id, expected_version) if booking_id is not None else Agendamento(criado_por=actor)
+    booking = _load(booking_id, expected_version) if booking_id is not None else Agendamento(
+        criado_por=actor, situacao=initial_status,
+    )
     old_equipment_ids = set(booking.equipamentos.values_list('pk', flat=True)) if booking.pk else set()
     old_target = _target(booking) if booking_id is not None else None
     if ('categoria' in data) != ('objeto' in data):
@@ -179,18 +189,56 @@ def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=
             if material.status == 'indisponivel' and (period_changed or previous.material_gasto_id != material.pk):
                 raise ValidationError({'material_gasto': 'Este material está indisponível.'})
         booking.full_clean()
-        overlap = Agendamento.objects.filter(cancelado_em__isnull=True, inicio__lt=booking.fim, fim__gt=booking.inicio,
-                                             **{target[0] + '_id': target[1]})
-        if previous:
-            overlap = overlap.exclude(pk=booking.pk)
-        if overlap.exists():
-            raise BookingConflict('horario_ocupado', 'Já existe uma reserva deste objeto no período informado.')
+        if booking.situacao == 'confirmado':
+            _check_overlap(booking)
         if previous:
             _persist_existing(booking, expected_version)
         else:
             booking.save()
         booking.equipamentos.set(equipment_ids)
         _record(actor, booking, 'editar' if previous else 'criar', before, actor_name=actor_name)
+    return booking
+
+
+def _check_overlap(booking):
+    overlap = Agendamento.objects.filter(situacao='confirmado', cancelado_em__isnull=True,
+        inicio__lt=booking.fim, fim__gt=booking.inicio, **{booking.categoria + '_id': booking.objeto_id})
+    if booking.pk:
+        overlap = overlap.exclude(pk=booking.pk)
+    if overlap.exists():
+        raise BookingConflict('horario_ocupado', 'Já existe uma reserva deste objeto no período informado.')
+
+
+@_busy_as_conflict
+def review_booking(*, actor, booking_id, expected_version, decision):
+    _require_admin(actor)
+    if decision not in ('aprovar', 'rejeitar'):
+        raise ValidationError({'decisao': 'Escolha aceitar ou rejeitar a solicitação.'})
+    booking = _load(booking_id, expected_version)
+    equipment_ids = list(booking.equipamentos.values_list('pk', flat=True))
+    with transaction.atomic():
+        _lock_targets(_target(booking), *(('equipamento', pk) for pk in equipment_ids))
+        booking = _load(booking_id, expected_version)
+        if booking.situacao != 'pendente':
+            raise BookingConflict('pedido_avaliado', 'Esta solicitação já foi avaliada.')
+        before = _snapshot(booking)
+        if decision == 'aprovar':
+            resource = CATEGORY_MODELS[booking.categoria].objects.get(pk=booking.objeto_id)
+            if resource.status == 'indisponivel':
+                raise ValidationError({'objeto': 'Este cadastro está indisponível para reservar este período.'})
+            if Equipamento.objects.filter(pk__in=equipment_ids, status='indisponivel').exists():
+                raise ValidationError({'equipamentos': 'Um equipamento selecionado está indisponível.'})
+            if booking.material_gasto_id is not None:
+                material = Material.objects.select_for_update().get(pk=booking.material_gasto_id)
+                if material.status == 'indisponivel':
+                    raise ValidationError({'material_gasto': 'Este material está indisponível.'})
+            booking.full_clean()
+            _check_overlap(booking)
+        booking.situacao = 'confirmado' if decision == 'aprovar' else 'rejeitado'
+        booking.avaliado_por = actor
+        booking.avaliado_em = timezone.now()
+        _persist_existing(booking, expected_version)
+        _record(actor, booking, decision, before)
     return booking
 
 

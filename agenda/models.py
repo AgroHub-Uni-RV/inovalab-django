@@ -8,6 +8,7 @@ from django.utils import timezone
 
 
 CATEGORIES = {'servico': 'Serviço', 'equipamento': 'Equipamento', 'espaco': 'Espaço'}
+BOOKING_STATUSES = {'pendente': 'Pendente', 'confirmado': 'Confirmado', 'rejeitado': 'Rejeitado'}
 
 
 class Agendamento(models.Model):
@@ -30,6 +31,10 @@ class Agendamento(models.Model):
     cancelado_em = models.DateTimeField(null=True, blank=True, editable=False)
     criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, editable=False)
     criado_em = models.DateTimeField(auto_now_add=True)
+    situacao = models.CharField(max_length=10, choices=BOOKING_STATUSES.items(), default='confirmado', editable=False)
+    avaliado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                     editable=False, related_name='agendamentos_avaliados')
+    avaliado_em = models.DateTimeField(null=True, blank=True, editable=False)
 
     class Meta:
         ordering = ['inicio', 'pk']
@@ -41,6 +46,7 @@ class Agendamento(models.Model):
             ), name='agenda_exatamente_um_alvo'),
             models.CheckConstraint(condition=models.Q(fim__gt=models.F('inicio')), name='agenda_intervalo_positivo'),
             models.CheckConstraint(condition=models.Q(versao__gte=1), name='agenda_versao_positiva'),
+            models.CheckConstraint(condition=models.Q(situacao__in=list(BOOKING_STATUSES)), name='agenda_situacao_valida'),
             models.CheckConstraint(condition=(
                 models.Q(material_proprio__isnull=True, material_gasto_gramas__isnull=True)
                 | models.Q(servico__isnull=False, material_proprio__isnull=False,
@@ -106,7 +112,8 @@ class EventoAgendamento(models.Model):
     ator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     ator_nome = models.CharField(max_length=150)
     instante = models.DateTimeField(auto_now_add=True)
-    acao = models.CharField(max_length=15, choices=[('criar', 'Criar'), ('editar', 'Editar'), ('cancelar', 'Cancelar')])
+    acao = models.CharField(max_length=15, choices=[('criar', 'Criar'), ('editar', 'Editar'), ('cancelar', 'Cancelar'),
+                                                  ('aprovar', 'Aprovar'), ('rejeitar', 'Rejeitar')])
     alteracoes = models.JSONField(default=dict)
 
     class Meta:

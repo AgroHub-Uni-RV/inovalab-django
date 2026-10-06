@@ -8,13 +8,16 @@ from django.utils import timezone
 from accounts.policies import is_business_admin
 from agenda.models import Agendamento
 from agenda.models import CATEGORIES
+from agenda.policies import can_access_agenda
 
 
 def visible_bookings(actor):
     queryset = Agendamento.objects.filter(cancelado_em__isnull=True).select_related(
-        'servico', 'equipamento', 'espaco', 'criado_por', 'material_gasto',
+        'servico', 'equipamento', 'espaco', 'criado_por', 'material_gasto', 'avaliado_por',
     )
-    return queryset if is_business_admin(actor) else queryset.none()
+    if not can_access_agenda(actor):
+        return queryset.none()
+    return queryset if is_business_admin(actor) else queryset.filter(criado_por=actor)
 
 
 def month_bounds(value):
@@ -44,7 +47,7 @@ def calendar_weeks(queryset, month):
     start, end = month_bounds(month)
     # Count from the entire filtered month, independently of table pagination.
     counts, previews = {}, {}
-    for booking in queryset.iterator():
+    for booking in queryset.filter(situacao='confirmado', cancelado_em__isnull=True).iterator():
         first, last = booking.inicio, booking.fim
         first, last = max(first, start), min(last, end)
         day = timezone.localtime(first).date()
