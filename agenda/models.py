@@ -1,4 +1,5 @@
 from decimal import Decimal
+from uuid import uuid4
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -140,6 +141,30 @@ class Agendamento(models.Model):
 class ControleAgendaVisitas(models.Model):
     """Linha única usada para serializar alterações na agenda de visitas."""
     id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+
+
+class ReservaAgroHub(models.Model):
+    agendamento = models.OneToOneField(Agendamento, on_delete=models.CASCADE, related_name='reserva_agrohub')
+    referencia = models.UUIDField(default=uuid4, unique=True, editable=False)
+    origem = models.URLField(max_length=2048, editable=False)
+    reserva_id = models.PositiveBigIntegerField(null=True, blank=True, editable=False)
+    status_remoto = models.CharField(max_length=20, blank=True, editable=False)
+    operacao = models.CharField(max_length=10, default='criar', editable=False)
+    estado = models.CharField(max_length=12, default='pendente', editable=False,
+        choices=[('pendente', 'Envio pendente'), ('enviando', 'Envio em andamento'),
+                 ('registrada', 'Enviada ao AgroHub'), ('falha', 'Envio não concluído'), ('incerta', 'Aguardando conciliação')])
+    payload = models.JSONField(default=dict, editable=False)
+    mensagem = models.CharField(max_length=500, blank=True, editable=False)
+    ultima_tentativa = models.DateTimeField(null=True, blank=True, editable=False)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['origem', 'reserva_id'], name='agrohub_reserva_origem_id_unico')]
+
+    @property
+    def status_display(self):
+        return {'pendente': 'Pendente', 'confirmada': 'Confirmada', 'cancelada': 'Cancelada',
+                'recusada': 'Recusada'}.get(self.status_remoto, 'Ainda não registrada')
 
 
 class EventoAgendamento(models.Model):

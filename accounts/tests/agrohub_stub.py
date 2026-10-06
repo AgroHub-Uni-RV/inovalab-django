@@ -50,6 +50,9 @@ class AccountsStub:
                 override = state['responses'].get((self.command, self.path))
                 if override:
                     return self.reply(*override)
+                dispatch_extra = getattr(stub, 'dispatch_extra', None)
+                if dispatch_extra and dispatch_extra(self, data):
+                    return
                 if self.command == 'GET' and self.path.startswith('/api/v1/agrohub/eventos/?'):
                     return self.reply(200, {'count': 0, 'next': None, 'results': []})
                 if self.path == '/media/profile.png':

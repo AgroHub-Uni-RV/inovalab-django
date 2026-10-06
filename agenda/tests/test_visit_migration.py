@@ -10,6 +10,7 @@ class VisitMigrationTests(TransactionTestCase):
         previous = [('agenda', '0007_agendamento_observacoes')]
         current = [('agenda', '0008_visitas_e_espacos_legados')]
         executor = MigrationExecutor(connection)
+        latest = executor.loader.graph.leaf_nodes()
         executor.migrate(previous)
         try:
             apps = executor.loader.project_state(previous).apps
@@ -35,4 +36,4 @@ class VisitMigrationTests(TransactionTestCase):
                              (booking.pk, 'Conta anterior', changes))
             self.assertTrue(apps.get_model('agenda', 'ControleAgendaVisitas').objects.filter(pk=1).exists())
         finally:
-            MigrationExecutor(connection).migrate(current)
+            MigrationExecutor(connection).migrate(latest)

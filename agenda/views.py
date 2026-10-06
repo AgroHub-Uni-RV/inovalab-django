@@ -17,6 +17,7 @@ from agenda.policies import can_access_agenda
 from agenda.selectors import calendar_weeks, category_filter, filter_bookings, month_bounds, visible_bookings
 from agenda.services import PUBLIC_FIELDS, SERVICE_FIELDS, BookingConflict, cancel_booking, review_booking, save_booking
 from accounts.photos import profile_photo_response
+from agenda.agrohub import can_sync, reservation_summary, sync_reservation
 
 
 class AgendaAccessMixin(LoginRequiredMixin):
@@ -89,8 +90,39 @@ class BookingDetailView(AgendaAccessMixin, DetailView):
     template_name = 'agenda/detail.html'
 
     def get_context_data(self, **kwargs):
+        sync = getattr(self.object, 'reserva_agrohub', None)
         return {**super().get_context_data(**kwargs), 'events': self.object.eventos.all()[:5],
-                'creator_name': self.object.criador_nome}
+                'creator_name': self.object.criador_nome, 'agrohub_sync': sync,
+                'can_sync_agrohub': sync is not None and can_sync(self.request.user, sync)}
+
+
+@method_decorator(never_cache, name='dispatch')
+class BookingSyncView(AgendaAccessMixin, View):
+    def get_booking(self, pk):
+        queryset = Agendamento.objects.all()
+        if not is_business_admin(self.request.user):
+            queryset = queryset.filter(criado_por=self.request.user)
+        booking = get_object_or_404(queryset, pk=pk, reserva_agrohub__isnull=False)
+        return booking
+
+    def get(self, request, pk):
+        booking = self.get_booking(pk)
+        sync = booking.reserva_agrohub
+        return render(request, 'agenda/agrohub.html', {'booking': booking, 'agrohub_sync': sync,
+            'can_sync_agrohub': can_sync(request.user, sync)})
+
+    def post(self, request, pk):
+        booking = self.get_booking(pk)
+        form = CancelForm(request.POST)
+        if not form.is_valid():
+            return render(request, 'agenda/error.html', {'message': 'Informe a versão válida do agendamento.'}, status=400)
+        try:
+            if booking.versao != form.cleaned_data['versao']:
+                raise BookingConflict('versao_desatualizada', 'O agendamento foi alterado. Atualize antes de tentar novamente.')
+            sync_reservation(request, booking)
+        except BookingConflict as error:
+            return render(request, 'agenda/error.html', {'message': str(error)}, status=409)
+        return redirect('agenda:agrohub', pk=booking.pk)
 
 
 @method_decorator(never_cache, name='dispatch')
@@ -141,7 +173,7 @@ class BookingWriteView(AgendaAccessMixin, View):
             try:
                 saved = save_booking(actor=request.user,
                                      data={key: value for key, value in form.cleaned_data.items() if key in PUBLIC_FIELDS},
-                                     booking_id=booking.pk if booking else None, expected_version=form.cleaned_data['versao'])
+                                     booking_id=booking.pk if booking else None, expected_version=form.cleaned_data['versao'], agrohub_request=request)
             except BookingConflict as error:
                 form.add_error(None, str(error))
                 response_status = 409
@@ -149,8 +181,12 @@ class BookingWriteView(AgendaAccessMixin, View):
                 for field, errors in error.message_dict.items():
                     form.add_error(field if field in form.fields else None, errors)
             else:
-                messages.success(request, 'Solicitação enviada. Aguarde a confirmação de um administrador.'
-                                 if saved.situacao == 'pendente' else 'Agendamento salvo.')
+                remote = reservation_summary(saved)
+                if remote and remote['estado'] != 'registrada':
+                    messages.warning(request, 'Agendamento salvo no InovaLab. Confira a operação pendente no AgroHub.')
+                else:
+                    messages.success(request, 'Solicitação enviada. Aguarde a confirmação de um administrador.'
+                                     if saved.situacao == 'pendente' else 'Agendamento salvo.')
                 return redirect('agenda:detail', pk=saved.pk)
         return render(request, 'agenda/form.html', {'form': form, 'booking': booking}, status=response_status)
 
@@ -167,10 +203,13 @@ class BookingCancelView(AdminAgendaAccessMixin, View):
         message = 'Informe a versão válida do agendamento e confira os campos enviados.'
         if form.is_valid():
             try:
-                cancel_booking(actor=request.user, booking_id=pk, expected_version=form.cleaned_data['versao'])
+                saved = cancel_booking(actor=request.user, booking_id=pk, expected_version=form.cleaned_data['versao'], agrohub_request=request)
             except BookingConflict as error:
                 message, response_status = str(error), 409
             else:
+                remote = reservation_summary(saved)
+                if remote and remote['estado'] != 'registrada':
+                    return redirect('agenda:agrohub', pk=saved.pk)
                 messages.success(request, 'Agendamento cancelado. Horário liberado e histórico preservado.')
                 return redirect('agenda:list')
         return render(request, 'agenda/error.html', {'message': message, 'booking': booking}, status=response_status)
@@ -209,12 +248,16 @@ class BookingReviewView(AdminAgendaAccessMixin, View):
             return render(request, 'agenda/error.html', {'message': 'Confira a decisão, a versão e os campos enviados.',
                                                        'booking': booking}, status=400)
         try:
-            review_booking(actor=request.user, booking_id=pk, expected_version=form.cleaned_data['versao'],
-                           decision=form.cleaned_data['decisao'])
+            saved = review_booking(actor=request.user, booking_id=pk, expected_version=form.cleaned_data['versao'],
+                           decision=form.cleaned_data['decisao'], agrohub_request=request)
         except BookingConflict as error:
             return render(request, 'agenda/error.html', {'message': str(error), 'booking': booking}, status=409)
         except ValidationError as error:
             return render(request, 'agenda/error.html', {'message': ' '.join(error.messages), 'booking': booking}, status=400)
+        remote = reservation_summary(saved)
+        if remote and remote['estado'] != 'registrada':
+            messages.warning(request, 'Avaliação salva no InovaLab. Confira a operação pendente no AgroHub.')
+            return redirect('agenda:detail', pk=saved.pk)
         messages.success(request, 'Solicitação aceita. Horário reservado.' if form.cleaned_data['decisao'] == 'aprovar'
                          else 'Solicitação rejeitada.')
         return redirect('agenda:requests')

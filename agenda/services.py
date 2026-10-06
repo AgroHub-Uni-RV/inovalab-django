@@ -111,14 +111,18 @@ def _persist_existing(booking, version):
 
 
 @_busy_as_conflict
-def save_booking(*, actor, data, booking_id=None, expected_version=None):
+def save_booking(*, actor, data, booking_id=None, expected_version=None, agrohub_request=None):
     if not can_access_agenda(actor):
         raise PermissionDenied('Entre com uma conta ativa para acessar a agenda.')
     if booking_id is not None:
         _require_admin(actor)
-    return _save_booking(actor=actor, actor_name=actor.username, data=data,
+    booking = _save_booking(actor=actor, actor_name=actor.username, data=data,
                          booking_id=booking_id, expected_version=expected_version,
                          initial_status='confirmado' if is_business_admin(actor) else 'pendente')
+    if agrohub_request is not None:
+        from agenda.agrohub import sync_after_change
+        sync_after_change(agrohub_request, booking)
+    return booking
 
 
 def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=None, initial_status='confirmado'):
@@ -210,6 +214,8 @@ def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=
         else:
             booking.save()
         booking.equipamentos.set(equipment_ids)
+        from agenda.agrohub import queue_reservation
+        queue_reservation(booking, actor, allow_create=previous is None or not previous.visita)
         _record(actor, booking, 'editar' if previous else 'criar', before, actor_name=actor_name)
     return booking
 
@@ -226,7 +232,7 @@ def _check_overlap(booking):
 
 
 @_busy_as_conflict
-def review_booking(*, actor, booking_id, expected_version, decision):
+def review_booking(*, actor, booking_id, expected_version, decision, agrohub_request=None):
     _require_admin(actor)
     if decision not in ('aprovar', 'rejeitar'):
         raise ValidationError({'decisao': 'Escolha aceitar ou rejeitar a solicitação.'})
@@ -256,12 +262,17 @@ def review_booking(*, actor, booking_id, expected_version, decision):
         booking.avaliado_por = actor
         booking.avaliado_em = timezone.now()
         _persist_existing(booking, expected_version)
+        from agenda.agrohub import queue_reservation
+        queue_reservation(booking, actor)
         _record(actor, booking, decision, before)
+    if agrohub_request is not None:
+        from agenda.agrohub import sync_after_change
+        sync_after_change(agrohub_request, booking)
     return booking
 
 
 @_busy_as_conflict
-def cancel_booking(*, actor, booking_id, expected_version):
+def cancel_booking(*, actor, booking_id, expected_version, agrohub_request=None):
     _require_admin(actor)
     booking = _load(booking_id, expected_version)
     with transaction.atomic():
@@ -270,5 +281,10 @@ def cancel_booking(*, actor, booking_id, expected_version):
         before = _snapshot(booking)
         booking.cancelado_em = timezone.now()
         _persist_existing(booking, expected_version)
+        from agenda.agrohub import queue_reservation
+        queue_reservation(booking, actor)
         _record(actor, booking, 'cancelar', before)
+    if agrohub_request is not None:
+        from agenda.agrohub import sync_after_change
+        sync_after_change(agrohub_request, booking)
     return booking

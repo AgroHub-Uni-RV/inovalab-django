@@ -84,7 +84,7 @@ def begin_session(request, payload):
     return user
 
 
-def authenticated_request(request, method, route, *, data=None, photo=None):
+def authenticated_request(request, method, route, *, data=None, photo=None, namespace='accounts', params=None):
     credential = request.session.get(SESSION_KEY)
     if not isinstance(credential, dict) or credential.get('user_id') != request.user.agrohub_id:
         raise AgroHubError(401)
@@ -92,7 +92,7 @@ def authenticated_request(request, method, route, *, data=None, photo=None):
         raise AgroHubError(401)
     client = AgroHubClient()
     try:
-        return client.request(method, route, data=data, photo=photo, access=credential['access'])
+        return client.request(method, route, data=data, photo=photo, access=credential['access'], namespace=namespace, params=params)
     except AgroHubError as error:
         if error.status != 401:
             raise
@@ -105,6 +105,6 @@ def authenticated_request(request, method, route, *, data=None, photo=None):
     request.session[SESSION_KEY] = {**renewed, 'user_id': profile['id']}
     if photo is not None:
         photo.seek(0)
-    if method == 'GET' and route == 'me/':
+    if namespace == 'accounts' and method == 'GET' and route == 'me/':
         return profile
-    return client.request(method, route, data=data, photo=photo, access=renewed['access'])
+    return client.request(method, route, data=data, photo=photo, access=renewed['access'], namespace=namespace, params=params)

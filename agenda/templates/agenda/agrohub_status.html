@@ -1,0 +1,11 @@
+{% if agrohub_sync %}
+<section class="description-block" aria-label="Reserva no AgroHub">
+  <h2>Reserva no Laboratório InovaLab</h2>
+  <p>AgroHub: <strong>{{ agrohub_sync.status_display }}</strong>{% if agrohub_sync.reserva_id %} · Reserva #{{ agrohub_sync.reserva_id }}{% endif %}</p>
+  {% if agrohub_sync.estado == 'registrada' %}{% if agrohub_sync.reserva_id %}<p>Operação registrada no AgroHub.</p>{% else %}<p>Não há reserva vinculada no AgroHub.</p>{% endif %}{% else %}<p>Há uma operação aguardando confirmação no AgroHub.</p>{% endif %}
+  {% if agrohub_sync.mensagem %}<p role="alert">{{ agrohub_sync.mensagem }}</p>{% endif %}
+  {% if can_sync_agrohub and agrohub_sync.estado != 'registrada' %}
+  <form method="post" action="{% url 'agenda:agrohub' booking.pk %}">{% csrf_token %}<input type="hidden" name="versao" value="{{ booking.versao }}"><button class="secondary-button" type="submit">{% if agrohub_sync.estado == 'incerta' or agrohub_sync.estado == 'enviando' %}Consultar resultado no AgroHub{% else %}Tentar envio ao AgroHub{% endif %}</button></form>
+  {% endif %}
+</section>
+{% endif %}

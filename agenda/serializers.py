@@ -42,6 +42,7 @@ class AwareDateTimeField(serializers.DateTimeField):
 
 
 class BookingSerializer(StrictPayloadMixin, serializers.Serializer):
+    reserva_agrohub = serializers.SerializerMethodField()
     id = serializers.IntegerField(read_only=True)
     categoria = serializers.ChoiceField(choices=CATEGORIES)
     objeto = VersionField(source='objeto_id', min_value=1, required=False, allow_null=True)
@@ -84,12 +85,16 @@ class BookingSerializer(StrictPayloadMixin, serializers.Serializer):
         return attrs
 
     def create(self, validated_data):
-        return save_booking(actor=self.context['request'].user, data=validated_data)
+        return save_booking(actor=self.context['request'].user, data=validated_data, agrohub_request=self.context['request'])
 
     def update(self, instance, validated_data):
         version = validated_data.pop('versao')
         return save_booking(actor=self.context['request'].user, booking_id=instance.pk,
-                            expected_version=version, data=validated_data)
+                            expected_version=version, data=validated_data, agrohub_request=self.context['request'])
+
+    def get_reserva_agrohub(self, booking):
+        from agenda.agrohub import reservation_summary
+        return reservation_summary(booking)
 
 
 class CancelSerializer(StrictPayloadMixin, serializers.Serializer):

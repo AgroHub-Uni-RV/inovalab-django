@@ -1,4 +1,5 @@
 import json
+import re
 from http.client import HTTPException
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urljoin, urlsplit
@@ -53,9 +54,14 @@ class AgroHubClient:
     ROUTES = {'login/', 'login/refresh/', 'register/', 'me/', 'me/picture/',
               'password-reset/', 'password-reset/confirm/'}
 
-    def request(self, method, route, *, data=None, access=None, photo=None):
-        if route not in self.ROUTES:
-            raise ValueError('Rota Accounts desconhecida.')
+    def request(self, method, route, *, data=None, access=None, photo=None, namespace='accounts', params=None):
+        allowed = namespace == 'accounts' and route in self.ROUTES
+        if namespace == 'agendamentos':
+            allowed = (route == 'salas/' and method == 'GET') or (route == 'reservas/' and method in ('GET', 'POST'))
+            allowed = allowed or bool(re.fullmatch(r'reservas/[1-9][0-9]*/', route) and method in ('GET', 'PATCH'))
+            allowed = allowed or bool(re.fullmatch(r'reservas/[1-9][0-9]*/cancelar/', route) and method == 'POST')
+        if not allowed:
+            raise ValueError('Rota AgroHub desconhecida.')
         headers = {'Accept': 'application/json'}
         if access:
             headers['Authorization'] = 'Bearer '+access
@@ -69,7 +75,10 @@ class AgroHubClient:
         elif data is not None:
             body = json.dumps(data).encode('utf-8')
             headers['Content-Type'] = 'application/json'
-        request = Request(urljoin(base_url(), 'accounts/'+route), data=body, headers=headers, method=method)
+        url = urljoin(base_url(), namespace+'/'+route)
+        if params:
+            url += '?'+urlencode(params)
+        request = Request(url, data=body, headers=headers, method=method)
         raw = self._read(request, limit=512*1024)
         try:
             result = json.loads(raw)
