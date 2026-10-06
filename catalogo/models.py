@@ -46,6 +46,7 @@ class Servico(CadastroBase):
 
 
 class Equipamento(CadastroBase):
+    codigo_inicial = models.CharField(max_length=40, null=True, blank=True, unique=True, editable=False)
     descricao = models.TextField('descrição', blank=True)
     status = models.CharField('status', max_length=15, choices=StatusRecurso.choices, default=StatusRecurso.DISPONIVEL)
 
@@ -57,8 +58,11 @@ class Equipamento(CadastroBase):
 
 
 class Espaco(CadastroBase):
+    codigo_inicial = models.CharField(max_length=40, null=True, blank=True, unique=True, editable=False)
+    somente_administradores = models.BooleanField('agendamento exclusivo de administradores', default=False)
     capacidade_maxima_de_pessoas = models.PositiveIntegerField(
-        'capacidade máxima de pessoas', validators=[MinValueValidator(1), MaxValueValidator(2147483647)],
+        'capacidade máxima de pessoas', null=True, blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(2147483647)],
     )
     status = models.CharField('status', max_length=15, choices=StatusRecurso.choices, default=StatusRecurso.DISPONIVEL)
 

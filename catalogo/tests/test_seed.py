@@ -23,13 +23,13 @@ EXPECTED_SERVICES = {
 
 
 class InitialServicesTests(TestCase):
-    def test_migration_loads_exact_pdf_services_only(self):
+    def test_migration_loads_exact_pdf_services(self):
         self.assertEqual(dict(Servico.objects.values_list('nome', 'descricao')), EXPECTED_SERVICES)
         self.assertEqual(Servico.objects.count(), 11)
         self.assertEqual(Servico.objects.filter(status='disponivel').count(), 11)
         self.assertEqual(Servico.objects.exclude(codigo_inicial=None).count(), 11)
-        self.assertFalse(Equipamento.objects.exists())
-        self.assertFalse(Espaco.objects.exists())
+        self.assertEqual(Equipamento.objects.count(), 6)
+        self.assertEqual(Espaco.objects.count(), 9)
 
     def test_command_and_migration_are_idempotent_and_preserve_edits(self):
         entry = Servico.objects.get(nome='Impressão 3D')

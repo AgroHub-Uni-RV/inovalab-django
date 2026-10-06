@@ -10,7 +10,7 @@ from catalogo.models import Equipamento, Espaco, Servico
 PUBLIC_FIELDS = {
     Servico: ('nome', 'descricao', 'status'),
     Equipamento: ('nome', 'descricao', 'status'),
-    Espaco: ('nome', 'capacidade_maxima_de_pessoas', 'status'),
+    Espaco: ('nome', 'capacidade_maxima_de_pessoas', 'somente_administradores', 'status'),
 }
 
 

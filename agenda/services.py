@@ -125,6 +125,9 @@ def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=
         previous = _load(booking_id, expected_version) if booking_id is not None else None
         before = _snapshot(previous) if previous else {}
         resource = CATEGORY_MODELS[target[0]].objects.get(pk=target[1])
+        if (isinstance(resource, Espaco) and resource.somente_administradores
+                and (actor is None or not is_business_admin(actor))):
+            raise PermissionDenied('Este espaço só pode ser agendado por administradores do laboratório.')
         period_changed = previous is None or target != _target(previous) or (booking.inicio, booking.fim) != (previous.inicio, previous.fim)
         if period_changed and resource.status == 'indisponivel':
             raise ValidationError({'objeto': 'Este cadastro está indisponível para reservar este período.'})

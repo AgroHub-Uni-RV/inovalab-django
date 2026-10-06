@@ -20,5 +20,5 @@ class EquipamentoForm(forms.ModelForm):
 class EspacoForm(forms.ModelForm):
     class Meta:
         model = Espaco
-        fields = ['nome', 'capacidade_maxima_de_pessoas', 'status']
+        fields = ['nome', 'capacidade_maxima_de_pessoas', 'somente_administradores', 'status']
         widgets = {'capacidade_maxima_de_pessoas': forms.NumberInput(attrs={'min': 1, 'max': 2147483647})}

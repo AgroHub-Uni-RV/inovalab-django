@@ -9,7 +9,8 @@ from catalogo.models import Equipamento, Espaco, Servico
 CASES = (
     ('servicos', Servico, {'nome': 'Novo serviço', 'descricao': 'Descrição', 'status': 'disponivel'}),
     ('equipamentos', Equipamento, {'nome': 'Impressora', 'descricao': 'Descrição', 'status': 'ocupado'}),
-    ('espacos', Espaco, {'nome': 'Sala', 'capacidade_maxima_de_pessoas': 10, 'status': 'disponivel'}),
+    ('espacos', Espaco, {'nome': 'Sala', 'capacidade_maxima_de_pessoas': 10,
+                       'somente_administradores': False, 'status': 'disponivel'}),
 )
 
 

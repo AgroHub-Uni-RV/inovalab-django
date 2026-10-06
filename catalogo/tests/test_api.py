@@ -114,7 +114,6 @@ class CatalogApiTests(TestCase):
         response = self.client.put(f'/api/v1/espacos/{entry.pk}/', {'status': 'indisponivel'}, content_type='application/json')
         self.assertEqual(response.status_code, 400)
         self.assertIn('nome', response.json())
-        self.assertIn('capacidade_maxima_de_pessoas', response.json())
 
     def test_delete_is_not_supported_and_preserves_records(self):
         self.client.force_login(self.admin)

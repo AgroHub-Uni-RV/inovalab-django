@@ -94,7 +94,7 @@ class CatalogModelTests(TestCase):
             entry.refresh_from_db()
             self.assertEqual(entry.nome, 'Original')
             self.assertEqual(entry.capacidade_maxima_de_pessoas, 10)
-        self.assertEqual(Espaco.objects.count(), 1)
+        self.assertEqual(Espaco.objects.count(), 10)
 
     def test_private_seed_key_cannot_be_changed_by_write_operation(self):
         entry = Servico.objects.first()

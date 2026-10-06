@@ -59,7 +59,8 @@ class BookingWebTests(TestCase):
 
     def test_form_options_follow_selected_category_and_reject_foreign_or_disabled_target(self):
         response = self.client.get('/agenda/novo/', {'categoria': 'espaco'})
-        self.assertEqual(list(response.context['form'].fields['objeto'].queryset), [self.space])
+        self.assertQuerySetEqual(response.context['form'].fields['objeto'].queryset,
+                                 Espaco.objects.exclude(status='indisponivel').order_by('nome', 'pk'))
         self.space.status = 'indisponivel'
         self.space.save()
         response = self.client.post('/agenda/novo/', {**self.data, 'categoria': 'espaco', 'objeto': self.space.pk})
@@ -71,7 +72,8 @@ class BookingWebTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.context['form'].errors)
         self.assertContains(response, 'Texto ainda em edição')
-        self.assertEqual(list(response.context['form'].fields['objeto'].queryset), [self.space])
+        self.assertQuerySetEqual(response.context['form'].fields['objeto'].queryset,
+                                 Espaco.objects.exclude(status='indisponivel').order_by('nome', 'pk'))
         self.assertFalse(Agendamento.objects.exists())
         response = self.client.post('/agenda/novo/', {**self.data, 'categoria': 'equipamento', 'objeto': 999999})
         self.assertEqual(Agendamento.objects.count(), 0)

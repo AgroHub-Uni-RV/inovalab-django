@@ -31,6 +31,39 @@ class IntegrationAPITests(TestCase):
     def post(self, **overrides):
         return self.client.post(self.url, {**self.data, **overrides}, format='json')
 
+    def test_restricted_spaces_are_hidden_and_cannot_be_reserved_by_id(self):
+        restricted = Espaco.objects.filter(somente_administradores=True)
+        response = self.client.get('/api/v1/integracoes/catalogo/', {'categoria': 'espaco'})
+        self.assertEqual(response.status_code, 200)
+        ids = {entry['id'] for entry in response.data['results']}
+        self.assertIn(self.space.pk, ids)
+        for room in restricted:
+            with self.subTest(room=room.nome):
+                self.assertNotIn(room.pk, ids)
+                denied = self.post(categoria='espaco', objeto=room.pk)
+                self.assertEqual(denied.status_code, 403, denied.data)
+        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(PedidoIntegracao.objects.exists())
+
+    def test_business_admin_can_book_restricted_spaces_internally(self):
+        self.client.credentials()
+        self.client.force_authenticate(self.admin)
+        for room in Espaco.objects.filter(somente_administradores=True):
+            with self.subTest(room=room.nome):
+                data = {key: value for key, value in self.data.items()
+                        if key not in ('id_externo', 'requerente_id')}
+                response = self.client.post('/api/v1/agendamentos/',
+                    {**data, 'categoria': 'espaco', 'objeto': room.pk}, format='json')
+                self.assertEqual(response.status_code, 201, response.data)
+
+    def test_external_booking_checks_current_restriction_on_custom_space(self):
+        self.space.somente_administradores = True
+        self.space.save()
+        self.assertEqual(self.post(categoria='espaco', objeto=self.space.pk).status_code, 403)
+        self.space.somente_administradores = False
+        self.space.save()
+        self.assertEqual(self.post(categoria='espaco', objeto=self.space.pk).status_code, 201)
+
     def test_real_bearer_without_session_or_csrf_creates_and_replays(self):
         response = self.post()
         self.assertEqual(response.status_code, 201, response.data)
@@ -115,9 +148,9 @@ class IntegrationAPITests(TestCase):
         Equipamento.objects.create(nome='Não expor', status='indisponivel')
         url = '/api/v1/integracoes/catalogo/'
         response = self.client.get(url, {'categoria': 'equipamento'})
-        self.assertEqual((response.status_code, response.data['count'], len(response.data['results'])), (200, 27, 25))
+        self.assertEqual((response.status_code, response.data['count'], len(response.data['results'])), (200, 33, 25))
         self.assertEqual(set(response.data['results'][0]), {'id', 'categoria', 'nome'})
-        self.assertEqual(len(self.client.get(url, {'categoria': 'equipamento', 'page': 2}).data['results']), 2)
+        self.assertEqual(len(self.client.get(url, {'categoria': 'equipamento', 'page': 2}).data['results']), 8)
         for query in ({}, {'categoria': 'qualquer'}):
             self.assertEqual(self.client.get(url, query).status_code, 400)
         self.assertEqual(self.client.post(url, {}, format='json').status_code, 405)

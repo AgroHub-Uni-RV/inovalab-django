@@ -47,5 +47,5 @@ class EquipamentoSerializer(CatalogSerializer):
 class EspacoSerializer(CatalogSerializer):
     class Meta:
         model = Espaco
-        fields = ['id', 'nome', 'capacidade_maxima_de_pessoas', 'status']
+        fields = ['id', 'nome', 'capacidade_maxima_de_pessoas', 'somente_administradores', 'status']
         read_only_fields = ['id']
