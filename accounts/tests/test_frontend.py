@@ -37,6 +37,22 @@ class FrontendRoutesTests(TestCase):
                 self.assertNotContains(response, '/integracoes/')
         self.assertEqual(self.client.get('/painel/').status_code, 200)
 
+    def test_login_self_returns_normalize_to_index(self):
+        self.client.force_login(self.user)
+        for path in ('/', '/entrar/'):
+            for destination in ('/', '/entrar/', '/?next=/', '/entrar/?next=/entrar/',
+                                '?next=/', '#login', 'http://testserver/entrar/'):
+                with self.subTest(path=path, destination=destination):
+                    self.assertRedirects(self.client.get(path, {'next':destination}), '/index/',
+                                         fetch_redirect_response=False)
+        self.assertRedirects(self.client.get('/', {'next':'/materiais/'}), '/materiais/', fetch_redirect_response=False)
+
+    def test_login_post_self_return_normalizes_to_index(self):
+        for destination in ('/', '/entrar/?next=/entrar/'):
+            self.client.logout()
+            self.assertRedirects(self.client.post('/', {'username':self.user.username,
+                                'password':PASSWORD, 'next':destination}), '/index/')
+
     def test_catalog_menu_remains_current_for_all_categories(self):
         self.client.force_login(self.user)
         for path in ('/catalogo/servicos/', '/catalogo/equipamentos/', '/catalogo/espacos/'):

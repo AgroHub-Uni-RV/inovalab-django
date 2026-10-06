@@ -38,6 +38,18 @@ class AgendaFrontendTests(TestCase):
         self.assertEqual(response.context['category_counts'], {'servico': 1, 'equipamento': 0, 'espaco': 0})
         self.assertNotContains(response, 'Cancelado')
 
+    def test_multiday_previews_show_full_interval_in_each_occupied_day(self):
+        self.client.force_login(self.admin)
+        for end, occurrences in [('2026-10-07T08:00:00-03:00', 3), ('2026-10-06T00:00:00-03:00', 1)]:
+            with self.subTest(end=end):
+                Agendamento.objects.all().delete()
+                Agendamento.objects.create(servico=self.service, requerente='Reserva longa', motivo='Motivo',
+                    criado_por=self.admin, inicio=datetime.fromisoformat('2026-10-05T22:00:00-03:00'),
+                    fim=datetime.fromisoformat(end))
+                response = self.client.get('/agenda/?mes=2026-10')
+                label = '05/10 22:00 até ' + ('07/10 08:00' if occurrences == 3 else '06/10 00:00')
+                self.assertContains(response, label, count=occurrences)
+
     def test_midnight_and_pagination_keep_all_calendar_bookings(self):
         start = datetime.fromisoformat('2026-12-31T22:00:00-03:00')
         end = datetime.fromisoformat('2027-01-01T00:00:00-03:00')
