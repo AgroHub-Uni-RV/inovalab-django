@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser, Group
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import IntegrityError, transaction
+from django.db import DataError, IntegrityError, transaction
 from django.test import TestCase
 
 from catalogo.models import Equipamento, Espaco, Servico
@@ -59,7 +59,8 @@ class CatalogModelTests(TestCase):
                 save_entry(actor=self.admin, model=Espaco, data={
                     'nome': 'Sala inválida', 'capacidade_maxima_de_pessoas': value,
                 })
-            with self.subTest(database=value), self.assertRaises(IntegrityError), transaction.atomic():
+            # PostgreSQL rejeita overflow como DataError; SQLite usa a constraint.
+            with self.subTest(database=value), self.assertRaises((DataError, IntegrityError)), transaction.atomic():
                 Espaco.objects.create(nome='Sala inválida', capacidade_maxima_de_pessoas=value)
         for value in (1, 2147483647):
             Espaco(nome='Sala', capacidade_maxima_de_pessoas=value).full_clean()
