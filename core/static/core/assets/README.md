@@ -4,4 +4,4 @@ Montserrat variável, distribuição oficial de [Google Fonts](https://github.co
 
 A fonte das referências não foi confirmada. Montserrat é uma escolha visual provisória.
 
-`logo.png` é uma cópia sem alterações de `Referencias/logo.png`, fornecida pelo responsável e incorporada após sua solicitação. Usada no login, sidebar e cabeçalho público, sobre fundo branco para manter o contraste do texto azul. O sistema serve o arquivo estático sem depender da pasta de referências em execução. Logos institucionais de parceiros ainda não fornecidas permanecem reservadas no rodapé.
+`logo.png` e `logo_texto_branco.png` são cópias sem alterações dos arquivos correspondentes em `Referencias/`, fornecidos pelo responsável. Texto branco no login e sidebar de fundo azul; texto azul no cabeçalho público branco. O sistema serve os arquivos estáticos sem depender da pasta de referências em execução. Logos institucionais de parceiros ainda não fornecidas permanecem reservadas no rodapé.

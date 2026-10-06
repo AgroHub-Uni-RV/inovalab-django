@@ -90,4 +90,6 @@ Por decisão do responsável, entregar um módulo por vez e aguardar sua depura�
 
 Para as próximas entregas visuais, seguir as referências com as funcionalidades atuais. A logo do InovaLab fornecida em `Referencias/logo.png` está incorporada; logos institucionais restantes aguardam os arquivos do responsável. A sidebar guarda a preferência de aberto/fechado no navegador, e Páginas mantém a estrutura interna após login. Veja [ajustes da sidebar, calendário e logo](docs/frontend/04-sidebar-calendario-e-logo.md). Executar os testes automatizados do Django e os testes básicos no navegador; o responsável realizará os testes mais profundos posteriormente. Essas orientações estão em [AGENTS.md](AGENTS.md).
 
+O perfil permite editar login, nome, sobrenome e foto da própria conta. A logo de texto branco é usada nos fundos azuis. Veja [entrega e validações do perfil](docs/frontend/05-perfil-e-logo-branca.md). Ao atualizar outro ambiente, executar `python manage.py migrate` antes de iniciar o servidor.
+
 Commits importantes seguem o formato em português, por exemplo `feat (docs): adiciona documentação da arquitetura do sistema.`.
