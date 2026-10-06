@@ -1,6 +1,6 @@
 # Módulo 4 — Agenda interna
 
-Entrega local em 02/10/2026, autorizada para implementação direta com [plano simples](../superpowers/plans/2026-10-02-agenda.md). Somente agenda interna nesta etapa. Aguardar depuração e autorização antes da integração AgroHub.
+Entrega inicial local em 02/10/2026, autorizada para implementação direta com [plano simples](../superpowers/plans/2026-10-02-agenda.md). Em 06/10/2026, a solicitação posterior autoriza [reservar a sala 1 no AgroHub na criação de visitas](10-visitas-agrohub.md). As seções abaixo registram a entrega inicial e suas evoluções; o contrato externo atual está nesse guia.
 
 ## Uso e permissões
 

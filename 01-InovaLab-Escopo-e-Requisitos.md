@@ -19,6 +19,8 @@ Em 04/10/2026, F3 autorizou desenvolver o módulo 7. Conteúdo/banners entregue 
 
 **F6 — Accounts de 06/10/2026:** o responsável solicitou login, registro, atualização de perfil/foto e solicitação/confirmação da recuperação de senha pela [API documentada do AgroHub](https://agrohub.unirv.edu.br/api/v1/schema/redoc/), e confirmou **somente login pelo AgroHub**. F6 substitui senha local como forma de entrada. Permissões do InovaLab permanecem locais; identificação por ID remoto, sem associação automática por nome/e-mail, é decisão de implementação documentada no [contrato Accounts](docs/modules/09-agrohub-accounts.md).
 
+**F7 — visitas AgroHub de 06/10/2026:** criar uma visita no InovaLab deve registrar reserva pela API Agendamentos na sala ID 1, Laboratório InovaLab. O responsável confirmou envio **na criação**, antes da aprovação local. [Contrato, manutenção e tratamento de falhas](docs/modules/10-visitas-agrohub.md).
+
 Classificação usada em todos os arquivos: **C = confirmado pela fonte**, **D = derivado da fonte para permitir funcionamento coerente**, **P = proposta a validar**. Uma regra D ou P não representa aprovação do responsável. Uma observação C de uma tela confirma o elemento visual, sem aprovar automaticamente suas regras de negócio. Prioridades são propostas: **MVP**, **seguinte** e **condicional**.
 
 As respostas da página 3 prevalecem sobre a lista inicial: não haverá status `re-criar`; a tarefa recusada retorna a `criacao`. A unificação dos agendamentos também está confirmada. O termo “Agendamento Figma” identifica uma proposta de modelagem no PDF, não uma integração confirmada com a ferramenta Figma.
@@ -80,6 +82,7 @@ Os critérios abaixo são a especificação operacional proposta; onde o comport
 | RF27 | Atualizar a própria foto pelo AgroHub | C — F6 | MVP | Foto validada usa PUT multipart me/picture; avatares exibem a foto remota com as permissões existentes |
 | RF28 | Solicitar recuperação de senha pelo AgroHub | C — F6 | MVP | E-mail usa password-reset; a interface mostra confirmação genérica sem revelar existência da conta |
 | RF29 | Confirmar recuperação de senha pelo AgroHub | C — F6 | MVP | UID/token e nova senha confirmada usam password-reset/confirm; sucesso limpa a sessão e solicita novo login |
+| RF30 | Registrar novas visitas internas na sala 1 do AgroHub na criação | C — F7 | MVP | POST Agendamentos com sessão do criador e data/horários; vínculo e resultado externo visíveis; manutenção no mesmo ID e conciliação sem repetir mutação incerta |
 
 O PDF apresenta dois modelos de agendamento na página 2: “Agendamento Figma” (`servico`, `data_hora`, `requerente`) e “Agendamento AgroHub já existente” (`categoria`, `objeto_agendadado`, `motivo`, `data`, `horario_inicio`, `horario_fim`). A página 3 confirma sua unificação. Representar `data_hora` por início completo ou por data/horário é derivação técnica; a fonte não define a conversão nem fornece horário final no primeiro modelo. Não inventar duração para registros antigos; esclarecer essa eventual migração em Q07.
 
@@ -151,7 +154,7 @@ O PDF lista “Óculos de realidade virtual” e “Scanner 3D manual” como se
 | Q04 | Quais campos são obrigatórios? Início é previsto ou real? Prazo contém horário? | Validações e datas das tarefas |
 | Q05 | F5 substitui espaços por visitas; serviços/equipamentos continuam exclusivos por recurso. Confirmar se visitas podem ocorrer simultaneamente; provisoriamente uma visita por intervalo, sem bloquear outros recursos | Categorias confirmadas; exclusividade de visitas e tratamento do legado pendentes |
 | Q06 | Status ocupado é manual ou calculado? Indisponibilidade pode ter período? | Consistência da agenda |
-| Q07 | F3 escolheu preparar primeiro API de recebimento no InovaLab, com credencial própria/idempotência. Validar payload e IDs com consumidor AgroHub, hospedagem/HTTPS, edição/exclusão, sincronização e migração de agendamentos antigos sem fim | Direção inicial definida; adaptador local entregue, conexão real e demais políticas pendentes |
+| Q07 | F3 preparou recebimento no InovaLab; F7 confirma também envio de novas visitas à sala 1 do AgroHub na criação. API documentada orienta contrato de envio/manutenção; validar permissões reais, idempotência do provedor, consumidor do recebimento e eventual migração de agendamentos antigos | Direções definidas por etapa; envio implementado/testado com HTTP controlado; validação real e demais políticas pendentes |
 | Q08 | Excluir significa apagar ou cancelar/arquivar? Agendamento exige aprovação? | Auditoria e ciclo da reserva |
 | Q09 | F3 confirmou cadastro simples: quantidade não negativa até 3 casas e unidade informada; categoria/fonte em texto; status disponível/indisponível; sem movimentações | Cadastro definido para o MVP; limites e fonte como descrição de origem são escolhas técnicas do módulo 6 |
 | Q10 | Implementado como escolha inicial: início/fim obrigatórios com fuso para agendados, início<=agora<fim; vários banners por local ordenados por ordem/ID. Validar com responsável | Publicação por leitura entregue; sem confirmação adicional F3 |
