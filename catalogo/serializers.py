@@ -40,7 +40,7 @@ class ServicoSerializer(CatalogSerializer):
 class EquipamentoSerializer(CatalogSerializer):
     class Meta:
         model = Equipamento
-        fields = ['id', 'nome', 'descricao', 'status']
+        fields = ['id', 'nome', 'descricao', 'foto', 'status']
         read_only_fields = ['id']
 
 

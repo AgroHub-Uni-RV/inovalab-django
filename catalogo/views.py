@@ -1,12 +1,14 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.http import HttpResponseRedirect
+from django.http import FileResponse, Http404, HttpResponseRedirect
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.views.generic import CreateView, DetailView, ListView, UpdateView
+from django.views.generic import CreateView, DetailView, ListView, UpdateView, View
 
 from accounts.policies import is_business_admin
 from catalogo.services import save_entry
+from catalogo.models import Equipamento
 
 
 class CatalogContextMixin:
@@ -67,3 +69,18 @@ class CatalogCreateView(LoginRequiredMixin, BusinessAdminRequiredMixin, CatalogW
 
 class CatalogUpdateView(LoginRequiredMixin, BusinessAdminRequiredMixin, CatalogWriteMixin, UpdateView):
     pass
+
+
+class EquipmentPhotoView(LoginRequiredMixin, View):
+    def get(self, request):
+        name = request.GET.get('arquivo', '')
+        if not name:
+            raise Http404
+        equipment = get_object_or_404(Equipamento, foto=name)
+        try:
+            stream = equipment.foto.open('rb')
+        except OSError as error:
+            raise Http404 from error
+        response = FileResponse(stream)
+        response['X-Content-Type-Options'] = 'nosniff'
+        return response

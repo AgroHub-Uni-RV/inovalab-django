@@ -6,7 +6,7 @@ from accounts.policies import is_business_admin
 
 from agenda.models import CATEGORIES
 from agenda.services import CATEGORY_MODELS, SERVICE_FIELDS
-from agenda.widgets import SpaceRadioSelect
+from agenda.widgets import EquipmentCheckboxSelectMultiple, EquipmentRadioSelect, SpaceRadioSelect
 from materiais.models import Material
 
 
@@ -29,7 +29,7 @@ class BookingForm(StrictFormMixin, forms.Form):
         format='%Y-%m-%dT%H:%M:%S', attrs={'type': 'datetime-local', 'step': '1'}))
     equipamentos = forms.ModelMultipleChoiceField(
         label='Equipamentos', queryset=CATEGORY_MODELS['equipamento'].objects.none(), required=False,
-        widget=forms.CheckboxSelectMultiple, help_text='Selecione as máquinas utilizadas neste serviço.',
+        widget=EquipmentCheckboxSelectMultiple, help_text='Selecione as máquinas utilizadas neste serviço (opcional).',
     )
     material_proprio = forms.TypedChoiceField(
         label='Tem material próprio?', choices=[('', 'Selecione'), ('sim', 'Sim'), ('nao', 'Não')],
@@ -77,6 +77,9 @@ class BookingForm(StrictFormMixin, forms.Form):
                 self.fields['objeto'].widget = SpaceRadioSelect(
                     choices=self.fields['objeto'].choices, is_admin=self.is_admin,
                 )
+            elif category == 'equipamento':
+                self.fields['objeto'].empty_label = None
+                self.fields['objeto'].widget = EquipmentRadioSelect(choices=self.fields['objeto'].choices)
         if category == 'servico':
             self.fields['material_gasto'].queryset = Material.objects.filter(
                 ~Q(status='indisponivel') | Q(pk=booking.material_gasto_id if booking else None),

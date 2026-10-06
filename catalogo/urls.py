@@ -3,11 +3,12 @@ from django.views.generic import RedirectView
 
 from catalogo.forms import EquipamentoForm, EspacoForm, ServicoForm
 from catalogo.models import Equipamento, Espaco, Servico
-from catalogo.views import CatalogCreateView, CatalogDetailView, CatalogListView, CatalogUpdateView
+from catalogo.views import CatalogCreateView, CatalogDetailView, CatalogListView, CatalogUpdateView, EquipmentPhotoView
 
 
 app_name = 'catalogo'
 urlpatterns = [path('', RedirectView.as_view(pattern_name='catalogo:servicos-list', permanent=False))]
+urlpatterns.append(path('equipamentos/foto/', EquipmentPhotoView.as_view(), name='equipment-photo'))
 
 for category, model, form in (
     ('servicos', Servico, ServicoForm),

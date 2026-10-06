@@ -13,7 +13,7 @@ class ServicoForm(forms.ModelForm):
 class EquipamentoForm(forms.ModelForm):
     class Meta:
         model = Equipamento
-        fields = ['nome', 'descricao', 'status']
+        fields = ['nome', 'descricao', 'foto', 'status']
         widgets = {'descricao': forms.Textarea(attrs={'rows': 4})}
 
 

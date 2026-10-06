@@ -1,4 +1,5 @@
 from django.db import transaction
+from catalogo.equipment_photos import INITIAL_EQUIPMENT_PHOTOS
 
 
 INITIAL_EQUIPMENT = (
@@ -30,9 +31,12 @@ def seed_initial_resources(equipment_model, space_model, using='default'):
     counts = [0, 0]
     with transaction.atomic(using=using):
         for code, name, description in INITIAL_EQUIPMENT:
+            defaults = {'nome': name, 'descricao': description, 'status': 'disponivel'}
+            if any(field.name == 'foto' for field in equipment_model._meta.fields):
+                defaults['foto'] = 'iniciais/' + INITIAL_EQUIPMENT_PHOTOS[code]
             _, created = equipment_model.objects.using(using).get_or_create(
                 codigo_inicial=code,
-                defaults={'nome': name, 'descricao': description, 'status': 'disponivel'},
+                defaults=defaults,
             )
             counts[0] += created
         for code, name, capacity, restricted in INITIAL_SPACES:

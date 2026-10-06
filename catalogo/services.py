@@ -9,7 +9,7 @@ from catalogo.models import Equipamento, Espaco, Servico
 
 PUBLIC_FIELDS = {
     Servico: ('nome', 'descricao', 'status'),
-    Equipamento: ('nome', 'descricao', 'status'),
+    Equipamento: ('nome', 'descricao', 'foto', 'status'),
     Espaco: ('nome', 'capacidade_maxima_de_pessoas', 'somente_administradores', 'status'),
 }
 
@@ -26,7 +26,10 @@ def save_entry(*, actor, model, data: Mapping, instance=None):
         raise ValueError('O cadastro não pertence ao modelo informado.')
     entry = model.objects.select_for_update().get(pk=instance.pk) if instance is not None else model()
     for field, value in data.items():
-        setattr(entry, field, value)
+        if model is Equipamento and field == 'foto':
+            entry._meta.get_field('foto').save_form_data(entry, value)
+        else:
+            setattr(entry, field, value)
     if isinstance(entry.nome, str):
         entry.nome = entry.nome.strip()
     entry.full_clean()

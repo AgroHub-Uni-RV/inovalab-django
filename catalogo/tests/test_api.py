@@ -29,10 +29,13 @@ class CatalogApiTests(TestCase):
             response = self.client.get(f'/api/v1/{slug}/{entry.pk}/')
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response['Content-Type'], 'application/json')
-            self.assertEqual(response.json(), {'id': entry.pk, **data})
+            expected = {'id': entry.pk, **data}
+            if slug == 'equipamentos':
+                expected['foto'] = None
+            self.assertEqual(response.json(), expected)
             collection = self.client.get(f'/api/v1/{slug}/').json()
             self.assertEqual(set(collection), {'count', 'next', 'previous', 'results'})
-            self.assertIn({'id': entry.pk, **data}, collection['results'])
+            self.assertIn(expected, collection['results'])
 
     def test_business_admin_without_staff_creates_and_edits_all_categories(self):
         self.client.force_login(self.admin)
