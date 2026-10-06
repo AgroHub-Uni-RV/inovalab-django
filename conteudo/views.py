@@ -5,13 +5,14 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Count, Q
 from django.http import FileResponse, Http404, HttpResponseNotFound
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_http_methods, require_safe
+from django.views.decorators.http import require_http_methods, require_POST, require_safe
 from django.views.generic import DetailView, ListView
 
 from accounts.policies import is_business_admin
-from conteudo.forms import BannerForm, DeleteBannerForm
+from conteudo.forms import BannerForm, BannerStatusForm, DeleteBannerForm
 from conteudo.models import StatusBanner
 from conteudo.selectors import published_banners, visible_banners
 from conteudo.services import BannerConflict, delete_banner, save_banner
@@ -120,6 +121,37 @@ def banner_delete(request, pk):
             response_status = 400
     return render(request, 'conteudo/delete.html', {'form': form, 'object': banner, 'category': 'banners'},
                   status=response_status)
+
+
+@never_cache
+@login_required
+@require_POST
+def banner_status(request, pk):
+    require_admin(request.user)
+    banner = get_object_or_404(visible_banners(request.user), pk=pk)
+    form = BannerStatusForm(request.POST)
+    query = request.GET.copy()
+    query.pop('page', None)
+    list_url = reverse('conteudo:list')
+    if query:
+        list_url += '?' + query.urlencode()
+    response_status = 400
+    if form.is_valid():
+        try:
+            save_banner(actor=request.user, banner_id=banner.pk, expected_version=form.cleaned_data['versao'],
+                        data={'status': form.cleaned_data['status'], 'inicio_exibicao': None, 'fim_exibicao': None})
+        except BannerConflict as error:
+            form.add_error(None, str(error))
+            response_status = 409
+        except ValidationError as error:
+            form.add_error(None, ' '.join(error.messages))
+        else:
+            messages.success(request, 'Banner ativado.' if form.cleaned_data['status'] == StatusBanner.ATIVO
+                             else 'Banner desativado.')
+            return redirect(list_url)
+    return render(request, 'conteudo/status_error.html', {
+        'form': form, 'object': banner, 'list_url': list_url, 'category': 'banners',
+    }, status=response_status)
 
 
 @never_cache

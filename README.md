@@ -84,6 +84,8 @@ Os [padrões visuais compartilhados](docs/frontend/03-padroes-visuais.md) centra
 
 ## Processo
 
+A revisão seguinte adiciona [ativação/desativação de banners na coluna Ações](docs/frontend/07-acoes-de-banners-e-filtros.md), substitui Filtrar pelo rótulo Filtros e remove Atualizar opções da agenda. Validação: 329 testes Django aprovados e verificações básicas no Chrome; nenhuma migração nova.
+
 Em 06/10/2026, filtros e atualização de opções passaram a ter [aplicação automática](docs/frontend/06-aplicacao-automatica.md), preservando as ações explícitas de salvar. A carga inicial inclui [seis máquinas e nove espaços das imagens fornecidas](docs/modules/08-recursos-iniciais.md), com Secretaria, Laboratório maker e Laboratório de robótica reserváveis somente por administradores. Execute `python manage.py migrate` ao atualizar; no ambiente local as migrações já foram aplicadas. Validação desta entrega: 323 testes Django aprovados e verificações básicas no Chrome.
 
 Revisar requisitos e decisões de cada etapa, validar seu desenho, preparar o plano, implementar o fluxo web/API e verificar cenários relevantes. A coleção de skills [Superpowers](https://github.com/obra/superpowers) foi instalada neste ambiente do Codex; não é dependência da aplicação e não acompanha um clone do projeto.

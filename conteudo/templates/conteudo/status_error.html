@@ -1,0 +1,9 @@
+{% extends 'core/sheet.html' %}
+{% block title %}Alterar status do banner{% endblock %}
+{% block sheet_toolbar %}<a class="secondary-button" href="{{ list_url }}">Voltar aos banners</a>{% endblock %}
+{% block sheet_content %}
+<h1>Não foi possível alterar o status de {{ object.titulo }}</h1>
+{{ form.non_field_errors }}
+{% for field in form %}{{ field.errors }}{% endfor %}
+<p>Volte à lista para conferir o estado atual do banner e tentar novamente.</p>
+{% endblock %}

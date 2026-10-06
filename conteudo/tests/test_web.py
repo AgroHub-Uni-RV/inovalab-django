@@ -142,3 +142,83 @@ class BannerWebTests(BannerFixtures, TestCase):
         self.assertEqual(len(response.context['object_list']), 25)
         self.assertIn('no-store', response['Cache-Control'])
         self.assertEqual(len(self.client.get('/banners/?page=2').context['object_list']), 1)
+
+    def test_status_action_disables_and_reactivates_without_changing_banner_content(self):
+        self.client.force_login(self.admin)
+        original_image = self.banner.banner_img.name
+        url = self.detail + 'status/?q=Banner&status=ativo&page=3'
+        response = self.client.post(url, {'versao': 1, 'status': 'inativo'})
+        self.assertRedirects(response, '/banners/?q=Banner&status=ativo')
+        self.banner.refresh_from_db()
+        self.assertEqual((self.banner.status, self.banner.versao), ('inativo', 2))
+        self.assertEqual(self.banner.titulo, DATA['titulo'])
+        self.assertEqual(self.banner.banner_img.name, original_image)
+        self.assertIsNone(self.banner.excluido_em)
+        self.assertNotContains(self.client.get('/publico/'), DATA['titulo'])
+        response = self.client.post(self.detail + 'status/', {'versao': 2, 'status': 'ativo'})
+        self.assertRedirects(response, '/banners/')
+        self.banner.refresh_from_db()
+        self.assertEqual((self.banner.status, self.banner.versao), ('ativo', 3))
+        self.assertContains(self.client.get('/publico/'), DATA['titulo'])
+        self.assertEqual(self.stored_files(), [original_image])
+
+    def test_disabling_scheduled_banner_clears_period_as_required_by_model(self):
+        start = datetime.fromisoformat('2026-11-01T10:00:00-03:00')
+        save_banner(actor=self.admin, banner_id=self.banner.pk, expected_version=1, data={
+            'status': 'agendado', 'inicio_exibicao': start, 'fim_exibicao': start+timedelta(hours=1)})
+        self.client.force_login(self.admin)
+        response = self.client.post(self.detail + 'status/', {'versao': 2, 'status': 'inativo'})
+        self.assertRedirects(response, '/banners/')
+        self.banner.refresh_from_db()
+        self.assertEqual((self.banner.status, self.banner.versao), ('inativo', 3))
+        self.assertIsNone(self.banner.inicio_exibicao)
+        self.assertIsNone(self.banner.fim_exibicao)
+        self.banner.full_clean()
+
+    def test_status_action_requires_active_admin_and_post(self):
+        url = self.detail + 'status/'
+        self.assertEqual(self.client.post(url, {'versao': 1, 'status': 'inativo'}).status_code, 302)
+        self.client.force_login(self.user)
+        self.assertEqual(self.client.post(url, {'versao': 1, 'status': 'inativo'}).status_code, 403)
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.get(url).status_code, 405)
+        self.admin.is_active = False
+        self.admin.save()
+        self.assertEqual(self.client.post(url, {'versao': 1, 'status': 'inativo'}).status_code, 302)
+        self.banner.refresh_from_db()
+        self.assertEqual((self.banner.status, self.banner.versao), ('ativo', 1))
+
+    def test_status_action_rejects_invalid_and_duplicate_fields_without_changes(self):
+        self.client.force_login(self.admin)
+        url = self.detail + 'status/'
+        for data in ({}, {'versao': 1}, {'versao': 0, 'status': 'inativo'},
+                     {'versao': 1, 'status': 'agendado'}, {'versao': 1, 'status': 'inativo', 'titulo': 'Injetado'}):
+            with self.subTest(data=data):
+                self.assertEqual(self.client.post(url, data).status_code, 400)
+        response = self.client.post(url, 'versao=1&status=inativo&status=ativo',
+                                    content_type='application/x-www-form-urlencoded')
+        self.assertEqual(response.status_code, 400)
+        self.banner.refresh_from_db()
+        self.assertEqual((self.banner.status, self.banner.versao), ('ativo', 1))
+
+    def test_status_action_rejects_stale_version_and_missing_or_deleted_banner(self):
+        self.client.force_login(self.admin)
+        save_banner(actor=self.admin, banner_id=self.banner.pk, expected_version=1, data={'titulo': 'Outra sessão'})
+        response = self.client.post(self.detail + 'status/', {'versao': 1, 'status': 'inativo'})
+        self.assertContains(response, 'O banner foi alterado', status_code=409)
+        self.assertIn('no-store', response['Cache-Control'])
+        self.banner.refresh_from_db()
+        self.assertEqual((self.banner.titulo, self.banner.status, self.banner.versao), ('Outra sessão', 'ativo', 2))
+        self.assertEqual(self.client.post('/banners/999999/status/', {'versao': 1, 'status': 'inativo'}).status_code, 404)
+        self.client.post(self.detail + 'excluir/', {'versao': 2})
+        self.assertEqual(self.client.post(self.detail + 'status/', {'versao': 3, 'status': 'ativo'}).status_code, 404)
+
+    def test_status_action_enforces_csrf(self):
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.admin)
+        client.get('/banners/')
+        url = self.detail + 'status/'
+        self.assertEqual(client.post(url, {'versao': 1, 'status': 'inativo'}).status_code, 403)
+        response = client.post(url, {'versao': 1, 'status': 'inativo',
+                                    'csrfmiddlewaretoken': client.cookies['csrftoken'].value})
+        self.assertRedirects(response, '/banners/')

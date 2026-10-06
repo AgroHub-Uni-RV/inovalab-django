@@ -47,7 +47,17 @@
 
   // Atualiza apenas as opções dependentes; nunca aciona o botão de salvar.
   document.querySelectorAll('[data-auto-refresh]').forEach(field => {
-    const button = field.form?.querySelector('button[name="atualizar"][value="1"]');
-    if (button) field.addEventListener('change', () => field.form.requestSubmit(button));
+    if (!field.form) return;
+    field.addEventListener('change', () => {
+      const button = document.createElement('button');
+      button.type = 'submit';
+      button.name = 'atualizar';
+      button.value = '1';
+      button.formNoValidate = true;
+      button.hidden = true;
+      field.form.append(button);
+      field.form.requestSubmit(button);
+      button.remove();
+    });
   });
 })();

@@ -1,10 +1,10 @@
 # Aplicação automática dos formulários — 06/10/2026
 
-Filtros de Agenda, Tarefas, Materiais, Banners e Usuários são aplicados ao mudar as seleções ou após 600 ms sem digitar. Os botões continuam disponíveis para aplicação manual e para navegadores sem JavaScript. A busca preserva o foco e a posição do cursor após recarregar. Filtros ocultos, como status e aba, acompanham a consulta; a paginação volta à primeira página.
+Filtros de Agenda, Tarefas, Materiais, Banners e Usuários são aplicados ao mudar as seleções ou após 600 ms sem digitar. A busca preserva o foco e a posição do cursor após recarregar. Filtros ocultos, como status e aba, acompanham a consulta; a paginação volta à primeira página. Na revisão posterior de 06/10/2026, os botões Filtrar de Agenda, Tarefas, Materiais e Banners foram substituídos por um rótulo discreto “Filtros”. A aplicação automática depende de JavaScript.
 
-No formulário da agenda, trocar a categoria atualiza as opções com o botão `atualizar=1`, por POST, preservando os outros campos em edição. Essa operação não valida o preenchimento obrigatório nem grava um agendamento. Salvar, excluir, cancelar, gerar credenciais e sair continuam sendo ações explícitas.
+No formulário da agenda, trocar a categoria atualiza as opções por POST, preservando os outros campos em edição. O botão Atualizar opções foi removido da tela; o script envia `atualizar=1` com um controle temporário invisível que é removido após o envio. Essa operação não valida o preenchimento obrigatório nem grava um agendamento. Salvar, excluir, cancelar, gerar credenciais e sair continuam sendo ações explícitas.
 
-O comportamento fica em `core/static/core/auto-apply.js`: o atributo `data-auto-apply` só atua em consultas GET; `data-auto-refresh` atua exclusivamente no campo de categoria da agenda, com seu botão de atualizar opções.
+O comportamento fica em `core/static/core/auto-apply.js`: o atributo `data-auto-apply` só atua em consultas GET; `data-auto-refresh` atua exclusivamente no campo de categoria da agenda. Veja a [revisão dos filtros e das ações de banners](07-acoes-de-banners-e-filtros.md) para a validação mais recente.
 
 ## Verificação
 

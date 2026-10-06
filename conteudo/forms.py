@@ -44,8 +44,12 @@ class DeleteBannerForm(forms.Form):
 
     def clean(self):
         data = super().clean()
-        if set(self.data) - {'versao', 'csrfmiddlewaretoken'}:
+        if set(self.data) - (set(self.fields) | {'csrfmiddlewaretoken'}):
             raise forms.ValidationError('O formulário contém campos não permitidos.')
         if any(len(values) != 1 for _, values in self.data.lists()):
             raise forms.ValidationError('Envie cada campo uma única vez.')
         return data
+
+
+class BannerStatusForm(DeleteBannerForm):
+    status = forms.ChoiceField(choices=[(StatusBanner.ATIVO, 'Ativar'), (StatusBanner.INATIVO, 'Desativar')])
