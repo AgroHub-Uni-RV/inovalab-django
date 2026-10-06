@@ -26,7 +26,7 @@
         {% if is_business_admin %}<a class="button secondary" href="{% url 'integracoes:list' %}">Integrações</a>{% endif %}
         {% if is_business_admin %}<a class="button secondary" href="{% url 'conteudo:list' %}">Banners</a>{% endif %}
         {% if user.is_superuser %}
-        <a class="button primary" href="{% url 'admin:index' %}">Administrar contas <span aria-hidden="true">↗</span></a>
+        <a class="button primary" href="{% url 'accounts:users' %}">Administrar contas</a>
         {% endif %}
         <form action="{% url 'accounts:logout' %}" method="post">
             {% csrf_token %}

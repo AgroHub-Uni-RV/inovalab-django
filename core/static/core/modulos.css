@@ -78,7 +78,22 @@
 .public-banner { margin:35px 0; }
 .public-banner h2 { font-size:24px; color:var(--navy); }
 .public-banner img { width:100%; height:auto; border-radius:15px; }
+.users-toolbar { display:flex; align-items:start; gap:28px; margin-bottom:34px; border-bottom:2px solid #aaa; }
+.users-toolbar .module-tabs { flex:1; border:0; margin:0; }
+.user-search { width:460px; position:relative; flex-shrink:0; }
+.user-search input { padding-right:55px!important; }
+.module-page .user-search button[type=submit] { position:absolute; top:0; right:0; width:55px; padding:0; color:#62626a; background:transparent; min-height:58px; }
+.user-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:20px 64px; }
+.user-card { padding:20px 24px; border:1px solid #d9d9d9; border-radius:11px; background:white; text-align:center; min-width:0; }
+.user-photo { width:100%; aspect-ratio:1; display:flex; align-items:center; justify-content:center; background:#ddd; border-radius:9px; color:#9b9b9b; }
+.user-photo .icon { width:40%; height:40%; stroke-width:1.2; }
+.user-card h2 { margin:16px 0 8px; font-size:20px; font-weight:700; }
+.user-card p { margin:5px 0; font-size:16px; color:#777; }
 @container(max-width:1200px) {
+  .user-grid { gap:20px; }
+  .users-toolbar { flex-direction:column; gap:15px; }
+  .users-toolbar .module-tabs { width:100%; }
+  .user-search { width:100%; }
   .stat-card { gap:20px; padding:20px; }
   .stat-icon { width:80px; height:90px; }
   .stat-icon .icon { width:48px; height:48px; }
@@ -87,12 +102,17 @@
   .module-tabs a { font-size:20px; padding:16px; }
 }
 @container(max-width:900px) {
+  .user-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
   .statistics, .statistics.three { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-bottom:35px; }
   .stat-card { min-height:132px; }
   .module-tabs a { font-size:16px; }
   .filter-field.search-field { width:100%; }
 }
 @container(max-width:650px) {
+  .user-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+  .user-card { padding:14px; }
+  .user-card h2 { font-size:14px; }
+  .user-card p { font-size:12px; }
   .page-heading { align-items:start; flex-direction:column; gap:18px; }
   .page-heading p { font-size:16px; }
   .module-page h1 { font-size:24px; }

@@ -13,7 +13,7 @@ def panel_navigation(request):
         routes.append(('Agendamentos', 'agenda:list', 'calendar'))
     routes.extend([('Estoque/materiais', 'materiais:list', 'box'), ('Tarefas', 'tarefas:board', 'task')])
     if actor.is_active and actor.is_superuser:
-        routes.append(('Usuários', 'admin:accounts_user_changelist', 'users'))
+        routes.append(('Usuários', 'accounts:users', 'users'))
     if admin:
         routes.append(('Banners', 'conteudo:list', 'image'))
     routes.extend([('Páginas', 'conteudo:public-home', 'layers'), ('Estrutura', 'catalogo:servicos-list', 'building')])

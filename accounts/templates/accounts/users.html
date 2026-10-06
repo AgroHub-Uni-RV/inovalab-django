@@ -1,0 +1,25 @@
+{% extends 'catalogo/base.html' %}
+{% block title %}Usuários{% endblock %}
+{% block content_class %}module-page users-page{% endblock %}
+{% block content %}
+<div class="page-heading"><div><h1>Usuários</h1><p>Gerencie os usuários do InovaLab</p></div><a class="primary-button" href="{% url 'admin:accounts_user_changelist' %}">Configurar usuários {% include 'core/icon.html' with name='settings' %}</a></div>
+<div class="statistics">
+{% include 'core/stat_card.html' with label='Total' count=user_counts.total icon='task' %}
+{% include 'core/stat_card.html' with label='Administradores' count=user_counts.administradores icon='profile' tone='amber' %}
+{% include 'core/stat_card.html' with label='Ativos' count=user_counts.ativos icon='users' tone='red' %}
+{% include 'core/stat_card.html' with label='Inativos' count=user_counts.inativos icon='warning' tone='green' %}
+</div>
+<div class="users-toolbar"><nav class="module-tabs compact" aria-label="Filtrar usuários">
+<a href="{% querystring tab='todos' page=None %}"{% if selected_tab == 'todos' %} aria-current="page"{% endif %}>Todos os usuários</a>
+<a href="{% querystring tab='administradores' page=None %}"{% if selected_tab == 'administradores' %} aria-current="page"{% endif %}>Administradores</a>
+<a href="{% querystring tab='ativos' page=None %}"{% if selected_tab == 'ativos' %} aria-current="page"{% endif %}>Ativos</a>
+<a href="{% querystring tab='inativos' page=None %}"{% if selected_tab == 'inativos' %} aria-current="page"{% endif %}>Inativos</a>
+</nav><form class="user-search" method="get"><label class="sr-only" for="user-q">Buscar usuário</label><input id="user-q" name="q" value="{{ query }}" placeholder="Buscar usuário"><input type="hidden" name="tab" value="{{ selected_tab }}"><button type="submit" aria-label="Buscar usuários">{% include 'core/icon.html' with name='search' %}</button></form></div>
+<div class="user-grid">{% for account in object_list %}<article class="user-card">
+<div class="user-photo" aria-hidden="true">{% include 'core/icon.html' with name='profile' %}</div>
+<h2><a href="{% url 'admin:accounts_user_change' account.pk %}">{{ account.get_full_name|default:account.username }}</a></h2>
+<p>{% if account.is_superuser %}Administrador técnico{% elif account.lab_admin %}Administrador do laboratório{% else %}Usuário interno{% endif %}</p>
+<p>{{ account.is_active|yesno:'Ativo,Inativo' }}</p>
+</article>{% empty %}<p class="empty-notice">Nenhum usuário encontrado.</p>{% endfor %}</div>
+{% include 'core/pagination.html' %}
+{% endblock %}

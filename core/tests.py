@@ -145,7 +145,7 @@ class DashboardTests(TestCase):
         self.assertContains(self.client.get('/perfil/'), '/index/')
         response = self.panel()
         self.assertContains(response, 'action="/sair/" method="post"')
-        self.assertContains(response, '/admin/accounts/user/')
+        self.assertContains(response, '/usuarios/')
         strict = Client(enforce_csrf_checks=True)
         strict.force_login(self.user)
         strict.get('/painel/')
