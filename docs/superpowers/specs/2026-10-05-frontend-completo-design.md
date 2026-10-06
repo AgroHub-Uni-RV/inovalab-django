@@ -6,7 +6,7 @@ O responsável solicitou aplicar as referências a todas as páginas, colocar o 
 
 Arquivo indicado pelo responsável: [INOVALAB](https://www.figma.com/design/6PL44EZWM82SdZ9dkcJ4S8/INOVALAB?node-id=0-1). Consultar somente para leitura, sem alterar o projeto no Figma. Desconsiderar qualquer tela que contenha um grupo chamado `Group 17`, inclusive em grupos aninhados; verificar a composição antes de selecionar cada referência.
 
-A consulta ainda está pendente: o plugin aparece instalado, mas suas ferramentas de leitura não estão disponíveis nesta sessão; o acesso direto pelo navegador retornou HTTP 403. Nenhuma tela, fonte, medida ou asset foi extraído do arquivo. Até verificar a composição no Figma, as adaptações baseadas nos PNGs locais permanecem provisórias quanto a esse critério.
+Após reconexão, as ferramentas do plugin ficaram disponíveis, mas a consulta de metadados de `0:1` foi recusada por falta de acesso ao arquivo na conta conectada. O acesso direto pelo navegador também retornou HTTP 403. Nenhuma tela, fonte, medida ou asset foi extraído do Figma, nem houve escrita lá. O responsável autorizou seguir somente com os PNGs locais se o acesso falhasse. Como PNG não preserva os nomes dos grupos, a exclusão por `Group 17` continua pendente de conferência no arquivo original.
 
 ## Rotas e autoridade
 
@@ -14,7 +14,7 @@ A consulta ainda está pendente: o plugin aparece instalado, mas suas ferramenta
 - `/index/`: Dashboard atual. `/painel/` permanece um alias funcional; `/entrar/` mantém compatibilidade para entrada. Login padrão leva ao index; `next` interno seguro continua permitido, externo rejeitado. Logout POST/CSRF retorna ao login.
 - `/perfil/`: página atual da conta, com a base compartilhada.
 - `/usuarios/`: cartões conforme a referência, busca, abas e contagens reais; fotos inexistentes serão substituídas por avatar neutro. Professores/funcionários/visitantes não existem no modelo: usar total, administradores, ativos e inativos.
-- Manter inicialmente a autoridade técnica vigente: superusuário ativo acessa e administra usuários; staff isolado, usuário comum e administrador de negócio não recebem gestão técnica. Pergunta de esclarecimento enviada ao responsável; eventual resposta será incorporada antes da entrega.
+- Preservar a autoridade técnica vigente: superusuário ativo acessa e administra usuários; staff isolado, usuário comum e administrador de negócio não recebem gestão técnica. A pergunta opcional sobre ampliação de autoridade não teve resposta; manter a política atual evita conceder privilégios técnicos por uma alteração visual.
 - **Administrar contas** e menu **Usuários** apontam para a nova tela. Configuração técnica continua disponível apenas a superusuários. Esta alteração não modifica contratos de API.
 
 ## Apresentação

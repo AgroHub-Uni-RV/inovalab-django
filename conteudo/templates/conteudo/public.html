@@ -1,4 +1,3 @@
 {% extends 'core/public_base.html' %}
-{% block title %}{% if local == 'sobre' %}Sobre{% else %}In?cio{% endif %} ? InovaLab{% endblock %}
-{% block content %}<h1>{% if local == 'sobre' %}Sobre o InovaLab{% else %}InovaLab{% endif %}</h1>
-{% for banner in banners %}<section class="public-banner" aria-labelledby="banner-{{ banner.pk }}"><h2 id="banner-{{ banner.pk }}">{{ banner.titulo }}</h2><img src="{% url 'conteudo:image' banner.pk %}" alt="{{ banner.texto_alternativo|default:banner.titulo }}"></section>{% empty %}<p>Nenhum conte?do publicado no momento.</p>{% endfor %}{% endblock %}
+{% block title %}{% if local == 'sobre' %}Sobre{% else %}Início{% endif %} · InovaLab{% endblock %}
+{% block content %}<h1>{% if local == 'sobre' %}Sobre o InovaLab{% else %}InovaLab{% endif %}</h1>{% for banner in banners %}<section class="public-banner" aria-labelledby="banner-{{ banner.pk }}"><h2 id="banner-{{ banner.pk }}">{{ banner.titulo }}</h2><img src="{% url 'conteudo:image' banner.pk %}" alt="{{ banner.texto_alternativo|default:banner.titulo }}"></section>{% empty %}<p>Nenhum conteúdo publicado no momento.</p>{% endfor %}{% endblock %}

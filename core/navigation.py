@@ -26,5 +26,7 @@ def panel_navigation(request):
         current = request.path.startswith(href)
         if route == 'core:dashboard':
             current = request.path in ('/index/', '/painel/')
+        elif route == 'catalogo:servicos-list':
+            current = request.path.startswith('/catalogo/')
         items.append({'label': label, 'href': href, 'icon': icon, 'current': current})
     return {'is_business_admin': admin, 'nav_items': items}

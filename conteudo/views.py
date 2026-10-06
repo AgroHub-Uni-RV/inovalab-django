@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.db.models import Count, Q
 from django.http import FileResponse, Http404, HttpResponseNotFound
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.decorators import method_decorator
@@ -11,6 +12,7 @@ from django.views.generic import DetailView, ListView
 
 from accounts.policies import is_business_admin
 from conteudo.forms import BannerForm, DeleteBannerForm
+from conteudo.models import StatusBanner
 from conteudo.selectors import published_banners, visible_banners
 from conteudo.services import BannerConflict, delete_banner, save_banner
 
@@ -35,6 +37,27 @@ class BannerContextMixin:
 class BannerListView(LoginRequiredMixin, BannerContextMixin, ListView):
     template_name = 'conteudo/list.html'
     paginate_by = 25
+
+    def filtered_banners(self):
+        queryset = super().get_queryset()
+        self.query = self.request.GET.get('q', '').strip()[:150]
+        if self.query:
+            queryset = queryset.filter(Q(titulo__icontains=self.query) | Q(texto_alternativo__icontains=self.query))
+        return queryset
+
+    def get_queryset(self):
+        queryset = self.filtered_banners()
+        status = self.request.GET.get('status', '')
+        self.selected_status = status if status in StatusBanner.values else ''
+        return queryset.filter(status=self.selected_status) if self.selected_status else queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(query=self.query, selected_status=self.selected_status, statuses=StatusBanner.choices,
+                       stat_counts=self.filtered_banners().aggregate(total=Count('pk'),
+                           ativo=Count('pk', filter=Q(status='ativo')), inativo=Count('pk', filter=Q(status='inativo')),
+                           agendado=Count('pk', filter=Q(status='agendado'))))
+        return context
 
 
 @method_decorator(never_cache, name='dispatch')

@@ -37,6 +37,13 @@ class FrontendRoutesTests(TestCase):
                 self.assertNotContains(response, '/integracoes/')
         self.assertEqual(self.client.get('/painel/').status_code, 200)
 
+    def test_catalog_menu_remains_current_for_all_categories(self):
+        self.client.force_login(self.user)
+        for path in ('/catalogo/servicos/', '/catalogo/equipamentos/', '/catalogo/espacos/'):
+            response = self.client.get(path)
+            selected = [item['label'] for item in response.context['nav_items'] if item['current']]
+            self.assertEqual(selected, ['Estrutura'])
+
     def test_logout_returns_to_root_and_public_remains_public(self):
         self.client.force_login(self.user)
         self.assertRedirects(self.client.post('/sair/'), '/')

@@ -1,0 +1,3 @@
+{% extends 'core/public_base.html' %}
+{% block title %}Acesso restrito · InovaLab{% endblock %}
+{% block content %}<section class="empty-notice error-page"><span class="error-code">403</span><h1>Acesso restrito</h1><p>Sua conta não tem permissão para acessar esta página.</p><a class="primary-button" href="{% url 'core:dashboard' %}">Voltar ao index</a></section>{% endblock %}

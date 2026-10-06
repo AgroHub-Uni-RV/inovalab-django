@@ -1,5 +1,4 @@
-{% extends 'integracoes/base.html' %}
-{% block content %}
-<h1>{% if integration %}Editar integrador{% else %}Novo integrador{% endif %}</h1>
-<form method="post">{% csrf_token %}{{ form.as_p }}<div class="actions"><button type="submit">Salvar integrador</button><a href="{% url 'integracoes:list' %}">Voltar</a></div></form>
-{% endblock %}
+{% extends 'core/sheet.html' %}
+{% block title %}Integrações{% endblock %}
+{% block sheet_toolbar %}<a class="secondary-button" href="{% url 'integracoes:list' %}">Voltar às integrações</a>{% endblock %}
+{% block sheet_content %}<h1>{% if integration %}Editar integrador{% else %}Novo integrador{% endif %}</h1><form method="post" class="sheet-form">{% csrf_token %}{% include 'core/form_fields.html' %}<div class="sheet-actions"><button type="submit">Salvar integrador</button><a class="secondary-button" href="{% url 'integracoes:list' %}">Voltar</a></div></form>{% endblock %}

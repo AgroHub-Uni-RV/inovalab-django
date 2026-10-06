@@ -1,15 +1,4 @@
-{% extends 'catalogo/base.html' %}
+{% extends 'core/sheet.html' %}
 {% block title %}{{ object.nome }}{% endblock %}
-{% block content %}
-<p><a href="{{ list_url }}">Voltar para {{ title }}</a></p>
-<h1>{{ object.nome }}</h1>
-<dl>
-    <dt>Status</dt><dd>{{ object.get_status_display }}</dd>
-    {% if category == 'espacos' %}
-    <dt>Capacidade máxima</dt><dd>{{ object.capacidade_maxima_de_pessoas }} pessoas</dd>
-    {% else %}
-    <dt>Descrição</dt><dd>{{ object.descricao|default:'Sem descrição.'|linebreaksbr }}</dd>
-    {% endif %}
-</dl>
-{% if can_manage %}<p><a class="button" href="{% url update_url_name object.pk %}">Editar</a></p>{% endif %}
-{% endblock %}
+{% block sheet_toolbar %}<a class="secondary-button" href="{{ list_url }}">Voltar para {{ title }}</a>{% if can_manage %}<a class="secondary-button" href="{% url update_url_name object.pk %}">Editar</a>{% endif %}{% endblock %}
+{% block sheet_content %}<h1>{{ object.nome }}</h1><dl class="inline-details"><div><dt>Status</dt><dd><span class="badge {% if object.status == 'disponivel' %}available{% else %}unavailable{% endif %}">{{ object.get_status_display }}</span></dd></div>{% if category == 'espacos' %}<div><dt>Capacidade máxima</dt><dd>{{ object.capacidade_maxima_de_pessoas }} pessoas</dd></div>{% endif %}</dl>{% if category != 'espacos' %}<section class="description-block"><h2>Descrição</h2><p>{{ object.descricao|default:'Sem descrição.'|linebreaksbr }}</p></section>{% endif %}{% endblock %}

@@ -89,6 +89,8 @@
 .user-photo .icon { width:40%; height:40%; stroke-width:1.2; }
 .user-card h2 { margin:16px 0 8px; font-size:20px; font-weight:700; }
 .user-card p { margin:5px 0; font-size:16px; color:#777; }
+.users-page .stat-card { gap:24px; }
+.users-page .stat-copy h2 { font-size:18px; }
 .task-board { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
 .task-board.task-board-filtered { grid-template-columns:minmax(0,1fr); }
 .task-column { min-width:0; background:white; border:1px solid #d8d8d8; border-radius:10px; min-height:1000px; overflow:hidden; }
@@ -161,6 +163,26 @@
 .form-field label { display:block; margin-bottom:12px; font-size:16px; }
 .sheet-actions { display:flex; gap:18px; flex-wrap:wrap; align-items:center; margin-top:32px; }
 .category-refresh { display:flex; align-items:end; }
+.banners-page { max-width:1160px; }
+.banners-page .statistics.three { gap:24px; margin-bottom:32px; }
+.banners-page .stat-card { gap:18px; }
+.banners-page .stat-icon { width:100px; height:110px; }
+.banners-page .stat-copy h2 { font-weight:500; }
+.banners-page .stat-card.green .stat-icon { background:#edffd7; color:#70b626; }
+.banners-page .module-tabs { margin-bottom:32px; }
+.banners-page .table-wrapper { min-height:900px; }
+.banners-page td { background:white; border-bottom:1px solid #ccc; padding:30px 15px; }
+.banner-cell { display:flex; align-items:center; gap:24px; }
+.banner-thumbnail { width:280px; height:70px; object-fit:contain; background:#e8e8e8; border-radius:8px; }
+.banner-preview img { max-width:100%; height:auto; display:block; border-radius:12px; }
+.sheet-topbar .sheet-actions { margin:0; }
+.history-content { max-width:1000px; }
+.history-content .task-event, .history-content .agenda-event { margin:30px 0; }
+.error-page { margin:70px auto; max-width:750px; }
+.error-code { display:block; font-size:80px; font-weight:800; color:var(--navy); }
+.module-page button[disabled] { opacity:.5; cursor:not-allowed; }
+.module-page code { overflow-wrap:anywhere; }
+.module-page [readonly] { background:#f4f4f4!important; }
 @container(max-width:1200px) {
   .kanban-icon { width:65px; min-height:75px; }
   .kanban-icon .icon { width:42px; height:42px; }

@@ -2,12 +2,14 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 from django.views.generic import DetailView, ListView
 
 from accounts.policies import is_business_admin
 from materiais.forms import MaterialCreateForm, MaterialUpdateForm
+from materiais.models import StatusMaterial
 from materiais.selectors import visible_materials
 from materiais.services import MaterialConflict, save_material
 
@@ -25,6 +27,33 @@ class MaterialContextMixin:
 class MaterialListView(LoginRequiredMixin, MaterialContextMixin, ListView):
     template_name = 'materiais/list.html'
     paginate_by = 25
+
+    def filtered_materials(self):
+        queryset = visible_materials(self.request.user)
+        self.query = self.request.GET.get('q', '').strip()[:150]
+        self.selected_category = self.request.GET.get('categoria', '').strip()[:100]
+        if self.query:
+            queryset = queryset.filter(Q(nome__icontains=self.query) | Q(categoria__icontains=self.query) |
+                                       Q(fonte__icontains=self.query))
+        if self.selected_category:
+            queryset = queryset.filter(categoria=self.selected_category)
+        return queryset
+
+    def get_queryset(self):
+        queryset = self.filtered_materials()
+        status = self.request.GET.get('status', '')
+        self.selected_status = status if status in StatusMaterial.values else ''
+        return queryset.filter(status=self.selected_status) if self.selected_status else queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(query=self.query, selected_category=self.selected_category, selected_status=self.selected_status,
+                       statuses=StatusMaterial.choices,
+                       categories=visible_materials(self.request.user).order_by('categoria').values_list('categoria', flat=True).distinct(),
+                       stat_counts=self.filtered_materials().aggregate(total=Count('pk'),
+                           disponivel=Count('pk', filter=Q(status='disponivel')),
+                           indisponivel=Count('pk', filter=Q(status='indisponivel'))))
+        return context
 
 
 class MaterialDetailView(LoginRequiredMixin, MaterialContextMixin, DetailView):

@@ -1,0 +1,2 @@
+{{ form.non_field_errors }}
+<div class="form-grid">{% for field in form %}{% if field.is_hidden %}{{ field }}{{ field.errors }}{% else %}<div class="form-field{% if field.name == 'descricao' or field.name == 'texto_alternativo' or field.name == 'banner_img' %} full-width{% endif %}">{{ field.label_tag }}{{ field }}{{ field.errors }}{% if field.help_text %}<small class="field-help">{{ field.help_text }}</small>{% endif %}</div>{% endif %}{% endfor %}</div>

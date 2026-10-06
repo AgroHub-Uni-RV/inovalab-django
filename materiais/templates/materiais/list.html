@@ -1,18 +1,10 @@
 {% extends 'catalogo/base.html' %}
 {% block title %}Materiais{% endblock %}
-{% block extra_head %}<style>.materials-table { min-width: 560px; }</style>{% endblock %}
 {% block content %}
-<h1>Materiais</h1>
-{% if can_manage %}<p><a class="button" href="{% url 'materiais:create' %}">Novo material</a></p>{% endif %}
-<div class="table-wrapper" role="region" aria-label="Lista de materiais" tabindex="0">
-<table class="materials-table">
-    <thead><tr><th>Material</th><th>Categoria</th><th>Quantidade</th><th>Status</th></tr></thead>
-    <tbody>{% for material in object_list %}
-        <tr><td><a href="{% url 'materiais:detail' material.pk %}">{{ material.nome }}</a></td>
-            <td>{{ material.categoria }}</td><td>{{ material.quantidade }} {{ material.unidade }}</td>
-            <td>{{ material.get_status_display }}</td></tr>
-    {% empty %}<tr><td colspan="4">Nenhum material cadastrado.</td></tr>{% endfor %}</tbody>
-</table>
-</div>
-{% include 'agenda/pagination.html' %}
+<div class="page-heading"><h1>Materiais</h1>{% if can_manage %}<a class="primary-button" href="{% url 'materiais:create' %}">Adicionar Material {% include 'core/icon.html' with name='plus' %}</a>{% endif %}</div>
+<div class="statistics three">{% include 'core/stat_card.html' with label='Materiais' count=stat_counts.total icon='box' %}{% include 'core/stat_card.html' with label='Disponíveis' count=stat_counts.disponivel icon='check' tone='green' %}{% include 'core/stat_card.html' with label='Indisponíveis' count=stat_counts.indisponivel icon='warning' tone='red' %}</div>
+<form method="get" class="filter-bar"><div class="filter-field search-field"><label for="material-q">Pesquisar material</label><input id="material-q" name="q" value="{{ query }}" placeholder="Pesquisar Material"></div><div class="filter-field"><label for="material-category">Categoria</label><select id="material-category" name="categoria"><option value="">Todas as categorias</option>{% for value in categories %}<option value="{{ value }}"{% if value == selected_category %} selected{% endif %}>{{ value }}</option>{% endfor %}</select></div><input type="hidden" name="status" value="{{ selected_status }}"><button type="submit">Filtrar</button></form>
+<nav class="module-tabs" aria-label="Status de materiais"><a href="{% querystring status='' page=None %}"{% if not selected_status %} aria-current="page"{% endif %}>Todos</a>{% for value,label in statuses %}<a href="{% querystring status=value page=None %}"{% if selected_status == value %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}</nav>
+<div class="table-wrapper" role="region" aria-label="Lista de materiais" tabindex="0"><table class="materials-table"><thead><tr><th scope="col">Material</th><th scope="col">Categoria</th><th scope="col">Quantidade</th><th scope="col">Status</th><th scope="col">Fonte / origem</th><th scope="col">Ações</th></tr></thead><tbody>{% for material in object_list %}<tr><td><a class="cell-name" href="{% url 'materiais:detail' material.pk %}"><span class="material-thumbnail" aria-hidden="true"></span>{{ material.nome }}</a></td><td><span class="badge">{{ material.categoria }}</span></td><td>{{ material.quantidade }} {{ material.unidade }}</td><td><span class="badge {% if material.status == 'disponivel' %}available{% else %}unavailable{% endif %}">{{ material.get_status_display }}</span></td><td>{{ material.fonte }}</td><td><div class="icon-actions"><a href="{% url 'materiais:detail' material.pk %}">{% include 'core/icon.html' with name='eye' %}Visualizar</a>{% if can_manage %}<a href="{% url 'materiais:update' material.pk %}">{% include 'core/icon.html' with name='edit' %}Editar</a>{% endif %}</div></td></tr>{% empty %}<tr><td colspan="6">Nenhum material encontrado.</td></tr>{% endfor %}</tbody></table></div>
+{% include 'core/pagination.html' %}
 {% endblock %}
