@@ -60,4 +60,17 @@
       button.remove();
     });
   });
+
+  document.querySelectorAll('[data-material-proprio]').forEach(field => {
+    const amount = field.form?.querySelector('#id_material_gasto_gramas');
+    if (!amount) return;
+    const updateMaterial = () => {
+      const usesLabMaterial = field.value === 'nao';
+      amount.closest('.form-field').hidden = !usesLabMaterial;
+      amount.disabled = !usesLabMaterial;
+      amount.required = usesLabMaterial;
+    };
+    field.addEventListener('change', updateMaterial);
+    updateMaterial();
+  });
 })();

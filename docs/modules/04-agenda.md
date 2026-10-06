@@ -24,7 +24,7 @@ O frontend de identidade foi preservado, com apenas um link para a agenda nas co
 ## Regras entregues
 
 - **Confirmado pelo responsável:** cada reserva tem exatamente um serviço, equipamento ou espaço. Em 02/10 foi confirmado que serviços também são exclusivos: uma reserva por objeto em cada horário, nas três categorias. Não há reserva automática de recursos associados.
-- Campos públicos: `categoria`, `objeto`, `requerente`, `motivo`, `inicio`, `fim`. Categoria pertence a `servico`, `equipamento`, `espaco`; o ID de objeto é interpretado nessa categoria. IDs iguais em categorias diferentes não identificam o mesmo objeto. Troca exige categoria e objeto juntos.
+- Campos comuns: `categoria`, `objeto`, `requerente`, `motivo`, `inicio`, `fim`. Categoria pertence a `servico`, `equipamento`, `espaco`; o ID de objeto é interpretado nessa categoria. IDs iguais em categorias diferentes não identificam o mesmo objeto. Troca exige categoria e objeto juntos. A entrega de 06/10/2026 acrescenta `equipamentos`, `material_proprio` e `material_gasto_gramas` para serviços na API interna, preservando o contrato anterior dos pedidos externos. Veja [formulários por categoria e criador](../frontend/08-agendamento-por-categoria.md).
 - Requerente é nome obrigatório de até 150 caracteres, sem exigir conta local; motivo é obrigatório. Espaços no início/fim dos textos são removidos.
 - Três FKs protegidas e restrição de exatamente uma preenchida; categoria derivada da FK. O banco também exige versão positiva e fim posterior ao início.
 - Intervalos `[início, fim)`; sobreposição no mesmo objeto retorna conflito, horários adjacentes são permitidos. A edição exclui o próprio registro da busca de conflito. Falhas não deixam mudanças parciais.

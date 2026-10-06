@@ -1,5 +1,8 @@
+from decimal import Decimal
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 
@@ -11,6 +14,12 @@ class Agendamento(models.Model):
     servico = models.ForeignKey('catalogo.Servico', on_delete=models.PROTECT, null=True, blank=True)
     equipamento = models.ForeignKey('catalogo.Equipamento', on_delete=models.PROTECT, null=True, blank=True)
     espaco = models.ForeignKey('catalogo.Espaco', on_delete=models.PROTECT, null=True, blank=True)
+    equipamentos = models.ManyToManyField('catalogo.Equipamento', blank=True, related_name='agendamentos_de_servico')
+    material_proprio = models.BooleanField('tem material próprio', null=True, blank=True)
+    material_gasto_gramas = models.DecimalField(
+        'material gasto (g)', max_digits=12, decimal_places=3, null=True, blank=True,
+        validators=[MinValueValidator(Decimal('0.001'))],
+    )
     requerente = models.CharField(max_length=150)
     motivo = models.TextField()
     inicio = models.DateTimeField()
@@ -30,6 +39,14 @@ class Agendamento(models.Model):
             ), name='agenda_exatamente_um_alvo'),
             models.CheckConstraint(condition=models.Q(fim__gt=models.F('inicio')), name='agenda_intervalo_positivo'),
             models.CheckConstraint(condition=models.Q(versao__gte=1), name='agenda_versao_positiva'),
+            models.CheckConstraint(condition=(
+                models.Q(material_proprio__isnull=True, material_gasto_gramas__isnull=True)
+                | models.Q(servico__isnull=False, material_proprio__isnull=False,
+                           material_proprio=True, material_gasto_gramas__isnull=True)
+                | models.Q(servico__isnull=False, material_proprio__isnull=False,
+                           material_proprio=False, material_gasto_gramas__gt=0)
+                  & models.Q(material_gasto_gramas__isnull=False)
+            ), name='agenda_material_de_servico_valido'),
         ]
         indexes = [models.Index(fields=['inicio', 'fim'], name='agenda_periodo_idx')]
 
@@ -45,8 +62,18 @@ class Agendamento(models.Model):
     def objeto_nome(self):
         return getattr(self, self.categoria).nome if self.categoria else ''
 
+    @property
+    def categoria_display(self):
+        return {'servico': 'Serviços', 'equipamento': 'Equipamentos', 'espaco': 'Salas'}.get(self.categoria, '')
+
     def clean(self):
         errors = {}
+        if self.categoria != 'servico' and (self.material_proprio is not None or self.material_gasto_gramas is not None):
+            errors['material_proprio'] = 'Material é informado somente em agendamentos de serviço.'
+        elif self.material_proprio is False and self.material_gasto_gramas is None:
+            errors['material_gasto_gramas'] = 'Informe em gramas o material gasto do laboratório.'
+        elif self.material_proprio is not False and self.material_gasto_gramas is not None:
+            errors['material_gasto_gramas'] = 'O gasto é informado somente quando o material não é próprio.'
         for name in ('requerente', 'motivo'):
             value = getattr(self, name)
             if isinstance(value, str):

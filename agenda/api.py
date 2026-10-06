@@ -34,7 +34,7 @@ class BookingViewSet(ModelViewSet):
     http_method_names = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options']
 
     def get_queryset(self):
-        queryset = visible_bookings(self.request.user)
+        queryset = visible_bookings(self.request.user).prefetch_related('equipamentos')
         if self.action == 'list':
             return filter_bookings(queryset, month=self.request.query_params.get('mes'),
                                    category=self.request.query_params.get('categoria'))

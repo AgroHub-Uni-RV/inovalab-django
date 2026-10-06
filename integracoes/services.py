@@ -12,12 +12,12 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from accounts.policies import is_business_admin
-from agenda.services import CATEGORY_MODELS, PUBLIC_FIELDS, BookingConflict, _busy_as_conflict, _save_booking
+from agenda.services import BASE_FIELDS, CATEGORY_MODELS, BookingConflict, _busy_as_conflict, _save_booking
 from integracoes.credentials import CredentialRejected, IntegrationPrincipal, issue_token
 from integracoes.models import ClienteIntegracao, PedidoIntegracao
 
 
-REQUEST_FIELDS = PUBLIC_FIELDS | {'id_externo', 'requerente_id'}
+REQUEST_FIELDS = BASE_FIELDS | {'id_externo', 'requerente_id'}
 
 
 def _require_admin(actor):
@@ -145,7 +145,7 @@ def receive_booking(*, principal, data):
                 raise BookingConflict('idempotencia_conflitante', 'Este pedido externo já foi recebido com conteúdo diferente.')
             return receipt.agendamento, receipt, True
         booking = _save_booking(actor=None, actor_name=f'Integração: {client.nome}',
-                                data={name: normalized[name] for name in PUBLIC_FIELDS})
+                                data={name: normalized[name] for name in BASE_FIELDS})
         receipt = PedidoIntegracao.objects.create(cliente=client, id_externo=normalized['id_externo'],
             requerente_id=normalized['requerente_id'], conteudo_digest=digest, agendamento=booking)
     return booking, receipt, False

@@ -22,10 +22,14 @@ class BookingWebTests(TestCase):
     def setUp(self):
         self.client.force_login(self.admin)
         self.data = {'categoria': 'servico', 'objeto': self.service.pk, 'requerente': 'Ana', 'motivo': 'Protótipo',
-                     'inicio': '2026-11-01T14:00:00', 'fim': '2026-11-01T15:00:00'}
+                     'inicio': '2026-11-01T14:00:00', 'fim': '2026-11-01T15:00:00', 'material_proprio': 'sim'}
 
     def create(self, **overrides):
         data = {**self.data, **overrides}
+        if data['categoria'] == 'servico':
+            data['material_proprio'] = data['material_proprio'] == 'sim'
+        else:
+            data.pop('material_proprio', None)
         data['inicio'] = datetime.fromisoformat(data['inicio'] + '-03:00')
         data['fim'] = datetime.fromisoformat(data['fim'] + '-03:00')
         return save_booking(actor=self.admin, data=data)
@@ -44,11 +48,14 @@ class BookingWebTests(TestCase):
 
     def test_admin_can_create_each_category_edit_view_history_and_cancel(self):
         for category, target in (('servico', self.service), ('equipamento', self.equipment), ('espaco', self.space)):
-            response = self.client.post('/agenda/novo/', {**self.data, 'categoria': category, 'objeto': target.pk})
+            category_data = {**self.data, 'categoria': category, 'objeto': target.pk}
+            if category != 'servico':
+                category_data.pop('material_proprio')
+            response = self.client.post('/agenda/novo/', category_data)
             booking = Agendamento.objects.get(**{category + '_id': target.pk})
             self.assertRedirects(response, f'/agenda/{booking.pk}/')
             self.assertContains(self.client.get(response.url), target.nome)
-            response = self.client.post(f'/agenda/{booking.pk}/editar/', {**self.data, 'categoria': category,
+            response = self.client.post(f'/agenda/{booking.pk}/editar/', {**category_data, 'categoria': category,
                                         'objeto': target.pk, 'versao': 1, 'motivo': 'Corrigido'})
             self.assertRedirects(response, f'/agenda/{booking.pk}/')
             self.assertContains(self.client.get(f'/agenda/{booking.pk}/historico/'), 'Corrigido')

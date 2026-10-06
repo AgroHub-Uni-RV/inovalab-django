@@ -2,15 +2,18 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Q
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.generic import DetailView, ListView, View
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import never_cache
 
 from accounts.policies import is_business_admin
 from agenda.forms import BookingForm, CancelForm
 from agenda.models import CATEGORIES, Agendamento
 from agenda.selectors import calendar_weeks, filter_bookings, month_bounds, visible_bookings
-from agenda.services import PUBLIC_FIELDS, BookingConflict, cancel_booking, save_booking
+from agenda.services import PUBLIC_FIELDS, SERVICE_FIELDS, BookingConflict, cancel_booking, save_booking
 
 
 class AgendaAccessMixin(LoginRequiredMixin):
@@ -59,7 +62,25 @@ class BookingDetailView(AgendaAccessMixin, DetailView):
     template_name = 'agenda/detail.html'
 
     def get_context_data(self, **kwargs):
-        return {**super().get_context_data(**kwargs), 'events': self.object.eventos.all()[:5]}
+        creator = self.object.criado_por
+        creator_name = (creator.get_full_name() or creator.username) if creator else (
+            self.object.eventos.filter(acao='criar').values_list('ator_nome', flat=True).first() or 'Não registrado')
+        return {**super().get_context_data(**kwargs), 'events': self.object.eventos.all()[:5], 'creator_name': creator_name}
+
+
+@method_decorator(never_cache, name='dispatch')
+class BookingCreatorPhotoView(AgendaAccessMixin, View):
+    def get(self, request, pk):
+        booking = get_object_or_404(self.get_queryset(), pk=pk)
+        if not booking.criado_por or not booking.criado_por.foto:
+            raise Http404
+        try:
+            stream = booking.criado_por.foto.open('rb')
+        except OSError as error:
+            raise Http404 from error
+        response = FileResponse(stream, content_type='image/webp')
+        response['X-Content-Type-Options'] = 'nosniff'
+        return response
 
 
 class BookingWriteView(AgendaAccessMixin, View):
@@ -76,6 +97,11 @@ class BookingWriteView(AgendaAccessMixin, View):
         if request.POST.get('atualizar') == '1':
             # POST keeps names, reasons and CSRF tokens out of URL/history/logs.
             initial = {key: request.POST[key] for key in PUBLIC_FIELDS if key in request.POST}
+            if initial.get('categoria') == 'servico':
+                initial['equipamentos'] = request.POST.getlist('equipamentos')
+            else:
+                for key in SERVICE_FIELDS:
+                    initial.pop(key, None)
             if booking:
                 initial['versao'] = request.POST.get('versao', '')
             initial.pop('objeto', None)
@@ -87,7 +113,8 @@ class BookingWriteView(AgendaAccessMixin, View):
         response_status = 200
         if form.is_valid():
             try:
-                saved = save_booking(actor=request.user, data={key: form.cleaned_data[key] for key in PUBLIC_FIELDS},
+                saved = save_booking(actor=request.user,
+                                     data={key: value for key, value in form.cleaned_data.items() if key in PUBLIC_FIELDS},
                                      booking_id=booking.pk if booking else None, expected_version=form.cleaned_data['versao'])
             except BookingConflict as error:
                 form.add_error(None, str(error))

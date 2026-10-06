@@ -146,6 +146,11 @@
 .sheet-topbar .task-actions { display:flex; align-items:center; gap:var(--space-3); flex-wrap:wrap; }
 .sheet-meta { display:flex; align-items:center; gap:var(--space-4); font-size:var(--font-body); overflow-wrap:anywhere; min-width:0; }
 .sheet-meta .icon { width:32px; height:32px; }
+.booking-creator { color:#555; gap:var(--space-3); }
+.booking-creator-avatar { width:var(--space-8); height:var(--space-8); border-radius:var(--radius-round); overflow:hidden; background:#ddd; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--navy); font-size:var(--font-label); }
+.booking-creator-avatar img { width:100%; height:100%; object-fit:cover; }
+.booking-category { display:inline-flex; align-items:center; justify-content:space-between; gap:var(--space-6); background:#f0c4ff; color:#a340ff; border-radius:var(--radius-control); padding:var(--space-4) var(--space-6); font-size:var(--font-section); font-weight:700; }
+.booking-category .icon { width:var(--space-8); height:var(--space-8); }
 .sheet-close { font-size:var(--font-display); line-height:1; padding:var(--space-1); }
 .sheet-layout { display:grid; grid-template-columns:minmax(0,2.5fr) minmax(0,1fr); gap:var(--space-6); padding:var(--space-10); }
 .sheet-content { min-width:0; }
@@ -172,6 +177,9 @@
 .form-field { min-width:0; }
 .form-field.full-width { grid-column:1/-1; }
 .form-field label { display:block; margin-bottom:var(--space-2); font-size:var(--font-label); }
+.booking-equipment-options > div { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr)); gap:var(--space-3); }
+.booking-equipment-options #id_equipamentos label { display:flex; align-items:center; gap:var(--space-3); margin:0; padding:var(--space-3); border:1px solid #ddd; border-radius:var(--radius-small); }
+.booking-equipment-options input { flex-shrink:0; }
 .sheet-actions { display:flex; gap:var(--space-4); flex-wrap:wrap; align-items:center; margin-top:var(--space-8); }
 .banners-page .stat-card.green .stat-icon { background:#edffd7; color:#70b626; }
 .banners-page .table-wrapper { min-height:900px; }

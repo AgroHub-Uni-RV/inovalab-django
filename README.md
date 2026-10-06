@@ -84,6 +84,8 @@ Os [padrões visuais compartilhados](docs/frontend/03-padroes-visuais.md) centra
 
 ## Processo
 
+A entrega de [agendamentos por categoria](docs/frontend/08-agendamento-por-categoria.md) acrescenta seleção opcional de máquinas e material próprio/gasto em gramas ao formulário de serviço, além da foto/nome do criador e do destaque de categoria no detalhe. Foram aprovados 345 testes Django e verificações básicas no Chrome. Execute `python manage.py migrate` ao atualizar; as migrações locais já foram aplicadas.
+
 A revisão seguinte adiciona [ativação/desativação de banners na coluna Ações](docs/frontend/07-acoes-de-banners-e-filtros.md), substitui Filtrar pelo rótulo Filtros e remove Atualizar opções da agenda. Validação: 329 testes Django aprovados e verificações básicas no Chrome; nenhuma migração nova.
 
 Em 06/10/2026, filtros e atualização de opções passaram a ter [aplicação automática](docs/frontend/06-aplicacao-automatica.md), preservando as ações explícitas de salvar. A carga inicial inclui [seis máquinas e nove espaços das imagens fornecidas](docs/modules/08-recursos-iniciais.md), com Secretaria, Laboratório maker e Laboratório de robótica reserváveis somente por administradores. Execute `python manage.py migrate` ao atualizar; no ambiente local as migrações já foram aplicadas. Validação desta entrega: 323 testes Django aprovados e verificações básicas no Chrome.

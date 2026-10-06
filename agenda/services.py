@@ -1,10 +1,11 @@
 import sqlite3
+from decimal import Decimal
 from datetime import datetime, timezone as dt_timezone
 from functools import wraps
 
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import OperationalError, connection, transaction
-from django.db.models import F
+from django.db.models import F, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
@@ -14,8 +15,11 @@ from catalogo.models import Equipamento, Espaco, Servico
 
 
 CATEGORY_MODELS = {'servico': Servico, 'equipamento': Equipamento, 'espaco': Espaco}
-PUBLIC_FIELDS = {'categoria', 'objeto', 'requerente', 'motivo', 'inicio', 'fim'}
-STORED_FIELDS = ('servico_id', 'equipamento_id', 'espaco_id', 'requerente', 'motivo', 'inicio', 'fim', 'cancelado_em')
+BASE_FIELDS = {'categoria', 'objeto', 'requerente', 'motivo', 'inicio', 'fim'}
+SERVICE_FIELDS = {'equipamentos', 'material_proprio', 'material_gasto_gramas'}
+PUBLIC_FIELDS = BASE_FIELDS | SERVICE_FIELDS
+STORED_FIELDS = ('servico_id', 'equipamento_id', 'espaco_id', 'requerente', 'motivo', 'inicio', 'fim', 'cancelado_em',
+                 'material_proprio', 'material_gasto_gramas')
 
 
 class BookingConflict(Exception):
@@ -68,9 +72,12 @@ def _lock_targets(*targets):
 
 
 def _snapshot(booking):
-    values = {name: getattr(booking, name) for name in ('requerente', 'motivo', 'inicio', 'fim', 'cancelado_em')}
+    values = {name: getattr(booking, name) for name in (
+        'requerente', 'motivo', 'inicio', 'fim', 'cancelado_em', 'material_proprio', 'material_gasto_gramas')}
     values.update(categoria=booking.categoria, objeto=booking.objeto_id)
+    values['equipamentos'] = sorted(booking.equipamentos.values_list('pk', flat=True))
     return {name: value.astimezone(dt_timezone.utc).isoformat() if isinstance(value, datetime) else value
+            if not isinstance(value, Decimal) else format(value, '.3f')
             for name, value in values.items()}
 
 
@@ -103,6 +110,7 @@ def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=
     if unknown:
         raise ValidationError({name: 'Este campo não pode ser alterado.' for name in unknown})
     booking = _load(booking_id, expected_version) if booking_id is not None else Agendamento(criado_por=actor)
+    old_equipment_ids = set(booking.equipamentos.values_list('pk', flat=True)) if booking.pk else set()
     old_target = _target(booking) if booking_id is not None else None
     if ('categoria' in data) != ('objeto' in data):
         raise ValidationError({'objeto': 'Informe categoria e objeto juntos.'})
@@ -116,12 +124,32 @@ def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=
             setattr(booking, name + '_id', pk if name == category else None)
     if booking.categoria is None:
         raise ValidationError({'objeto': 'Selecione categoria e objeto.'})
+    equipment_ids = data.get('equipamentos', sorted(old_equipment_ids))
+    if not isinstance(equipment_ids, (list, tuple)) or any(type(pk) is not int or pk < 1 for pk in equipment_ids):
+        raise ValidationError({'equipamentos': 'Informe uma lista de IDs inteiros positivos.'})
+    if len(set(equipment_ids)) != len(equipment_ids):
+        raise ValidationError({'equipamentos': 'Selecione cada equipamento uma única vez.'})
+    if booking.categoria != 'servico':
+        if any(data.get(name) not in (None, []) for name in SERVICE_FIELDS):
+            raise ValidationError({'equipamentos': 'Estes campos são exclusivos de agendamentos de serviço.'})
+        equipment_ids = []
+        booking.material_proprio = None
+        booking.material_gasto_gramas = None
+    else:
+        for name in ('material_proprio', 'material_gasto_gramas'):
+            if name in data:
+                setattr(booking, name, data[name])
+        if booking.material_proprio is not None and type(booking.material_proprio) is not bool:
+            raise ValidationError({'material_proprio': 'Informe sim ou não.'})
+        if booking.material_proprio is True and 'material_gasto_gramas' not in data:
+            booking.material_gasto_gramas = None
     for name in ('requerente', 'motivo', 'inicio', 'fim'):
         if name in data:
             setattr(booking, name, data[name])
     target = _target(booking)
     with transaction.atomic():
-        _lock_targets(*(item for item in (old_target, target) if item is not None))
+        _lock_targets(*(item for item in (old_target, target) if item is not None),
+                      *(('equipamento', pk) for pk in set(equipment_ids) | old_equipment_ids))
         previous = _load(booking_id, expected_version) if booking_id is not None else None
         before = _snapshot(previous) if previous else {}
         resource = CATEGORY_MODELS[target[0]].objects.get(pk=target[1])
@@ -131,6 +159,9 @@ def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=
         period_changed = previous is None or target != _target(previous) or (booking.inicio, booking.fim) != (previous.inicio, previous.fim)
         if period_changed and resource.status == 'indisponivel':
             raise ValidationError({'objeto': 'Este cadastro está indisponível para reservar este período.'})
+        if Equipamento.objects.filter(pk__in=equipment_ids, status='indisponivel').filter(
+                ~Q(pk__in=old_equipment_ids) if not period_changed else Q()).exists():
+            raise ValidationError({'equipamentos': 'Um equipamento selecionado está indisponível.'})
         booking.full_clean()
         overlap = Agendamento.objects.filter(cancelado_em__isnull=True, inicio__lt=booking.fim, fim__gt=booking.inicio,
                                              **{target[0] + '_id': target[1]})
@@ -142,6 +173,7 @@ def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=
             _persist_existing(booking, expected_version)
         else:
             booking.save()
+        booking.equipamentos.set(equipment_ids)
         _record(actor, booking, 'editar' if previous else 'criar', before, actor_name=actor_name)
     return booking
 
