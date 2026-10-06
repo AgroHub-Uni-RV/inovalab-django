@@ -34,6 +34,7 @@ class BookingForm(StrictFormMixin, forms.Form):
         initial.setdefault('categoria', 'servico')
         kwargs['initial'] = initial
         super().__init__(*args, **kwargs)
+        self.fields['categoria'].widget.attrs['data-auto-refresh'] = ''
         category = self.data.get('categoria') if self.is_bound else self.initial['categoria']
         if category in CATEGORY_MODELS:
             retained_id = booking.objeto_id if booking and category == booking.categoria else None
