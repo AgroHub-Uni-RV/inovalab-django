@@ -88,9 +88,10 @@ class WebAccessTests(TestCase):
         self.assertNotContains(self.client.get('/perfil/'), 'Administrar contas')
         self.assertEqual(self.client.get('/admin/accounts/user/').status_code, 302)
 
-    def test_superuser_sees_admin_link(self):
+    def test_superuser_uses_sidebar_for_account_management(self):
         self.client.force_login(self.admin)
-        self.assertContains(self.client.get('/perfil/'), 'Administrar contas')
+        self.assertNotContains(self.client.get('/perfil/'), 'Administrar contas')
+        self.assertContains(self.client.get('/perfil/'), '/usuarios/')
         self.assertEqual(self.client.get('/admin/accounts/user/').status_code, 200)
 
     def test_login_fields_are_labeled_and_logout_form_is_post(self):

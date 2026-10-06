@@ -73,6 +73,10 @@
 .account-username { display:block; margin-top:var(--space-2); color:#777; }
 .account-details { display:grid; grid-template-columns:180px minmax(0,1fr); gap:var(--space-4); }
 .account-details dd { margin:0; }
+.profile-form { max-width:640px; display:grid; gap:var(--space-6); margin:var(--space-8) 0; }
+.profile-form label { display:block; font-size:var(--font-label); margin-bottom:var(--space-2); }
+.profile-form .field { min-width:0; }
+.profile-form small { display:block; font-size:var(--font-small); margin-top:var(--space-2); }
 .public-header { background:white; padding:var(--space-5) max(var(--page-gutter),calc((100vw - var(--content-width))/2)); display:flex; align-items:center; justify-content:space-between; gap:var(--space-6); min-height:90px; }
 .public-brand-slot { width:160px; flex-shrink:0; }
 .public-brand-slot img { display:block; width:100%; height:auto; }

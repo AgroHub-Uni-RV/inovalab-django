@@ -16,7 +16,7 @@
 <a href="{% querystring tab='inativos' page=None %}"{% if selected_tab == 'inativos' %} aria-current="page"{% endif %}>Inativos</a>
 </nav><form class="user-search" method="get"><label class="sr-only" for="user-q">Buscar usuário</label><input id="user-q" name="q" value="{{ query }}" placeholder="Buscar usuário"><input type="hidden" name="tab" value="{{ selected_tab }}"><button type="submit" aria-label="Buscar usuários">{% include 'core/icon.html' with name='search' %}</button></form></div>
 <div class="user-grid">{% for account in object_list %}<article class="user-card">
-<div class="user-photo" aria-hidden="true">{% include 'core/icon.html' with name='profile' %}</div>
+<div class="user-photo" aria-hidden="true">{% if account.foto %}<img src="{% url 'accounts:photo' account.pk %}" alt="">{% else %}{% include 'core/icon.html' with name='profile' %}{% endif %}</div>
 <h2><a href="{% url 'admin:accounts_user_change' account.pk %}">{{ account.get_full_name|default:account.username }}</a></h2>
 <p>{% if account.is_superuser %}Administrador técnico{% elif account.lab_admin %}Administrador do laboratório{% else %}Usuário interno{% endif %}</p>
 <p>{{ account.is_active|yesno:'Ativo,Inativo' }}</p>

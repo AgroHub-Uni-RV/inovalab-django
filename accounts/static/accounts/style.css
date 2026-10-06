@@ -27,7 +27,7 @@ button, a, input { -webkit-tap-highlight-color: transparent; }
     border: 1px solid #ffffff12; bottom: -300px; right: -190px; pointer-events: none;
 }
 .brand { display: flex; align-items: center; gap: var(--space-3); color: white; text-decoration: none; font-size:var(--font-title); font-weight: 700; width: fit-content; }
-.brand { background: white; border-radius: var(--radius-small); padding: var(--space-3); max-width: 100%; }
+.brand { border-radius: var(--radius-small); padding: var(--space-3); max-width: 100%; }
 .brand img { display: block; width: 240px; max-width: 100%; height: auto; }
 .eyebrow { font-size:var(--font-small); font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
 .brand-copy .eyebrow { color: #c4e5a1; }
