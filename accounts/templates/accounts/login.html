@@ -5,7 +5,7 @@
     <span class="eyebrow">Bem-vindo ao InovaLab</span>
     <h2 id="login-title">Entre na sua conta</h2>
     <p class="subtitle">Use sua conta do AgroHub para acessar o laboratório.</p>
-    {% for message in messages %}<div class="alert" role="status"><p>{{ message }}</p></div>{% endfor %}
+    {% for message in messages %}<div class="alert {{ message.tags }}" role="status"><p>{{ message }}</p></div>{% endfor %}
     {% if form.non_field_errors %}
     <div class="alert" role="alert">
         {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
