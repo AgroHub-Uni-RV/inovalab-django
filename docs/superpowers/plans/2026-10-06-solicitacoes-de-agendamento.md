@@ -30,7 +30,7 @@ autorizou execução direta; não haverá delegação a subagentes.
 ## Task 1: estados, criação por perfil e avaliação transacional
 
 **Files:** modificar `agenda/models.py`, `agenda/services.py`, `agenda/selectors.py`;
-criar `agenda/migrations/0005_agendamento_situacao_agendamento_avaliado_em_and_more.py`
+criar `agenda/policies.py` e `agenda/migrations/0005_agendamento_avaliado_em_agendamento_avaliado_por_and_more.py`
 e `agenda/tests/test_requests.py`; adaptar expectativas antigas em
 `agenda/tests/test_services.py`; ampliar `agenda/tests/test_concurrency.py`.
 
@@ -45,7 +45,7 @@ e `agenda/tests/test_requests.py`; adaptar expectativas antigas em
   para usuário ativo e todos os registros não cancelados para administrador.
 - Mantém `_save_booking` como núcleo confiável para integrações confirmadas.
 
-- [ ] Escrever testes de criação pendente, isolamento e rejeição de campos protegidos.
+- [x] Escrever testes de criação pendente, isolamento e rejeição de campos protegidos.
 
 ```python
 def test_normal_creation_is_pending_and_owned(self):
@@ -60,9 +60,9 @@ a `2026-11-01T15:00:00-03:00`. Testar criação pendente sobre reserva confirmad
 aprovação impedida por conflito, rejeição, repetição, versão antiga, inativos,
 restrição de espaços e indisponibilidade de equipamentos/material na avaliação.
 
-- [ ] Rodar `& .\venv\Scripts\python.exe manage.py test agenda.tests.test_requests --noinput`.
+- [x] Rodar `& .\venv\Scripts\python.exe manage.py test agenda.tests.test_requests --noinput`.
   Esperado inicialmente: falha porque usuário comum não pode criar.
-- [ ] Implementar estado e criação controlada pelo servidor.
+- [x] Implementar estado e criação controlada pelo servidor.
 
 ```python
 situacao = models.CharField(max_length=10, choices=[('pendente', 'Pendente'),
@@ -79,7 +79,7 @@ campos públicos continuam sem situação/autor/avaliação. O núcleo tem defau
 confirmado para preservar integrações. Incluir estado e avaliação no snapshot
 e nos campos persistidos. Migração usa default confirmado para dados existentes.
 
-- [ ] Implementar decisões com bloqueio de alvo, recarga de versão e histórico.
+- [x] Implementar decisões com bloqueio de alvo, recarga de versão e histórico.
 
 ```python
 with transaction.atomic():
@@ -102,17 +102,18 @@ pendente não valida sobreposição. Manter o primeiro acesso dentro da transaç
 como escrita no alvo para concorrência SQLite. Testar disputa de duas aprovações
 e aprovação contra criação administrativa usando o helper de threads existente.
 
-- [ ] Rodar testes de serviços, pedidos e concorrência; corrigir regressões.
-- [ ] Gerar a migração e verificar com `manage.py makemigrations --check --dry-run`.
-- [ ] Commit: `feat (agenda): adiciona solicitações e aprovação administrativa.`
+- [x] Rodar testes de serviços, pedidos e concorrência; corrigir regressões.
+- [x] Gerar a migração e verificar com `manage.py makemigrations --check --dry-run`.
+- [x] Commit: `feat (agenda): adiciona solicitações e aprovação administrativa.`
 
 ## Task 2: interface, API e seleção de espaços por perfil
 
 **Files:** modificar `agenda/views.py`, `agenda/forms.py`, `agenda/widgets.py`,
 `agenda/api.py`, `agenda/serializers.py`, `agenda/urls.py`,
 `agenda/templatetags/agenda_access.py`, templates list/detail/form/space_option;
-criar `agenda/templates/agenda/requests.html`; modificar `core/navigation.py`,
-`core/dashboard.py`, `core/static/core/ui.css`; testar em
+criar templates `agenda/templates/agenda/requests.html`, `filters.html` e `review_actions.html`;
+modificar `core/navigation.py`, `core/dashboard.py`, `core/static/core/modulos.css`
+e `core/static/core/painel.css`, usando a escala de `ui.css`; testar em
 `agenda/tests/test_requests.py` e adaptar testes antigos web/API/core/foto/widget.
 
 **Interfaces:**
@@ -124,7 +125,7 @@ criar `agenda/templates/agenda/requests.html`; modificar `core/navigation.py`,
   `ReviewForm` aceita apenas `versao` e `decisao` além do CSRF.
 - `SpaceRadioSelect` recebe `is_admin`, desabilita opções restritas só para comuns.
 
-- [ ] Escrever testes web/API de criação própria, filtros, acesso cruzado,
+- [x] Escrever testes web/API de criação própria, filtros, acesso cruzado,
   decisões administrativas, CSRF, estado e bloqueio dos três espaços.
 
 ```python
@@ -135,12 +136,12 @@ def test_user_cannot_read_another_booking(self):
     self.assertEqual(self.client.get(f'/agenda/{booking.pk}/historico/').status_code, 404)
 ```
 
-- [ ] Rodar os testes novos; esperado: views/API negam criação e leitura normal.
-- [ ] Separar mixins de usuário ativo e administrador; edição e cancelamento
+- [x] Rodar os testes novos; esperado: views/API negam criação e leitura normal.
+- [x] Separar mixins de usuário ativo e administrador; edição e cancelamento
   exigem administrador. Toda consulta de detalhes usa `visible_bookings`.
   API libera list/retrieve/create/historico a usuários ativos; update,
   partial_update e destroy continuam exclusivos de administradores.
-- [ ] Acrescentar campos de saída somente leitura na API.
+- [x] Acrescentar campos de saída somente leitura na API.
 
 ```python
 situacao = serializers.CharField(read_only=True)
@@ -148,15 +149,15 @@ avaliado_por = serializers.IntegerField(source='avaliado_por_id', read_only=True
 avaliado_em = serializers.DateTimeField(read_only=True)
 ```
 
-- [ ] Implementar listagem administrativa com filtro inicial pendente, sem mês,
+- [x] Implementar listagem administrativa com filtro inicial pendente, sem mês,
   e ações POST explícitas com versão. Capturar conflitos como HTTP 409 e
   validação como 400. Sucesso redireciona para a listagem administrativa.
-- [ ] Listagem comum usa mês opcional vazio por padrão; administrativa mantém
+- [x] Listagem comum usa mês opcional vazio por padrão; administrativa mantém
   mês atual quando parâmetro ausente. Calendário sempre recebe mês válido:
   `calendar_month = selected_month or timezone.localdate().strftime('%Y-%m')`.
   Filtrar calendário e contagens de ocupação por confirmado. Validar estado
   contra choices antes de filtrar. Preservar filtros `data-auto-apply` existentes.
-- [ ] Adicionar estado visível a listagem/detalhes, avaliação nos detalhes,
+- [x] Adicionar estado visível a listagem/detalhes, avaliação nos detalhes,
   mensagens de solicitação pendente e botões administrativos condicionais.
 
 ```html
@@ -164,37 +165,38 @@ avaliado_em = serializers.DateTimeField(read_only=True)
 {% if is_business_admin %}<a href="{% url 'agenda:update' booking.pk %}">Editar</a>{% endif %}
 ```
 
-- [ ] Passar ator ao formulário em GET, POST e atualização assíncrona. Na opção
+- [x] Passar ator ao formulário em GET, POST e atualização assíncrona. Na opção
   de espaço usar `restricted = space.somente_administradores and not self.is_admin`;
   se restrita, adicionar `option['attrs']['disabled'] = True`. O `clean_objeto`
   verifica novamente a política; o serviço permanece a última barreira.
-- [ ] Mostrar entrada Agendamentos para ativos e Solicitações só para admin.
+- [x] Mostrar entrada Agendamentos para ativos e Solicitações só para admin.
   Corrigir destaque da navegação para não marcar as duas entradas na página de
   solicitações. Dashboard consulta somente confirmados pelo seletor do ator.
-- [ ] Rodar `manage.py test agenda core integracoes --noinput` e verificar
+- [x] Rodar `manage.py test agenda core integracoes --noinput` e verificar
   isolamento, filtros, materiais, reservas por integração e layout dos widgets.
-- [ ] Commit: `feat (agenda): permite pedidos próprios e avaliação pela interface.`
+- [x] Commit: `feat (agenda): permite pedidos próprios e avaliação pela interface.`
 
 ## Task 3: validação final e documentação da entrega
 
 **Files:** atualizar o acompanhamento deste plano e criar
-`docs/frontend/08-solicitacoes-de-agendamento.md`; revisar migração e testes.
+`docs/frontend/11-solicitacoes-de-agendamento.md`; revisar migração e testes,
+incluindo `agenda/tests/test_request_migration.py` para dados existentes.
 
 **Interfaces:** consome todas as entregas anteriores; produz instruções de
 depuração, comandos/resultados e cenários restantes ao responsável.
 
-- [ ] Executar suíte completa: `& .\venv\Scripts\python.exe manage.py test --noinput`.
-- [ ] Executar check, dry-run de migrações e `git diff --check`; todos sem erros.
-- [ ] Aplicar migração local e confirmar que registros anteriores estão
+- [x] Executar suíte completa: `& .\venv\Scripts\python.exe manage.py test --noinput`.
+- [x] Executar check, dry-run de migrações e `git diff --check`; todos sem erros.
+- [x] Aplicar migração local e confirmar que registros anteriores estão
   confirmados e mantêm seus campos de cancelamento e criador.
-- [ ] Iniciar servidor temporário com cópia isolada do banco para o navegador.
+- [x] Iniciar servidor temporário com cópia isolada do banco para o navegador.
   Usar contas temporárias, sem alterar credenciais reais. Testar usuário comum
   solicitando, administrador rejeitando/aprovando e usuário acompanhando estado.
-- [ ] Verificar cadeados e seleção dos espaços para ambos os papéis, isolamento
+- [x] Verificar cadeados e seleção dos espaços para ambos os papéis, isolamento
   entre contas, filtros sem navegação completa, sidebar expandida e tela móvel.
-- [ ] Registrar resultados e limites da verificação, concluir checkboxes e
+- [x] Registrar resultados e limites da verificação, concluir checkboxes e
   commitar: `docs (agenda): registra validação do fluxo de solicitações.`
-- [ ] Usar finishing-a-development-branch ao encerrar e informar commits e estado
+- [x] Usar finishing-a-development-branch ao encerrar e informar commits e estado
   da branch. Aguardar depuração do responsável antes de outro módulo.
 
 ## Revisão do plano
