@@ -1,3 +1,17 @@
-{% extends 'core/public_base.html' %}
+{% extends base_template %}
 {% block title %}{% if local == 'sobre' %}Sobre{% else %}Início{% endif %} · InovaLab{% endblock %}
-{% block content %}<h1>{% if local == 'sobre' %}Sobre o InovaLab{% else %}InovaLab{% endif %}</h1>{% for banner in banners %}<section class="public-banner" aria-labelledby="banner-{{ banner.pk }}"><h2 id="banner-{{ banner.pk }}">{{ banner.titulo }}</h2><img src="{% url 'conteudo:image' banner.pk %}" alt="{{ banner.texto_alternativo|default:banner.titulo }}"></section>{% empty %}<p>Nenhum conteúdo publicado no momento.</p>{% endfor %}{% endblock %}
+{% block content %}
+{% if user.is_authenticated %}
+<nav class="module-tabs compact" aria-label="Páginas publicadas">
+  <a href="{% url 'conteudo:public-home' %}"{% if local == 'home' %} aria-current="page"{% endif %}>Início</a>
+  <a href="{% url 'conteudo:public-about' %}"{% if local == 'sobre' %} aria-current="page"{% endif %}>Sobre</a>
+</nav>
+{% endif %}
+<h1>{% if local == 'sobre' %}Sobre o InovaLab{% else %}InovaLab{% endif %}</h1>
+{% for banner in banners %}
+<section class="public-banner" aria-labelledby="banner-{{ banner.pk }}">
+  <h2 id="banner-{{ banner.pk }}">{{ banner.titulo }}</h2>
+  <img src="{% url 'conteudo:image' banner.pk %}" alt="{{ banner.texto_alternativo|default:banner.titulo }}">
+</section>
+{% empty %}<p>Nenhum conteúdo publicado no momento.</p>{% endfor %}
+{% endblock %}

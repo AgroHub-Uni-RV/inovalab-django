@@ -125,7 +125,10 @@ def banner_delete(request, pk):
 @never_cache
 @require_safe
 def public_page(request, local):
-    return render(request, 'conteudo/public.html', {'banners': published_banners(local), 'local': local})
+    base_template = 'catalogo/base.html' if request.user.is_authenticated else 'core/public_base.html'
+    return render(request, 'conteudo/public.html', {
+        'banners': published_banners(local), 'local': local, 'base_template': base_template,
+    })
 
 
 @never_cache

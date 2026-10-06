@@ -75,6 +75,26 @@ a:focus-visible,button:focus-visible,summary:focus-visible,[tabindex]:focus-visi
 .brand-slot {
   height:92px;
   flex-shrink:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:var(--space-2);
+}
+.sidebar-brand {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  padding:var(--space-2);
+  border-radius:var(--radius-small);
+  background:white;
+}
+.sidebar-brand img {
+  display:block;
+  width:100%;
+  height:auto;
+  max-height:68px;
+  object-fit:contain;
 }
 .sidebar-nav {
   display:flex;
@@ -94,6 +114,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible,[tabindex]:focus-visi
   text-align:left;
   white-space:nowrap;
   border-radius:var(--radius-small);
+  justify-content:center;
 }
 .nav-item:hover,.nav-item:focus-visible {
   background:#ffffff19;
@@ -125,6 +146,9 @@ a:focus-visible,button:focus-visible,summary:focus-visible,[tabindex]:focus-visi
 }
 .sidebar-expanded .nav-label {
   display:inline;
+}
+.sidebar-expanded .nav-item {
+  justify-content:flex-start;
 }
 .sidebar-expanded .sidebar-toggle .icon {
   transform:rotate(180deg);
@@ -528,10 +552,10 @@ main {
   border-radius:var(--radius-small);
   background:var(--green);
 }
-.swatch.today {
+.swatch.holiday {
   background:#00a3d8;
 }
-.swatch.reserved {
+.swatch.event {
   background:#eb1b23;
 }
 .calendar-more {
@@ -599,16 +623,14 @@ main {
   justify-content:center;
   border-radius:var(--radius-small);
 }
-.day.sunday {
-  color:#529019;
-}
 .day.today {
-  background:#0084b3;
-  color:white;
+  outline:1px solid var(--ink);
+  outline-offset:2px;
 }
 .day.reserved {
-  background:#d51a24;
-  color:white;
+  font-weight:900;
+  text-decoration:underline;
+  text-underline-offset:3px;
 }
 .dashboard-personal {
   grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);

@@ -1,5 +1,5 @@
-<aside class="sidebar" id="sidebar" aria-label="Menu principal">
-  <div class="brand-slot" aria-hidden="true"></div>
+{% load static %}<aside class="sidebar" id="sidebar" aria-label="Menu principal">
+  <div class="brand-slot"><a class="sidebar-brand" href="{% url 'core:dashboard' %}" aria-label="InovaLab, Dashboard"><img src="{% static 'core/assets/logo.png' %}" alt="InovaLab" width="350" height="130"></a></div>
   <nav class="sidebar-nav">
     {% for item in nav_items %}
     <a class="nav-item{% if item.current %} current{% endif %}" href="{{ item.href }}" aria-label="{{ item.label }}" title="{{ item.label }}"{% if item.current %} aria-current="page"{% endif %}>

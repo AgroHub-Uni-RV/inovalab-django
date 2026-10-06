@@ -44,3 +44,25 @@ class BannerFrontendTests(BannerFixtures, TestCase):
         self.assertContains(first, 'q=Busca')
         self.assertContains(first, 'status=ativo')
         self.assertEqual(len(self.client.get('/banners/', {'q':'Busca', 'status':'ativo', 'page':2}).context['object_list']), 1)
+
+    def test_authenticated_pages_keep_internal_navigation_and_publication_filter(self):
+        for actor in (self.admin, self.user):
+            self.client.force_login(actor)
+            for path in ('/publico/', '/publico/sobre/'):
+                with self.subTest(actor=actor.username, path=path):
+                    response = self.client.get(path)
+                    self.assertTemplateUsed(response, 'core/base.html')
+                    self.assertContains(response, 'id="sidebar"')
+                    self.assertContains(response, 'class="topbar"')
+                    self.assertContains(response, 'class="footer"')
+                    self.assertNotContains(response, 'Privado')
+                    self.assertNotContains(response, 'Futuro')
+                    self.assertNotContains(response, 'Excluído')
+
+    def test_anonymous_pages_keep_public_layout_without_account_information(self):
+        self.client.logout()
+        for path in ('/publico/', '/publico/sobre/'):
+            response = self.client.get(path)
+            self.assertTemplateUsed(response, 'core/public_base.html')
+            self.assertNotContains(response, 'id="sidebar"')
+            self.assertNotContains(response, '/sair/')

@@ -6,8 +6,14 @@
   const backdrop = document.querySelector('.sidebar-backdrop');
   const profile = document.querySelector('.profile-menu');
   const mobile = window.matchMedia('(max-width: 760px)');
-  const setMenu = (open, returnFocus = false) => {
+  const storageKey = 'inovalab.sidebar.expanded';
+  let preferredOpen = false;
+  try { preferredOpen = localStorage.getItem(storageKey) === 'true'; } catch { /* O menu funciona sem armazenamento disponível. */ }
+  const setMenu = (open, returnFocus = false, persist = true) => {
     body.classList.toggle('sidebar-expanded', open);
+    if (persist) {
+      try { localStorage.setItem(storageKey, String(open)); } catch { /* Navegadores podem bloquear o armazenamento. */ }
+    }
     toggle.setAttribute('aria-expanded', String(open));
     toggle.setAttribute('aria-label', open ? 'Recolher menu' : 'Expandir menu');
     toggle.title = open ? 'Recolher menu' : 'Expandir menu';
@@ -27,7 +33,7 @@
   toggle.addEventListener('click', () => setMenu(!body.classList.contains('sidebar-expanded'), true));
   mobileToggle.addEventListener('click', () => setMenu(!body.classList.contains('sidebar-expanded'), true));
   backdrop.addEventListener('click', () => setMenu(false, true));
-  mobile.addEventListener('change', () => setMenu(false));
+  mobile.addEventListener('change', () => setMenu(body.classList.contains('sidebar-expanded'), false, false));
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
       if (profile.open) { profile.open = false; profile.querySelector('summary').focus(); }
@@ -43,5 +49,5 @@
   document.addEventListener('click', event => {
     if (profile.open && !profile.contains(event.target)) profile.open = false;
   });
-  setMenu(false);
+  setMenu(preferredOpen, false, false);
 })();

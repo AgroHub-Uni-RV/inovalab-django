@@ -62,6 +62,11 @@
     button: measure('.primary-button, .sheet-actions button[type=submit], .login-card button[type=submit]'),
     table: measure('.table-wrapper'), sheet: measure('.detail-sheet'),
   });
+  // A preferência salva pode iniciar esta página com o menu aberto.
+  if (document.body.classList.contains('sidebar-expanded') && document.querySelector('.sidebar-toggle')) {
+    document.querySelector('.sidebar-toggle').click();
+    await new Promise(resolve => setTimeout(resolve, 200));
+  }
   check('collapsed');
   if (innerWidth > 760 && document.querySelector('.sidebar-toggle')) {
     document.querySelector('.sidebar-toggle').click();

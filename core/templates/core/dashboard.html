@@ -31,7 +31,7 @@
   </section>
   {% endif %}
   <section class="calendar-panel" aria-label="Calendário dos próximos seis meses">
-    <div class="calendar-top"><ul class="calendar-legend"><li><span class="swatch sunday"></span>Domingo</li><li><span class="swatch today"></span>Hoje</li>{% if is_business_admin %}<li><span class="swatch reserved"></span>Reserva</li>{% endif %}</ul>{% if is_business_admin %}<a class="calendar-more" href="{% url 'agenda:list' %}">Ver mais</a>{% endif %}</div>
+    <div class="calendar-top"><ul class="calendar-legend"><li><span class="swatch recess" aria-hidden="true"></span>Recesso</li><li><span class="swatch holiday" aria-hidden="true"></span>Feriado</li><li><span class="swatch event" aria-hidden="true"></span>Evento</li></ul>{% if is_business_admin %}<a class="calendar-more" href="{% url 'agenda:list' %}">Ver mais</a>{% endif %}</div>
     <div class="calendar-scroll" tabindex="0" aria-label="Meses do calendário">
       {% for month in months %}<section class="month-card" aria-label="{{ month.name }} de {{ month.year }}">
         <h2>{{ month.name|capfirst }}<span class="sr-only"> {{ month.year }}</span></h2>
