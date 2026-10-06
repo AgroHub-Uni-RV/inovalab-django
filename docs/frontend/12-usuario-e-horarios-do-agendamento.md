@@ -68,3 +68,26 @@ horizontal; o formulário usa os padrões compartilhados de espaçamento e campo
 O responsável ainda deve depurar com contas reais, conferir os períodos existentes
 e validar migração/concorrência no PostgreSQL do ambiente de destino. Nenhum
 deploy integra esta entrega. Aguardar essa depuração antes de iniciar outro módulo.
+
+## Complemento: observações opcionais
+
+O agendamento também aceita `observacoes`, um texto opcional disponível para
+serviços, equipamentos e espaços. O formulário usa uma área de texto com largura
+completa; o detalhe preserva quebras de linha e escapa HTML. Ao omitir o texto,
+o campo fica vazio. A edição administrativa permite alterar ou limpar observações
+e registra essas alterações no histórico, com o mesmo controle de versão.
+A troca de categoria conserva as observações ainda não salvas.
+
+A API interna aceita e retorna `observacoes`; PATCH sem esse campo conserva o
+texto anterior. O contrato externo das integrações permanece inalterado.
+A migração `agenda.0007_agendamento_observacoes` foi aplicada localmente e
+inicializa reservas existentes com texto vazio. Executar `manage.py migrate`
+nos outros ambientes.
+
+Os comandos de teste e verificação acima foram repetidos: **430 testes passaram**,
+check sem problemas, nenhuma migração pendente de geração e diff sem erros.
+Chrome, com contas e banco temporários: cadastro com observações e exibição no
+detalhe; campo opcional conferido. Desktop em 1366 px com sidebar expandida e
+celular em 390 px sem transbordamento horizontal. A revisão independente foi
+aprovada. O responsável deve conferir textos longos e edição com contas reais,
+além das verificações de PostgreSQL já indicadas.

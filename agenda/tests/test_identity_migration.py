@@ -28,6 +28,7 @@ class BookingIdentityMigrationTests(TransactionTestCase):
             executor.migrate(latest)
             apps = executor.loader.project_state(latest).apps
             migrated = apps.get_model('agenda', 'Agendamento').objects.get(pk=booking.pk)
+            self.assertEqual(migrated.observacoes, '')
             self.assertEqual((migrated.criado_por_id, migrated.inicio, migrated.fim, migrated.versao,
                               migrated.situacao, migrated.motivo),
                              (actor.pk, start, end, 4, 'pendente', 'Legado'))

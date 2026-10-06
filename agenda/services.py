@@ -19,8 +19,8 @@ from materiais.models import Material
 CATEGORY_MODELS = {'servico': Servico, 'equipamento': Equipamento, 'espaco': Espaco}
 BASE_FIELDS = {'categoria', 'objeto', 'motivo', 'inicio', 'fim'}
 SERVICE_FIELDS = {'equipamentos', 'material_proprio', 'material_gasto', 'material_gasto_gramas'}
-PUBLIC_FIELDS = BASE_FIELDS | SERVICE_FIELDS
-STORED_FIELDS = ('servico_id', 'equipamento_id', 'espaco_id', 'motivo', 'inicio', 'fim', 'cancelado_em',
+PUBLIC_FIELDS = BASE_FIELDS | SERVICE_FIELDS | {'observacoes'}
+STORED_FIELDS = ('servico_id', 'equipamento_id', 'espaco_id', 'motivo', 'observacoes', 'inicio', 'fim', 'cancelado_em',
                  'material_proprio', 'material_gasto_id', 'material_gasto_gramas',
                  'situacao', 'avaliado_por_id', 'avaliado_em')
 
@@ -76,7 +76,7 @@ def _lock_targets(*targets):
 
 def _snapshot(booking):
     values = {name: getattr(booking, name) for name in (
-        'motivo', 'inicio', 'fim', 'cancelado_em', 'material_proprio', 'material_gasto_gramas',
+        'motivo', 'observacoes', 'inicio', 'fim', 'cancelado_em', 'material_proprio', 'material_gasto_gramas',
         'situacao', 'avaliado_em')}
     values.update(categoria=booking.categoria, objeto=booking.objeto_id)
     values['criado_por'] = booking.criado_por_id
@@ -164,7 +164,7 @@ def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=
             booking.material_gasto_id = material_id
         elif booking.material_proprio is True:
             booking.material_gasto_id = None
-    for name in ('motivo', 'inicio', 'fim'):
+    for name in ('motivo', 'observacoes', 'inicio', 'fim'):
         if name in data:
             setattr(booking, name, data[name])
     target = _target(booking)

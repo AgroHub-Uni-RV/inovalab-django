@@ -24,6 +24,7 @@ class Agendamento(models.Model):
         validators=[MinValueValidator(Decimal('0.001'))],
     )
     motivo = models.TextField()
+    observacoes = models.TextField('observações', blank=True, default='')
     inicio = models.DateTimeField()
     fim = models.DateTimeField()
     versao = models.PositiveBigIntegerField(default=1, editable=False)
@@ -90,6 +91,8 @@ class Agendamento(models.Model):
 
     def clean(self):
         errors = {}
+        if isinstance(self.observacoes, str):
+            self.observacoes = self.observacoes.strip()
         if self.material_gasto_id is not None and (self.categoria != 'servico' or self.material_proprio is not False):
             errors['material_gasto'] = 'Selecione material somente para serviços que utilizam material do laboratório.'
         if self.categoria != 'servico' and (self.material_proprio is not None or self.material_gasto_gramas is not None):

@@ -47,6 +47,7 @@ class BookingSerializer(StrictPayloadMixin, serializers.Serializer):
     objeto = VersionField(source='objeto_id', min_value=1)
     objeto_nome = serializers.CharField(read_only=True)
     motivo = serializers.CharField()
+    observacoes = serializers.CharField(required=False, allow_blank=True)
     inicio = AwareDateTimeField()
     fim = AwareDateTimeField()
     equipamentos = serializers.PrimaryKeyRelatedField(queryset=Equipamento.objects.all(), many=True, required=False,

@@ -24,6 +24,8 @@ class BookingForm(StrictFormMixin, forms.Form):
     categoria = forms.ChoiceField(label='Categoria', choices=CATEGORIES.items())
     objeto = forms.ModelChoiceField(label='Objeto', queryset=CATEGORY_MODELS['servico'].objects.none())
     motivo = forms.CharField(label='Motivo', widget=forms.Textarea(attrs={'rows': 3}))
+    observacoes = forms.CharField(label='Observações', required=False, help_text='Opcional.',
+                                  widget=forms.Textarea(attrs={'rows': 3}))
     dia = forms.DateField(label='Dia', input_formats=['%Y-%m-%d'],
                           widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}))
     hora_inicio = forms.TimeField(label='Hora de início', help_text='Horário de Brasília.',
@@ -60,6 +62,7 @@ class BookingForm(StrictFormMixin, forms.Form):
             start, end = timezone.localtime(booking.inicio), timezone.localtime(booking.fim)
             self.legacy_multiday = start.date() != end.date()
             initial.update(categoria=booking.categoria, objeto=booking.objeto_id, motivo=booking.motivo,
+                           observacoes=booking.observacoes,
                            dia=start.date(), hora_inicio=start.time().replace(microsecond=0),
                            hora_termino=end.time().replace(microsecond=0), versao=booking.versao)
             initial.update(equipamentos=list(booking.equipamentos.values_list('pk', flat=True)),
