@@ -21,7 +21,7 @@ Os sete módulos planejados estão implementados localmente: **Identidade e aces
 | [Módulo 5 — Integrações](docs/modules/05-integracoes.md) | Credenciais, recebimento, idempotência, contrato e depuração |
 | [Módulo 6 — Materiais](docs/modules/06-materiais.md) | Cadastro, quantidade decimal, versão, API e depuração |
 | [Módulo 7 — Conteúdo](docs/modules/07-conteudo.md) | Banners WebP, publicação, imagem protegida, API e depuração |
-| [Frontend — Base e Dashboard](docs/frontend/01-base-e-dashboard.md) | Primeira entrega visual pelas referências, logos pendentes e roteiro de depuração |
+| [Frontend — Base e Dashboard](docs/frontend/01-base-e-dashboard.md) | Primeira entrega visual pelas referências e roteiro de depuração |
 | [Frontend — Páginas e Usuários](docs/frontend/02-paginas-e-usuarios.md) | Telas dos módulos, login raiz/index, contas protegidas, capturas e roteiro de depuração |
 
 Leia as classificações **C** (confirmado pela fonte), **D** (derivado) e **P** (proposta) no arquivo 01. Propostas não são decisões aprovadas. As seis telas e as três páginas de `Referencias/InovaLab - Modelagem.pdf` foram examinadas. A pasta permanece ignorada pelo Git e pode faltar em outro clone.
@@ -88,6 +88,6 @@ Revisar requisitos e decisões de cada etapa, validar seu desenho, preparar o pl
 
 Por decisão do responsável, entregar um módulo por vez e aguardar sua depuração antes do próximo. Identidade e catálogo seguem suas especificações e planos autorizados. Tarefas, agenda, integrações, materiais e conteúdo seguem execução direta com planos simples ([tarefas](docs/superpowers/plans/2026-10-01-tarefas.md), [agenda](docs/superpowers/plans/2026-10-02-agenda.md), [integrações](docs/superpowers/plans/2026-10-02-integracoes.md), [materiais](docs/superpowers/plans/2026-10-02-materiais.md), [conteúdo](docs/superpowers/plans/2026-10-04-conteudo.md)), mantendo testes e revisão independente. Após [base e Dashboard](docs/superpowers/plans/2026-10-05-frontend-painel.md), a solicitação de todas as páginas reúne as telas restantes no [plano do frontend completo](docs/superpowers/plans/2026-10-05-frontend-completo.md). Escolhas para lacunas dos requisitos estão identificadas nos guias. Aguardar depuração desta entrega visual antes de iniciar outra etapa.
 
-Para as próximas entregas visuais, seguir as referências com as funcionalidades atuais, mantendo as logos em branco até o responsável fornecê-las. Executar os testes automatizados do Django e os testes básicos no navegador; o responsável realizará os testes mais profundos posteriormente. Essas orientações estão em [AGENTS.md](AGENTS.md).
+Para as próximas entregas visuais, seguir as referências com as funcionalidades atuais. A logo do InovaLab fornecida em `Referencias/logo.png` está incorporada; logos institucionais restantes aguardam os arquivos do responsável. A sidebar guarda a preferência de aberto/fechado no navegador, e Páginas mantém a estrutura interna após login. Veja [ajustes da sidebar, calendário e logo](docs/frontend/04-sidebar-calendario-e-logo.md). Executar os testes automatizados do Django e os testes básicos no navegador; o responsável realizará os testes mais profundos posteriormente. Essas orientações estão em [AGENTS.md](AGENTS.md).
 
 Commits importantes seguem o formato em português, por exemplo `feat (docs): adiciona documentação da arquitetura do sistema.`.
