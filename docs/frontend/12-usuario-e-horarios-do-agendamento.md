@@ -1,5 +1,8 @@
 # Usuário e horários do agendamento
 
+**Correção posterior de 06/10/2026:** categorias atuais são Equipamentos, Serviços e Visitas. Espaços não admitem novas reservas; visitas recebem somente dia e horários. As seções abaixo registram a entrega anterior; contrato corrente em [agenda](../modules/04-agenda.md).
+
+
 Entrega de 06/10/2026, restrita ao fluxo existente da agenda.
 
 O campo livre `Agendamento.requerente` foi removido. O usuário autenticado que

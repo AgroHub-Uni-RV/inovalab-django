@@ -1,5 +1,8 @@
 # Agendamentos por categoria e identificação do criador — 06/10/2026
 
+**Correção posterior de 06/10/2026:** categorias atuais são Equipamentos, Serviços e Visitas. Espaços não admitem novas reservas; visitas recebem somente dia e horários. As seções abaixo registram a entrega anterior; contrato corrente em [agenda](../modules/04-agenda.md).
+
+
 Complemento posterior: [seleção visual de espaços e material utilizado](09-selecao-de-espacos-e-material.md). Serviços com material do laboratório agora também exigem selecionar o material cadastrado no formulário.
 
 O formulário adapta os campos à categoria selecionada. Serviço mantém os campos atuais e acrescenta Equipamentos, Tem material próprio? e Material gasto (g). Equipamento e Espaço mantêm os campos atuais, com a seleção do objeto identificada pelo nome da categoria. A troca continua automática por POST, preservando os campos comuns e a versão da edição; nenhum agendamento é salvo pela troca de categoria.

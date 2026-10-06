@@ -56,9 +56,9 @@ Não há estado `re-criar`. A autoridade para reabrir está aprovada; retornar p
 
 ## 3. Cenários de agenda e integração
 
-### CT09 — Reservar espaço pela interface
+### CT09 — Agendar visita pela interface
 
-**UC08; RF12–RF15; C/D.** Dado um espaço cadastrado e disponível, quando o administrador selecionar categoria espaço, esse objeto, requerente, motivo e intervalo de 14h a 15h, então o sistema salva o agendamento e o exibe na agenda unificada. A reserva não cria tarefa automaticamente pela proposta RN15.
+**UC08; RF12–RF15; C — F5.** Dado um usuário autenticado, quando selecionar Visita e informar dia, início 14h e término 15h, então o sistema grava a visita sem objeto, motivo ou observações, com autoria automática. Usuário comum envia solicitação pendente; administrador cria confirmação. Categoria espaço e campos extras para visita são rejeitados.
 
 ### CT10 — Categoria e objeto incompatíveis
 
@@ -66,7 +66,7 @@ Não há estado `re-criar`. A autoridade para reabrir está aprovada; retornar p
 
 ### CT11 — Conflito de horários
 
-**UC08–UC09; RF16; exclusividade C — F3 em 02/10, proteção D.** Dada uma reserva de 14h a 15h, quando outra solicitação para o mesmo serviço, equipamento ou espaço usar 14h30 a 15h30, então deve ser recusada. Um objeto diferente pode aceitar o mesmo horário. Q05 confirmou exclusividade também para serviços.
+**UC08–UC09; RF16; exclusividade C — F3 em 02/10, proteção D.** Dada uma reserva de 14h a 15h, quando outra solicitação para o mesmo serviço ou equipamento usar 14h30 a 15h30, então deve ser recusada. Um objeto diferente pode aceitar o mesmo horário. Q05 confirmou exclusividade também para serviços.
 
 ### CT12 — Limite entre reservas
 
@@ -233,3 +233,12 @@ Em 04/10/2026: 36 testes de banners e suíte completa de 270 passaram no SQLite 
 | Concorrência derivada | Duas conexões reais: vencedor único de substituição, upload perdedor removido, antigo preservado; regressão da imagem/eligibilidade consultadas na mesma versão |
 
 Chrome verificou criação/rejeição/troca, publicação/ordem/local/período, preview, inativação/exclusão, versão antiga, CSRF/acesso negado, teclado e 360 px. Revisão identificou um Important de exposição da imagem anterior numa troca concorrente, corrigido RED/GREEN; um Minor de inteiro multipart extremo ficou registrado. Título público sem espaços causava overflow a 360px; corrigido com verificação no navegador. Q10/Q12/Q15 são escolhas iniciais para depuração, não novas confirmações. Produção/retenção/consumidores reais não foram validados.
+
+## Correção F5 — visitas e legado (06/10/2026)
+
+- Visita com fim igual/anterior ao início ou em outro dia local é rejeitada.
+- Provisoriamente, duas confirmações de visitas sobrepostas geram conflito; adjacência é permitida e não bloqueia outros recursos.
+- Aprovação revalida conflito; cancelamento libera o horário e preserva a auditoria.
+- Reservas antigas de espaços conservam alvo e histórico; edição/aprovação são bloqueadas, consulta/cancelamento permanecem.
+- Novo pedido externo de espaço é rejeitado; reenvio idêntico de pedido antigo retorna o mesmo registro.
+- Testes atuais: `agenda.tests.test_visits`, `agenda.tests.test_concurrency` e testes do adaptador. Registros de verificações anteriores acima são históricos.

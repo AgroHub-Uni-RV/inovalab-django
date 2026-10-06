@@ -4,11 +4,11 @@ Entrega local em 02/10/2026, autorizada para implementação direta com [plano s
 
 ## Uso e permissões
 
-Entre com superusuário ativo ou conta ativa do grupo `Administradores` e abra `/agenda/`. O papel de negócio não exige `is_staff`. Usuários comuns, inclusive staff sem esse papel, recebem 403 em todas as telas e endpoints da agenda. Sem sessão, as telas redirecionam ao login e a API retorna 403.
+Entre com superusuário ativo ou conta ativa do grupo `Administradores` e abra `/agenda/`. O papel de negócio não exige `is_staff`. Usuários internos ativos consultam seus próprios registros e criam solicitações pendentes. Somente administradores editam, cancelam e avaliam pedidos; staff sem esse papel não recebe gestão administrativa. Sem sessão, as telas redirecionam ao login e a API retorna 403.
 
 A tela reúne calendário mensal, contagem de reservas por dia e lista de até 25 registros por página. Filtros: mês e categoria. Reservas que atravessam dias ou meses aparecem em todos os períodos ocupados; uma reserva terminando à meia-noite não conta no dia seguinte. As contagens incluem todo o filtro, independentemente da página da lista. Os formulários usam horário de Brasília (`America/Sao_Paulo`).
 
-Selecione uma categoria; as opções são atualizadas automaticamente via JavaScript. Escolha o objeto, preencha motivo, dia, hora de início e hora de término e salve. O responsável é o usuário autenticado que cadastrou o agendamento, definido pelo servidor. Para Espaço, selecione um cartão com capacidade e indicação de restrição administrativa. Para Serviço com material do laboratório, escolha o material cadastrado e informe o gasto em gramas. A atualização das opções conserva textos/datas não salvos e a versão original de uma edição. Usa POST com CSRF para manter esses dados fora da URL. Depois de uma edição concorrente, recarregue o formulário antes de reaplicar alterações. Veja [usuário e horários do agendamento](../frontend/12-usuario-e-horarios-do-agendamento.md).
+Selecione uma categoria; as opções são atualizadas automaticamente via JavaScript. Escolha Equipamento, Serviço ou Visita. Recursos recebem objeto, motivo obrigatório, observações opcionais, dia e horários. Visita recebe apenas dia, início e término. O responsável é o usuário autenticado que cadastrou o agendamento, definido pelo servidor. Para Serviço com material do laboratório, escolha o material cadastrado e informe o gasto em gramas. A atualização das opções conserva os campos que existem na categoria escolhida e as datas não salvas e a versão original de uma edição. Usa POST com CSRF para manter esses dados fora da URL. Depois de uma edição concorrente, recarregue o formulário antes de reaplicar alterações. Veja [usuário e horários do agendamento](../frontend/12-usuario-e-horarios-do-agendamento.md).
 
 | Caminho web | Operação |
 | --- | --- |
@@ -23,11 +23,11 @@ O frontend de identidade foi preservado, com apenas um link para a agenda nas co
 
 ## Regras entregues
 
-- **Confirmado pelo responsável:** cada reserva tem exatamente um serviço, equipamento ou espaço. Em 02/10 foi confirmado que serviços também são exclusivos: uma reserva por objeto em cada horário, nas três categorias. Não há reserva automática de recursos associados.
-- Campos comuns da API interna: `categoria`, `objeto`, `motivo`, `inicio`, `fim`. Categoria pertence a `servico`, `equipamento`, `espaco`; o ID de objeto é interpretado nessa categoria. IDs iguais em categorias diferentes não identificam o mesmo objeto. Troca exige categoria e objeto juntos. A entrega de 06/10/2026 acrescenta `equipamentos`, `material_proprio` e `material_gasto_gramas` para serviços na API interna, preservando o contrato anterior dos pedidos externos. Veja [formulários por categoria e criador](../frontend/08-agendamento-por-categoria.md).
-- O campo livre `requerente` foi removido do modelo e da API interna. `criado_por` identifica o usuário criador e não pode ser enviado ou alterado pelo cliente. A API também retorna `criado_por_nome`. Motivo é obrigatório e tem espaços nas extremidades removidos. Integrações conservam seus metadados externos, sem inventar uma conta interna.
-- `observacoes` é texto opcional nas três categorias, editável pelo formulário e pela API interna. Texto omitido fica vazio; PATCH sem esse campo preserva o anterior. Edição e limpeza são registradas no histórico. O contrato externo das integrações permanece inalterado.
-- Três FKs protegidas e restrição de exatamente uma preenchida; categoria derivada da FK. O banco também exige versão positiva e fim posterior ao início.
+- **Correção confirmada em F5 (06/10/2026):** novas categorias são Equipamentos, Serviços e Visitas. Espaços permanecem no catálogo, sem novas reservas. Serviço/equipamento é exclusivo por objeto; equipamentos associados a serviços não criam reservas automáticas.
+- API interna: `categoria` (`servico`, `equipamento`, `visita`), `inicio` e `fim`. Recursos exigem também `objeto` e `motivo`; troca para recurso exige categoria/objeto juntos. Visita rejeita objeto, motivo, observações e campos de serviço, mesmo vazios. Troca para visita limpa dados incompatíveis com auditoria. Serviço mantém equipamentos e campos de material.
+- O campo livre `requerente` foi removido do modelo e da API interna. `criado_por` identifica o usuário criador e não pode ser enviado ou alterado pelo cliente. A API também retorna `criado_por_nome`. Motivo é obrigatório em serviços/equipamentos e tem espaços nas extremidades removidos. Integrações conservam seus metadados externos, sem inventar uma conta interna.
+- `observacoes` é texto opcional somente para serviços/equipamentos. Omitido fica vazio; PATCH sem esse campo preserva o anterior. Edição/limpeza são auditadas. Visitas não recebem observações.
+- FKs protegidas de serviço/equipamento; visita com todas as FKs nulas e indicador `visita=True`. FK de espaço permanece exclusivamente para legado. Restrições impedem alvos incompatíveis e textos em visitas, exigem versão positiva e intervalo positivo.
 - Intervalos `[início, fim)`; sobreposição no mesmo objeto retorna conflito, horários adjacentes são permitidos. A edição exclui o próprio registro da busca de conflito. Falhas não deixam mudanças parciais.
 - Cada criação, edição e cancelamento grava um evento na mesma transação, com ator, instante, ação e mudanças. Datas nas mudanças são normalizadas em UTC para evitar diferenças fictícias entre fusos equivalentes.
 - Edição e cancelamento exigem versão inteira positiva. Versão desatualizada retorna 409. Cada gravação incrementa a versão, inclusive edição sem mudança material, que pode ter evento com alterações vazias.
@@ -35,7 +35,7 @@ O frontend de identidade foi preservado, com apenas um link para a agenda nas co
 **Escolhas de implementação para depuração, sem novas respostas a Q06/Q08/Q13/Q14:**
 
 - Cancelamento lógico libera o intervalo e preserva o registro/eventos. Canceladas ficam fora da lista, detalhe e histórico operacionais; não há restauração nem consulta de canceladas nesta entrega. Os registros permanecem no banco, inclusive as referências protegidas ao catálogo.
-- Não há etapa adicional de aprovação ou criação automática de tarefa.
+- Usuários comuns criam pedidos pendentes; avaliação administrativa revalida disponibilidade e conflitos antes de confirmar. Não há criação automática de tarefa.
 - `indisponivel` impede reserva nova, troca de alvo ou mudança de período. Alteração apenas do motivo de uma reserva existente continua possível após desativar o alvo; cancelamento também. `ocupado` manual não bloqueia automaticamente reservas futuras. Reservar/cancelar não muda o status do catálogo.
 - O formulário escolhe um dia e um intervalo positivo dentro desse dia. Datas passadas continuam permitidas, sem impor funcionamento, feriados, antecedência, duração mínima/máxima ou margem entre reservas ainda não definidos. O armazenamento e a API conservam `inicio`/`fim` com fuso horário, inclusive períodos antigos que atravessam dias. Não há campo de participantes nem validação de capacidade do espaço.
 
@@ -46,9 +46,9 @@ JSON, autenticação por sessão Django e CSRF obrigatório nas escritas; nenhum
 | Método e caminho | Resultado |
 | --- | --- |
 | `GET /api/v1/agendamentos/` | Todos os ativos, paginados 25; filtros opcionais `mes=AAAA-MM`, `categoria`; `page` seleciona página |
-| `POST /api/v1/agendamentos/` | Cria com os seis campos públicos, 201 |
+| `POST /api/v1/agendamentos/` | Cria conforme os campos da categoria, 201 |
 | `GET /api/v1/agendamentos/{id}/` | Detalhe, 200 |
-| `PUT /api/v1/agendamentos/{id}/` | Substitui os seis campos públicos, com `versao`, 200 |
+| `PUT /api/v1/agendamentos/{id}/` | Salva conforme os campos da categoria, com `versao`, 200 |
 | `PATCH /api/v1/agendamentos/{id}/` | Altera campos informados, com `versao`, 200 |
 | `DELETE /api/v1/agendamentos/{id}/` | Cancela com corpo `{"versao": 1}`, 204 |
 | `GET /api/v1/agendamentos/{id}/historico/` | Eventos mais recentes primeiro, paginados 25 |
@@ -75,7 +75,7 @@ Erros: 400 para payload/filtro inválido ou objeto indisponível; 403 para ausê
 | `versao_desatualizada` | Edição/cancelamento baseado em versão antiga |
 | `agenda_ocupada` | SQLite ocupado por outra transação; atualizar e tentar novamente |
 
-Para PATCH somente de texto, envie por exemplo `{"versao": 1, "motivo": "Descrição corrigida"}`. A ausência dos dois campos de alvo preserva o existente. Enviar apenas categoria ou apenas objeto retorna 400.
+Para PATCH somente de texto, envie por exemplo `{"versao": 1, "motivo": "Descrição corrigida"}`. A ausência dos dois campos de alvo preserva o existente. Para recursos, enviar somente categoria ou objeto retorna 400. `{"versao": 1, "categoria": "visita"}` muda para visita e limpa os dados anteriores do recurso.
 
 ## Concorrência e integridade
 
@@ -112,3 +112,31 @@ Revisão independente única: um Important corrigido — atualizar opções reno
 3. Testar reservas longas e viradas de mês/ano, segundos/frações pela API e preservação ao editar pelo navegador, além do caso histórico de horário de verão conhecido.
 4. Testar volume alto, paginação dos eventos, filtros, textos grandes e operação em navegadores/dispositivos adicionais.
 5. Confirmar o contrato AgroHub (Q07): autenticação, identidade externa, chave de idempotência, fuso/período, edição/cancelamento e dados mínimos antes do próximo módulo.
+
+## Visitas e reservas de espaços antigas — correção de 06/10/2026
+
+Visita não exige cadastro no catálogo. Criação interna:
+
+```json
+{"categoria": "visita", "inicio": "2026-11-01T14:00:00-03:00", "fim": "2026-11-01T15:00:00-03:00"}
+```
+
+Os instantes devem pertencer ao mesmo dia em `America/Sao_Paulo`, mesmo que enviados em UTC. Usuário criador, situação, versão e auditoria são automáticos. A resposta mantém o formato comum, com `objeto=null`, nome Visita e textos vazios. Formulário/detalhe ocultam campos de recurso.
+
+**Proposta provisória pendente de resposta:** uma visita confirmada por intervalo; visitas não bloqueiam serviços/equipamentos. A linha `ControleAgendaVisitas(pk=1)` serializa criação, edição, avaliação e cancelamento antes de consultar sobreposições. Cancelamento libera horário; pedidos pendentes não bloqueiam até aprovação.
+
+**Legado preservado:** migração 0008 mantém reservas e eventos de espaços, sem conversão nem exclusão. Aparecem como Espaço (legado), consultáveis e canceláveis. Edição e aprovação de espaços são bloqueadas; não há nova reserva por interface/API/integração. Reenvio externo idêntico de pedido anterior retorna o registro original.
+
+Requisitos correntes: [F5/RF12/RF15/RF16/RN04/Q05](../../01-InovaLab-Escopo-e-Requisitos.md). Resultados de verificação anteriores acima documentam as entregas históricas.
+
+## Verificação desta correção
+
+- `venv/Scripts/python.exe manage.py test --noinput`: **445 testes passaram** (42,257 s), incluindo visitas, concorrência real SQLite, reenvio externo legado e migração 0007→0008 preservando reserva/evento.
+- `venv/Scripts/python.exe manage.py migrate --noinput`: 0008 aplicada ao SQLite local.
+- `venv/Scripts/python.exe manage.py check`: sem problemas.
+- `venv/Scripts/python.exe manage.py makemigrations --check --dry-run`: sem alterações pendentes.
+- `git diff --check`: sem erros de espaços; avisos normais de LF/CRLF no Windows.
+- Chrome em banco isolado: troca Serviço→Visita conservou dia/horários e retirou campos de recurso; criação, detalhe, conflito 409, filtro/contador de visitas e retorno à seleção de equipamentos. Formulário em 360 px e 1201 px com sidebar expandida sem transbordamento horizontal; nenhuma exceção JavaScript da aplicação.
+- Revisão independente: sem Critical/Important; link de edição indevido no legado identificado e corrigido com teste que falhou antes da correção.
+
+Depuração restante: confirmar simultaneidade de visitas e política definitiva para reservas de espaços antigas; validar concorrência/carga no PostgreSQL e atualização do consumidor AgroHub. Esta entrega não foi publicada na Vercel nem migrou o banco de produção.

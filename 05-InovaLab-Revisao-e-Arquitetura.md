@@ -6,7 +6,7 @@ Versão 0.7 • 04/10/2026 • Os sete módulos têm entrega funcional local, in
 
 Desenvolver o sistema da documentação com interface básica de navegador e endpoints para integração futura. O núcleo reúne identidade, catálogo, tarefas, agenda, materiais e banners. Frontend e consumidores externos devem aplicar as mesmas operações de negócio.
 
-Decisões confirmadas nesta revisão: backend Django, frontend básico e API; somente administradores aprovam, recusam e reabrem tarefas; cada reserva do MVP tem um único serviço, equipamento ou espaço, sem bloquear automaticamente recursos associados.
+Decisões confirmadas nesta revisão: backend Django, frontend básico e API; somente administradores aprovam, recusam e reabrem tarefas; cada nova reserva de recurso tem um único serviço ou equipamento; visita tem apenas data e horários, sem objeto (correção F5 de 06/10/2026), sem bloquear automaticamente recursos associados.
 
 Recomendação de sucesso por etapa: um fluxo utilizável pelo navegador, sua API documentada quando aplicável e os cenários correspondentes de autorização e integridade verificados.
 
@@ -94,7 +94,7 @@ Representar administrador do negócio por grupo/permissões, sem exigir superusu
 
 Para reservas, três FKs opcionais e uma restrição de exatamente um alvo preservam Q05. Requerente externo usa dados mínimos acordados com o integrador, sem exigir usuário local. Categoria da API é validada contra o alvo; não usar tipo e ID sem referência íntegra no banco.
 
-Na agenda entregue, todos os serviços/equipamentos/espaços são exclusivos, conforme Q05 confirmada. Criação, edição e cancelamento bloqueiam alvos em ordem estável antes de revalidar versão/conflitos e gravar evento. Dois pedidos conflitantes produziram um sucesso nos testes de conexões reais no SQLite. Cancelamento lógico e tratamento de indisponibilidade são escolhas provisórias para Q06/Q08.
+Na agenda atual, serviços/equipamentos são exclusivos por recurso; visitas adotam exclusividade provisória por intervalo. Espaços não admitem novas reservas após F5; dados antigos são legado. Criação, edição e cancelamento bloqueiam alvos em ordem estável antes de revalidar versão/conflitos e gravar evento. Dois pedidos conflitantes produziram um sucesso nos testes de conexões reais no SQLite. Cancelamento lógico e tratamento de indisponibilidade são escolhas provisórias para Q06/Q08.
 
 ## 7. Superfície proposta da API
 

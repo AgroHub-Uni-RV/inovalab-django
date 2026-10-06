@@ -1,6 +1,6 @@
 # InovaLab — Escopo e requisitos
 
-Versão 0.7 • 04/10/2026 • PDF original conferido; decisões do responsável identificadas por fonte.
+Versão 0.8 • 06/10/2026 • PDF original conferido; decisões do responsável identificadas por fonte.
 
 ## 1. Fontes e limites
 
@@ -14,6 +14,8 @@ Atualização F3 em 02/10/2026: responsável autorizou a agenda e confirmou uma 
 Na passagem seguinte, F3 autorizou o módulo5 e escolheu preparar a API de recebimento no InovaLab com credencial própria e proteção contra pedidos duplicados. Adaptador local entregue; contrato de campos é escolha de implementação para validar com o consumidor. Conexão a um AgroHub real, hospedagem, sincronização e migração continuam pendentes.
 
 Em 04/10/2026, F3 autorizou desenvolver o módulo 7. Conteúdo/banners entregue localmente: WebP, gestão, publicação e API. As escolhas iniciais para Q10/Q12/Q15 estão no [contrato do módulo](docs/modules/07-conteudo.md); a pergunta opcional sobre esses pontos não foi respondida. Autorização para desenvolver não transforma cada escolha técnica em regra C.
+
+**F5 — correção de 06/10/2026:** o responsável substituiu Espaços por Visitas na agenda. Categorias atuais: Equipamentos, Serviços e Visitas. Visitas recebem apenas dia, hora de início e hora de término. A autoria é o usuário que cadastrou; equipamentos/serviços possuem observações opcionais. F5 prevalece sobre as decisões anteriores de reservar espaços. O catálogo de espaços continua existente. Preservação de reservas antigas como legado e exclusividade das visitas são escolhas operacionais provisórias, documentadas no contrato da agenda.
 
 Classificação usada em todos os arquivos: **C = confirmado pela fonte**, **D = derivado da fonte para permitir funcionamento coerente**, **P = proposta a validar**. Uma regra D ou P não representa aprovação do responsável. Uma observação C de uma tela confirma o elemento visual, sem aprovar automaticamente suas regras de negócio. Prioridades são propostas: **MVP**, **seguinte** e **condicional**.
 
@@ -58,11 +60,11 @@ Os critérios abaixo são a especificação operacional proposta; onde o comport
 | RF09 | Consultar e manter espaços com nome, capacidade máxima e status | Campos C; manutenção e capacidade positiva P — F1 p. 1 | MVP | Capacidade é positiva pela proposta; status segue disponível, ocupado e indisponível |
 | RF10 | Consultar e manter serviços com nome, descrição e status | Campos C; manutenção P — F1 p. 1 | MVP | Serviço aceita disponível ou indisponível |
 | RF11 | Disponibilizar os serviços pré-cadastrados do PDF | C — F1 p. 1–2 | MVP | Os 11 nomes da seção 6 existem, sem duplicação ao repetir a carga |
-| RF12 | Unificar agenda e formulário, com seleção por serviço, equipamento ou espaço | C — F1 p. 3 | MVP | Cada categoria lista apenas seus objetos; todas aparecem na agenda comum |
+| RF12 | Unificar agenda e formulário para Equipamentos, Serviços e Visitas | C — F5, substitui categorias de F1/F3 | MVP | Serviços/equipamentos selecionam seu objeto; visita não seleciona espaço ou outro objeto; novas reservas de espaços são rejeitadas |
 | RF13 | Permitir ao administrador criar, editar e excluir agendamentos | C — F1 p. 2 | MVP | Operações persistem e refletem na agenda; tratamento de histórico depende de Q08 |
 | RF14 | Viabilizar agendamento via API para o usuário do AgroHub; propor recebimento no InovaLab | Integração C — F1 p. 2; direção/contrato D/P, Q07 | MVP | No fluxo proposto, solicitação válida cria um registro na agenda unificada e devolve seu identificador |
-| RF15 | Registrar categoria, objeto, motivo, data, início, fim e requerente no agendamento unificado | Campos C; união D — F1 p. 2–3 | MVP | Preserva a informação dos modelos originais, inclusive `data_hora` na representação unificada; categoria e alvo correspondem; requerente sem conta local é derivação a detalhar |
-| RF16 | Impedir sobreposição para serviços, equipamentos e espaços exclusivos | Exclusividade C — F3 em 02/10; proteção D | MVP | Dois pedidos concorrentes para o mesmo objeto e intervalo não geram duas reservas; Q05 definida |
+| RF15 | Registrar dia, início e término e identificar automaticamente o usuário criador; serviços/equipamentos incluem objeto, motivo e observações opcionais | C — F5 e solicitações de autoria/observações | MVP | Visita exige somente dia e horários; não recebe motivo/observações/objeto; autoria e dados administrativos são automáticos |
+| RF16 | Impedir sobreposição de reservas confirmadas do mesmo serviço ou equipamento | C — F3; categorias corrigidas por F5 | MVP | Pedidos concorrentes para o mesmo recurso produzem no máximo uma confirmação; exclusividade de visitas é proposta provisória |
 | RF17 | Consultar e manter materiais com nome, categoria, quantidade, status e fonte | Campos C — F1 p. 2; manutenção/quantidade/unidade/status C — F3/Q09/Q12 | MVP | Dados persistem; quantidade não negativa até 3 casas/unidade informada, categoria/fonte livres, disponível/indisponível, manutenção administrativa e consulta interna ativa |
 | RF18 | Consultar e manter banners com título, imagem WebP, status e local | Campos C; manutenção P — F1 p. 3 | MVP | Status ativo/inativo/agendado e local home/sobre são preservados |
 | RF19 | Publicar banners conforme local e período de exibição | D/P — F1 p. 3 | MVP entregue sob escolhas provisórias | Inativo não aparece; agendado aparece em início<=agora<fim, com fuso; contrato inicial Q10 no módulo 7 |
@@ -118,7 +120,7 @@ O PDF lista “Óculos de realidade virtual” e “Scanner 3D manual” como se
 | RN01 | Administrador consulta e administra todas as tarefas | C |
 | RN02 | Usuário consulta somente tarefas cujo responsável é ele e altera somente seu status | C |
 | RN03 | Não existe etapa “recriar”; recusa na avaliação retorna à criação | C |
-| RN04 | No MVP, cada agendamento referencia exatamente um serviço, equipamento ou espaço, compatível com a categoria | C — F1/F3; integridade D |
+| RN04 | Serviço/equipamento referencia exatamente um objeto da categoria. Visita não referencia objeto. Espaço não admite novas reservas; registros anteriores são preservados como legado | Categorias C — F5; integridade D; legado P |
 | RN05 | Serviço possui status disponível/indisponível; espaço e equipamento também admitem ocupado | C |
 | RN06 | Horário final deve ser posterior ao inicial | D |
 | RN07 | Intervalos são tratados como [início, fim); reservas adjacentes são permitidas | P |
@@ -140,7 +142,7 @@ O PDF lista “Óculos de realidade virtual” e “Scanner 3D manual” como se
 | Q02 | Haverá vários quadros, projetos, equipes ou apenas um quadro do laboratório? | Escopo e relacionamento das tarefas |
 | Q03 | Decidido em F3: somente administradores aprovam, recusam e reabrem; responsável executa e envia para avaliação. Confirmar destino da reabertura e eventuais retornos durante execução | Autoridade definida; mapa restante no arquivo 03 é proposta |
 | Q04 | Quais campos são obrigatórios? Início é previsto ou real? Prazo contém horário? | Validações e datas das tarefas |
-| Q05 | Decidido em F3: um único serviço, equipamento ou espaço por reserva, sem bloqueio automático de outros alvos; em 02/10 confirmado um atendimento por serviço/horário, com equipamentos/espaços exclusivos | Modelo e exclusividade definidos para o MVP |
+| Q05 | F5 substitui espaços por visitas; serviços/equipamentos continuam exclusivos por recurso. Confirmar se visitas podem ocorrer simultaneamente; provisoriamente uma visita por intervalo, sem bloquear outros recursos | Categorias confirmadas; exclusividade de visitas e tratamento do legado pendentes |
 | Q06 | Status ocupado é manual ou calculado? Indisponibilidade pode ter período? | Consistência da agenda |
 | Q07 | F3 escolheu preparar primeiro API de recebimento no InovaLab, com credencial própria/idempotência. Validar payload e IDs com consumidor AgroHub, hospedagem/HTTPS, edição/exclusão, sincronização e migração de agendamentos antigos sem fim | Direção inicial definida; adaptador local entregue, conexão real e demais políticas pendentes |
 | Q08 | Excluir significa apagar ou cancelar/arquivar? Agendamento exige aprovação? | Auditoria e ciclo da reserva |

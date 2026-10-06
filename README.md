@@ -110,3 +110,5 @@ Para as próximas entregas visuais, seguir as referências com as funcionalidade
 O perfil permite editar login, nome, sobrenome e foto da própria conta. A logo de texto branco é usada nos fundos azuis. Veja [entrega e validações do perfil](docs/frontend/05-perfil-e-logo-branca.md). Ao atualizar outro ambiente, executar `python manage.py migrate` antes de iniciar o servidor.
 
 Commits importantes seguem o formato em português, por exemplo `feat (docs): adiciona documentação da arquitetura do sistema.`.
+
+Correção de requisitos em 06/10/2026: a agenda passa a aceitar **Equipamentos, Serviços e Visitas**. Visitas têm somente dia, início e término; espaços não admitem novas reservas e registros anteriores ficam como legado consultável/cancelável. Equipamentos/serviços mantêm motivo e observações opcionais. [Requisitos atualizados](01-InovaLab-Escopo-e-Requisitos.md) e [contrato corrente](docs/modules/04-agenda.md). Migração 0008 aplicada localmente; 445 testes Django passaram e fluxo básico verificado no Chrome. Exclusividade das visitas continua uma proposta provisória.

@@ -1,5 +1,8 @@
 # Seleção de espaços e material consumido — 06/10/2026
 
+**Correção posterior de 06/10/2026:** categorias atuais são Equipamentos, Serviços e Visitas. Espaços não admitem novas reservas; visitas recebem somente dia e horários. As seções abaixo registram a entrega anterior; contrato corrente em [agenda](../modules/04-agenda.md).
+
+
 Na criação e edição de agendamentos de Espaço, o campo de objeto foi substituído por cartões com seleção única, seguindo a imagem fornecida. A ordem dos espaços iniciais é Secretaria, Sala 01, Sala 02, Área de convivência, Sala 03, Sala 04, Espaço de coworking, Laboratório maker e Laboratório de robótica. Espaços adicionados posteriormente aparecem depois dos iniciais, por nome.
 
 Os cartões usam os nomes, capacidades e restrições atuais do cadastro. Secretaria tem fundo verde; os laboratórios exclusivos de administradores têm fundo azul; os demais têm fundo branco, capacidade em pessoas e ícone de mobiliário. O cadeado indica a restrição administrativa, sem impedir a seleção por administradores autorizados. As permissões e os conflitos de horários existentes continuam sendo aplicados no servidor.

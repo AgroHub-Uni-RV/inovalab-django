@@ -39,11 +39,11 @@ Na conferência direta do PDF, `objeto_agendadado` é a grafia original; normali
 
 ## 3. Alvo do agendamento
 
-F3 confirma um único alvo por reserva no MVP. Proposta técnica: três referências opcionais, `servico`, `equipamento` e `espaco`, com restrição de banco garantindo **exatamente uma preenchida**. A categoria deve ser derivada dessa referência ou, se armazenada para integração, validada para corresponder ao alvo.
+F5 corrige as categorias para serviço, equipamento e visita. Recursos têm exatamente uma FK preenchida; visitas não têm alvo de catálogo e usam `visita=True`. A FK de espaço é mantida exclusivamente para reservas legadas. A categoria é derivada das FKs ou do indicador de visita.
 
 Evitar apenas `categoria + id_objeto` sem integridade referencial. A alternativa de recurso agendável comum pode ser melhor se houver calendários, capacidades e indisponibilidades compartilhadas; não é necessária antes de esclarecer Q05.
 
-F3 deixa alocações compostas fora do MVP: uma reserva de serviço não bloqueia automaticamente equipamentos, espaços ou operadores. Se isso se tornar necessário, será preciso modelar alocações associadas e verificar todas numa transação. Em 02/10 F3 confirmou uma reserva por serviço/horário, com equipamentos/espaços exclusivos; a regra foi implementada nas três categorias.
+F3 deixa alocações compostas fora do MVP: uma reserva de serviço não bloqueia automaticamente equipamentos, espaços ou operadores. Se isso se tornar necessário, será preciso modelar alocações associadas e verificar todas numa transação. Em 02/10 F3 confirmou exclusividade dos recursos; F5 remove reservas novas de espaços. Exclusividade de visitas é proposta provisória, sem bloqueio de outros recursos.
 
 ## 4. Estados e permissões
 
@@ -102,3 +102,7 @@ Entregar um módulo por vez e aguardar depuração pelo responsável antes de av
 7. Validar cenários do arquivo 03 e metas não funcionais aprovadas.
 
 F3 solicita explicitamente endpoints para futuras integrações, além do AgroHub. Cada módulo deve planejar sua superfície de API junto com a interface, sem pressupor acesso público aos dados. A recomendação é Django com templates e Django REST Framework, compartilhando operações de domínio; bibliotecas e contratos precisam ser verificados por etapa. Frontend separado é alternativa se a experiência futura justificar seu custo.
+
+## Correção de agendamento — F5 (06/10/2026)
+
+`Agendamento.visita` distingue visitas sem objeto de reservas de serviços/equipamentos. A restrição de alvo aceita uma FK para recurso ou todas nulas quando visita; `espaco` é preservado exclusivamente para dados legados. Visitas guardam motivo/observações vazios e nenhum dado de serviço. `ControleAgendaVisitas` fornece a linha de trava comum para confirmação, edição e cancelamento concorrentes. O formulário recebe um dia e dois horários; o núcleo valida o mesmo dia de Brasília em visitas. Migração 0008 é aditiva, sem converter nem apagar reservas antigas. Categorias de entrada deixam de aceitar espaço, inclusive no adaptador externo; somente reenvio idempotente anterior é permitido.

@@ -56,3 +56,7 @@ Continuam em aberto as obrigatoriedades e semântica das datas de tarefa; destin
 O PDF apresenta o agendamento AgroHub como já existente. Isso não demonstra que seus dados devam ser migrados ou que o InovaLab deva substituir seu armazenamento. Caso haja migração, o modelo Figma não contém fim ou duração; não preencher esse dado por suposição. Essa questão foi incorporada a Q07.
 
 Calendário de eventos/reuniões, recessos/feriados, terceiros/devoluções, ordenação de banners e gestão de usuários do AgroHub são elementos das telas F4, não exigências explícitas desse PDF. Permanecem separados como decisões pendentes Q09–Q15.
+
+## Correção posterior que prevalece sobre o PDF — F5, 06/10/2026
+
+O responsável corrigiu o requisito de agendamento: Equipamentos, Serviços e Visitas. Visita recebe somente dia, início e término. Espaços continuam no catálogo, sem novas reservas. A tabela acima transcreve a fonte histórica e não define as categorias atuais. Autoria local é automática e observações opcionais são de serviços/equipamentos. Tratamento de reservas antigas e simultaneidade de visitas estão identificados como propostas provisórias em Q05 e no contrato da agenda.

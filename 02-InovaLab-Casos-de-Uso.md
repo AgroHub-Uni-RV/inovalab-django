@@ -64,7 +64,7 @@ Todos os casos têm escopo no sistema InovaLab e nível de objetivo do usuário,
 - **Base:** C para unificação; D para consulta. RF12, RF15.
 - **Ator:** administrador. Consulta por outros perfis ainda depende de validação.
 - **Pré-condição:** permissão para acessar agenda.
-- **Fluxo principal:** 1. Ator escolhe período e categoria. 2. Sistema consulta reservas do intervalo. 3. Exibe objeto, horário, motivo e requerente conforme autorização. 4. Ator abre um registro.
+- **Fluxo principal:** 1. Ator escolhe período e categoria. 2. Sistema consulta reservas do intervalo. 3. Exibe categoria, horário e usuário criador conforme autorização; recursos também mostram objeto e motivo. 4. Ator abre um registro.
 - **Alternativas:** período sem reservas exibe agenda vazia; categoria sem objetos informa ausência de cadastro; consulta não implica autorização de edição.
 - **Pós-condição:** agenda consultada sem alteração.
 
@@ -73,7 +73,7 @@ Todos os casos têm escopo no sistema InovaLab e nível de objetivo do usuário,
 - **Base:** C para CRUD e formulário único; P para política de conflito. RF12, RF13, RF15, RF16.
 - **Ator:** administrador. **Interesse:** organizar uso dos recursos e serviços.
 - **Pré-condições:** administrador autenticado, alvo existente e regras de disponibilidade definidas.
-- **Fluxo principal:** 1. Admin abre formulário único. 2. Seleciona categoria e objeto. 3. Informa requerente, motivo, data e intervalo. 4. Sistema valida referências, horários e disponibilidade. 5. Grava a reserva com proteção contra concorrência. 6. Atualiza a agenda.
+- **Fluxo principal:** 1. Admin abre formulário único. 2. Seleciona Equipamento, Serviço ou Visita; objeto somente para recursos. 3. Informa dia, início e término; recursos também recebem motivo e observações opcionais. A autoria é automática. 4. Sistema valida referências, horários e disponibilidade. 5. Grava a reserva com proteção contra concorrência. 6. Atualiza a agenda.
 - **Alternativas:** conflito propõe escolher outro horário sem gravar; edição revalida o novo intervalo desconsiderando o próprio registro; exclusão exige confirmação e política Q08; alvo indisponível impede nova reserva segundo RN08; falha não deixa registro parcial.
 - **Pós-condição:** reserva criada, editada ou excluída conforme ação. Não há geração automática de tarefa confirmada.
 
@@ -124,3 +124,5 @@ Todos os casos têm escopo no sistema InovaLab e nível de objetivo do usuário,
 ## Relações entre casos
 
 UC03 e UC04 reutilizam autorização e validação de tarefa; UC08 e UC09 compartilham validação de reserva. Isso é compartilhamento de comportamento, não obrigação de transformar cada validação em um caso de uso separado. A autenticação aparece como pré-condição dos casos internos. O ator da avaliação é o administrador, conforme F3. RF23/RF24 aplicam-se aos casos operacionais entregues por etapa: adaptar uma operação para API ou formulário não cria novas permissões. O mapa de endpoints proposto está no arquivo 05.
+
+Atualização F5 de 06/10/2026: Visitas substituem Espaços em UC07–UC09. Visitas têm somente data e horários, sem objeto/motivo/observações. Reservas anteriores de espaços permanecem consultáveis e canceláveis como legado; não são convertidas. Contrato atual em [agenda](docs/modules/04-agenda.md).

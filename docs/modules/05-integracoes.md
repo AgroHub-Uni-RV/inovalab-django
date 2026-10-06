@@ -35,7 +35,7 @@ Sem cabeçalho válido ou com credencial revogada/inativa, a API externa retorna
 
 ## Catálogo para mapear alvos
 
-`GET /api/v1/integracoes/catalogo/?categoria=servico|equipamento|espaco`, autenticado pelo mesmo token.
+`GET /api/v1/integracoes/catalogo/?categoria=servico|equipamento`, autenticado pelo mesmo token.
 
 A categoria é obrigatória; a lista paginada em 25 itens devolve apenas `id`, `categoria`, `nome` de objetos reserváveis. Indisponíveis são excluídos; `ocupado` manual não bloqueia reservas futuras. IDs são internos ao InovaLab e interpretados na categoria. IDs numéricos iguais em tabelas diferentes não representam o mesmo objeto. O endpoint só permite leitura e não expõe reservas, credenciais, histórico ou dados de contas internas.
 
@@ -56,9 +56,9 @@ A categoria é obrigatória; a lista paginada em 25 itens devolve apenas `id`, `
 }
 ```
 
-Use um `objeto` real obtido no catálogo. `id_externo` identifica o pedido no sistema consumidor; `requerente_id` identifica a pessoa nesse sistema. São strings opacas, obrigatórias, case-sensitive, até 150 caracteres. O nome do requerente também tem limite de 150; motivo é obrigatório. Textos são aparados nas bordas. O ID de objeto é inteiro JSON positivo, dentro do intervalo de 64 bits; strings, booleanos e decimais são rejeitados.
+Use um `objeto` real obtido no catálogo. `id_externo` identifica o pedido no sistema consumidor; `requerente_id` identifica a pessoa nesse sistema. São strings opacas, obrigatórias, case-sensitive, até 150 caracteres. O nome do requerente também tem limite de 150; motivo é obrigatório para serviços/equipamentos. Textos são aparados nas bordas. O ID de objeto é inteiro JSON positivo, dentro do intervalo de 64 bits; strings, booleanos e decimais são rejeitados.
 
-Início/fim exigem ISO8601 com fuso, fim posterior ao início. UTC é aceito; horários são normalizados em UTC antes da operação de agenda e da comparação de conteúdo. Preservam-se exclusividade nas três categorias, intervalos adjacentes permitidos, indisponibilidade, datas passadas e virada de dia do módulo 4. Origem/cliente são determinados pela credencial; não aceitar esses campos, versão inicial, autor, FKs internas ou outros desconhecidos.
+Início/fim exigem ISO8601 com fuso, fim posterior ao início. UTC é aceito; horários são normalizados em UTC antes da operação de agenda e da comparação de conteúdo. Serviços/equipamentos mantêm exclusividade por recurso; visitas usam exclusividade provisória por intervalo e devem ocorrer no mesmo dia de Brasília. Preservam-se intervalos adjacentes permitidos, indisponibilidade, datas passadas e virada de dia do módulo 4. Origem/cliente são determinados pela credencial; não aceitar esses campos, versão inicial, autor, FKs internas ou outros desconhecidos.
 
 Primeiro recebimento bem-sucedido retorna 201:
 
@@ -98,7 +98,7 @@ Conflitos 409 têm `detail` e `code`. Não há lista/detalhe/histórico/edição
 
 Na transação de recebimento, o primeiro SQL é UPDATE sem mudança de estado do cliente. Depois são revalidados ativo e digest da credencial; assim renovação/desativação ocorrida desde a autenticação é detectada. Só então é consultada a chave. Se for nova, o núcleo compartilhado da agenda bloqueia o alvo e verifica os mesmos conflitos antes de gravar reserva, evento e pedido juntos. Falha em gravar pedido reverte os três. Ordem de bloqueio: cliente→alvo.
 
-O núcleo privado da agenda é chamado exclusivamente pela fachada administrativa ou adaptador autenticado. A fachada `save_booking` continua verificando administrador; não existe conta técnica com privilégios internos criada para simular o integrador. Chamadas internas e futuras entradas devem preservar essa autorização antes de usar o núcleo.
+O núcleo privado da agenda é chamado exclusivamente pela fachada administrativa ou adaptador autenticado. A fachada `save_booking` verifica conta ativa e aplica papel administrativo nas alterações; não existe conta técnica com privilégios internos criada para simular o integrador. Chamadas internas e futuras entradas devem preservar essa autorização antes de usar o núcleo.
 
 SQLite e conexões reais foram verificados; a proteção por UPDATE da linha também foi exercitada com experimento de regressão retirando o bloqueio, que fez o teste falhar. O SQLite serializa escritores, portanto conflitos transitórios podem exigir reenvio. PostgreSQL/carga/produção não foram validados nesta etapa. [Transações SQLite](https://www.sqlite.org/lang_transaction.html).
 
@@ -127,3 +127,9 @@ Chrome: cadastro e cópia única de credencial, envio 201/reenvio 200/conflitos 
 3. Testar credencial perdida, reativação seguida de geração nova, pedidos cancelados/editados localmente e comportamento do consumidor diante dos códigos de conflito.
 4. Confirmar hospedagem e HTTPS, gestão/entrega do segredo, retenção dos dados externos e eventuais validade automática/limitação de taxa antes de publicação. Essas políticas ainda não estão implementadas/aprovadas.
 5. Confirmar separadamente edição/cancelamento externos, notificações/webhooks, sincronização e migração histórica. Esta entrega cobre recebimento de novas reservas e reenvio, preservando os módulos anteriores.
+
+## Correção de categorias — 06/10/2026
+
+Categorias novas: `servico`, `equipamento`, `visita`. Para visita, envie `id_externo`, `requerente_id`, `requerente`, `categoria`, `inicio`, `fim`; omita `objeto` e `motivo`. Esses identificadores são metadados do adaptador e não campos preenchidos no formulário interno. Visitas não têm entrada no catálogo externo. Motivo/objeto são rejeitados para visita, mesmo vazios. Observações continuam fora do contrato externo.
+
+`espaco` retorna 400 para novos pedidos, independentemente da restrição administrativa do catálogo. Reenvios idênticos de pedidos antigos de espaços conservam idempotência, retornando 200 com o ID original e sem renovar a reserva. A representação histórica da categoria só é aceita para esse reenvio. Resultados de verificações anteriores acima são registros históricos.
