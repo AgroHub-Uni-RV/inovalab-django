@@ -655,6 +655,16 @@ main {
   text-decoration:underline;
   text-underline-offset:3px;
 }
+.day.event {
+  background:#eb1b23;
+  color:white;
+}
+.calendar-notice {
+  margin:0;
+  padding:0 var(--space-3) var(--space-3);
+  font-size:var(--font-small);
+  color:var(--ink);
+}
 .dashboard-personal {
   grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);
 }

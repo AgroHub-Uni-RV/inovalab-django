@@ -14,6 +14,9 @@ NOW = datetime(2026, 12, 30, 15, tzinfo=dt_timezone.utc)
 
 
 class DashboardTests(TestCase):
+    def setUp(self):
+        self.enterContext(patch('core.views.load_events', return_value=([], False)))
+
     @classmethod
     def setUpTestData(cls):
         User = get_user_model()

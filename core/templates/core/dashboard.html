@@ -30,11 +30,12 @@
   </section>
   <section class="calendar-panel" aria-label="Calendário dos próximos seis meses">
     <div class="calendar-top"><ul class="calendar-legend"><li><span class="swatch recess" aria-hidden="true"></span>Recesso</li><li><span class="swatch holiday" aria-hidden="true"></span>Feriado</li><li><span class="swatch event" aria-hidden="true"></span>Evento</li></ul><a class="calendar-more" href="{% url 'agenda:list' %}">Ver mais</a></div>
+    {% if events_unavailable %}<p class="calendar-notice" role="status">Não foi possível carregar os eventos do AgroHub. Tente atualizar a página.</p>{% endif %}
     <div class="calendar-scroll" tabindex="0" aria-label="Meses do calendário">
       {% for month in months %}<section class="month-card" aria-label="{{ month.name }} de {{ month.year }}">
         <h2>{{ month.name|capfirst }}<span class="sr-only"> {{ month.year }}</span></h2>
         <div class="weekdays" aria-hidden="true">{% for label in weekday_labels %}<span>{{ label }}</span>{% endfor %}</div>
-        <div class="month-days">{% for week in month.weeks %}{% for day in week %}{% if day.in_month %}<span class="day{% if day.sunday %} sunday{% endif %}{% if day.today %} today{% endif %}{% if day.reservations %} reserved{% endif %}" title="{{ day.date|date:'d/m/Y' }}{% if day.today %} · Hoje{% endif %}{% if day.reservations %} · {{ day.reservations }} reserva{{ day.reservations|pluralize }}{% endif %}"><span aria-hidden="true">{{ day.date.day }}</span><span class="sr-only">{{ day.date|date:'d/m/Y' }}{% if day.today %}, hoje{% endif %}{% if day.reservations %}, {{ day.reservations }} reserva{{ day.reservations|pluralize }}{% endif %}</span></span>{% else %}<span></span>{% endif %}{% endfor %}{% endfor %}</div>
+        <div class="month-days">{% for week in month.weeks %}{% for day in week %}{% if day.in_month %}<span class="day{% if day.sunday %} sunday{% endif %}{% if day.today %} today{% endif %}{% if day.reservations %} reserved{% endif %}{% if day.events %} event{% endif %}" title="{{ day.date|date:'d/m/Y' }}{% if day.today %} · Hoje{% endif %}{% if day.reservations %} · {{ day.reservations }} reserva{{ day.reservations|pluralize }}{% endif %}{% if day.events %} · Evento: {{ day.events|join:'; ' }}{% endif %}"><span aria-hidden="true">{{ day.date.day }}</span><span class="sr-only">{{ day.date|date:'d/m/Y' }}{% if day.today %}, hoje{% endif %}{% if day.reservations %}, {{ day.reservations }} reserva{{ day.reservations|pluralize }}{% endif %}{% if day.events %}, evento: {{ day.events|join:'; ' }}{% endif %}</span></span>{% else %}<span></span>{% endif %}{% endfor %}{% endfor %}</div>
       </section>{% endfor %}
     </div>
   </section>

@@ -1,5 +1,6 @@
 from io import BytesIO
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from PIL import Image
 from django.contrib.auth import get_user_model
@@ -17,6 +18,7 @@ def photo_upload(format='PNG'):
 
 class ProfileTests(TestCase):
     def setUp(self):
+        self.enterContext(patch('core.views.load_events', return_value=([], False)))
         self.media = TemporaryDirectory()
         self.addCleanup(self.media.cleanup)
         self.override = override_settings(MEDIA_ROOT=self.media.name)

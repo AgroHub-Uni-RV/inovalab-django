@@ -1,7 +1,7 @@
 import json
 from http.client import HTTPException
 from urllib.error import HTTPError, URLError
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urlencode, urljoin, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 from uuid import uuid4
 
@@ -86,9 +86,21 @@ class AgroHubClient:
         # Fotos nunca recebem Bearer; não transmitir credenciais para URLs de mídia.
         return self._read(Request(safe, headers={'Accept': 'image/png,image/jpeg,image/webp'}), limit=5*1024*1024)
 
-    def _read(self, request, *, limit):
+    def events_page(self, page, *, timeout=5):
+        # A listagem pública responde sem JWT: nunca compartilhar credenciais no cache.
+        url = urljoin(base_url(), 'agrohub/eventos/')+'?'+urlencode({'page': page, 'page_size': 100})
+        raw = self._read(Request(url, headers={'Accept': 'application/json'}), limit=512*1024, timeout=timeout)
         try:
-            with build_opener(NoRedirects()).open(request, timeout=settings.AGROHUB_API_TIMEOUT) as response:
+            payload = json.loads(raw)
+        except (ValueError, UnicodeError):
+            raise AgroHubError() from None
+        if not isinstance(payload, dict):
+            raise AgroHubError()
+        return payload
+
+    def _read(self, request, *, limit, timeout=None):
+        try:
+            with build_opener(NoRedirects()).open(request, timeout=timeout if timeout is not None else settings.AGROHUB_API_TIMEOUT) as response:
                 raw = response.read(limit+1)
                 if len(raw) > limit:
                     raise AgroHubError()

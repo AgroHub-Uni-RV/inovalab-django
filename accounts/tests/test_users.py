@@ -1,9 +1,14 @@
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.test import TestCase
 
 
 class UserPageTests(TestCase):
+    def setUp(self):
+        self.enterContext(patch('core.views.load_events', return_value=([], False)))
+
     @classmethod
     def setUpTestData(cls):
         User = get_user_model()

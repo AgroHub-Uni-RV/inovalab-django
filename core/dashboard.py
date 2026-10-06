@@ -20,7 +20,7 @@ def _month_date(year, month, offset):
     return datetime(index // 12, index % 12 + 1, 1)
 
 
-def _months(bookings, today):
+def _months(bookings, today, events=()):
     first = timezone.make_aware(_month_date(today.year, today.month, 0))
     last = timezone.make_aware(_month_date(today.year, today.month, 6))
     counts = {}
@@ -30,18 +30,30 @@ def _months(bookings, today):
         while day <= final:
             counts[day] = counts.get(day, 0) + 1
             day += timedelta(days=1)
+    event_days = {}
+    for event in events:
+        begin, end = event['start'], event['end'] or event['start']
+        if begin >= last or end < first:
+            continue
+        day = timezone.localtime(max(begin, first)).date()
+        # Término à meia-noite não ocupa o dia seguinte; início=fim ocupa um dia.
+        final = timezone.localtime(min(max(begin, end-timedelta(microseconds=1)), last-timedelta(microseconds=1))).date()
+        while day <= final:
+            event_days.setdefault(day, []).append(event['title'])
+            day += timedelta(days=1)
     months = []
     for offset in range(6):
         date = _month_date(today.year, today.month, offset)
         weeks = calendar.Calendar(firstweekday=6).monthdatescalendar(date.year, date.month)
         months.append({'year': date.year, 'month': date.month, 'name': MONTHS[date.month],
             'weeks': [[{'date': day, 'in_month': day.month == date.month, 'today': day == today,
-                        'sunday': day.weekday() == 6, 'reservations': counts.get(day, 0)}
+                        'sunday': day.weekday() == 6, 'reservations': counts.get(day, 0),
+                        'events': event_days.get(day, [])}
                        for day in week] for week in weeks]})
     return months
 
 
-def dashboard_context(actor, *, now=None, task_tab='pendentes', booking_tab='semana'):
+def dashboard_context(actor, *, now=None, task_tab='pendentes', booking_tab='semana', events=()):
     now = now if now is not None else timezone.now()
     admin = is_business_admin(actor)
     task_tab = task_tab if task_tab in TASK_TABS else 'pendentes'
@@ -62,7 +74,7 @@ def dashboard_context(actor, *, now=None, task_tab='pendentes', booking_tab='sem
         bookings = all_bookings.filter(inicio__lt=end, fim__gt=max(start, now))
     return {
         'is_business_admin': admin, 'tasks': tasks, 'bookings': list(bookings[:10]),
-        'task_tab': task_tab, 'booking_tab': booking_tab, 'months': _months(all_bookings, today),
+        'task_tab': task_tab, 'booking_tab': booking_tab, 'months': _months(all_bookings, today, events),
         'weekday_labels': ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'],
         'task_tabs': [{'key': key, 'label': value[0], 'query': urlencode({'tarefas': key, 'agenda': booking_tab})}
                       for key, value in TASK_TABS.items()],

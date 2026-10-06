@@ -50,6 +50,8 @@ class AccountsStub:
                 override = state['responses'].get((self.command, self.path))
                 if override:
                     return self.reply(*override)
+                if self.command == 'GET' and self.path.startswith('/api/v1/agrohub/eventos/?'):
+                    return self.reply(200, {'count': 0, 'next': None, 'results': []})
                 if self.path == '/media/profile.png':
                     out = BytesIO()
                     Image.new('RGB', (32, 32), '#27348b').save(out, 'PNG')
