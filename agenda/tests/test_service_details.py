@@ -14,6 +14,7 @@ from agenda.models import Agendamento, EventoAgendamento
 from agenda.services import BookingConflict, cancel_booking, save_booking
 from catalogo.models import Equipamento, Espaco, Servico
 from conteudo.tests.helpers import image_upload
+from materiais.models import Material
 
 
 class BookingServiceDetailsTests(TestCase):
@@ -28,6 +29,8 @@ class BookingServiceDetailsTests(TestCase):
         cls.machine = Equipamento.objects.create(nome='Máquina A')
         cls.other_machine = Equipamento.objects.create(nome='Máquina B')
         cls.room = Espaco.objects.first()
+        cls.material = Material.objects.create(nome='PLA', categoria='Filamento', quantidade=500,
+                                              unidade='g', fonte='Laboratório')
 
     def setUp(self):
         self.client.force_login(self.admin)
@@ -146,7 +149,7 @@ class BookingServiceDetailsTests(TestCase):
 
     def test_web_submission_and_refresh_preserve_multiple_equipment_and_decimal_spending(self):
         data = self.web_data(equipamentos=[self.machine.pk, self.other_machine.pk],
-                             material_proprio='nao', material_gasto_gramas='12.125')
+                             material_proprio='nao', material_gasto=self.material.pk, material_gasto_gramas='12.125')
         refreshed = self.client.post('/agenda/novo/', {**data, 'atualizar': '1'})
         self.assertEqual(refreshed.context['form']['equipamentos'].value(), [str(self.machine.pk), str(self.other_machine.pk)])
         self.assertEqual(refreshed.context['form']['material_gasto_gramas'].value(), '12.125')

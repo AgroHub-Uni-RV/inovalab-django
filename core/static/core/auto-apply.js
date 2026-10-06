@@ -63,12 +63,15 @@
 
   document.querySelectorAll('[data-material-proprio]').forEach(field => {
     const amount = field.form?.querySelector('#id_material_gasto_gramas');
+    const material = field.form?.querySelector('#id_material_gasto');
     if (!amount) return;
     const updateMaterial = () => {
       const usesLabMaterial = field.value === 'nao';
-      amount.closest('.form-field').hidden = !usesLabMaterial;
-      amount.disabled = !usesLabMaterial;
-      amount.required = usesLabMaterial;
+      [amount, material].filter(Boolean).forEach(input => {
+        input.closest('.form-field').hidden = !usesLabMaterial;
+        input.disabled = !usesLabMaterial;
+        input.required = usesLabMaterial;
+      });
     };
     field.addEventListener('change', updateMaterial);
     updateMaterial();

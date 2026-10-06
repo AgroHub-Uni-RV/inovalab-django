@@ -5,6 +5,8 @@ from django.db.models import Q
 
 from agenda.models import CATEGORIES
 from agenda.services import CATEGORY_MODELS, SERVICE_FIELDS
+from agenda.widgets import SpaceRadioSelect
+from materiais.models import Material
 
 
 class StrictFormMixin:
@@ -32,6 +34,10 @@ class BookingForm(StrictFormMixin, forms.Form):
         label='Tem material próprio?', choices=[('', 'Selecione'), ('sim', 'Sim'), ('nao', 'Não')],
         coerce=lambda value: value == 'sim', widget=forms.Select(attrs={'data-material-proprio': ''}),
     )
+    material_gasto = forms.ModelChoiceField(
+        label='Material utilizado', queryset=Material.objects.none(), required=False,
+        empty_label='Selecione o material', help_text='Material do laboratório utilizado neste serviço.',
+    )
     material_gasto_gramas = forms.DecimalField(
         label='Material gasto (g)', required=False, min_value=Decimal('0.001'), max_digits=12, decimal_places=3,
         widget=forms.NumberInput(attrs={'min': '0.001', 'step': '0.001'}),
@@ -49,6 +55,7 @@ class BookingForm(StrictFormMixin, forms.Form):
                            material_proprio='sim' if booking.material_proprio is True else
                            'nao' if booking.material_proprio is False else '',
                            material_gasto_gramas=booking.material_gasto_gramas)
+            initial['material_gasto'] = booking.material_gasto_id
         initial.update(kwargs.get('initial', {}))
         initial.setdefault('categoria', 'servico')
         kwargs['initial'] = initial
@@ -62,7 +69,13 @@ class BookingForm(StrictFormMixin, forms.Form):
                 ~Q(status='indisponivel') | Q(pk=retained_id),
             ).order_by('nome', 'pk')
             self.fields['objeto'].label = CATEGORIES[category]
+            if category == 'espaco':
+                self.fields['objeto'].empty_label = None
+                self.fields['objeto'].widget = SpaceRadioSelect(choices=self.fields['objeto'].choices)
         if category == 'servico':
+            self.fields['material_gasto'].queryset = Material.objects.filter(
+                ~Q(status='indisponivel') | Q(pk=booking.material_gasto_id if booking else None),
+            ).order_by('nome', 'pk')
             retained = booking.equipamentos.values_list('pk', flat=True) if booking and booking.categoria == 'servico' else []
             self.fields['equipamentos'].queryset = CATEGORY_MODELS['equipamento'].objects.filter(
                 ~Q(status='indisponivel') | Q(pk__in=retained),
@@ -82,9 +95,16 @@ class BookingForm(StrictFormMixin, forms.Form):
             spent = cleaned.get('material_gasto_gramas')
             if own_material is False and spent is None and 'material_gasto_gramas' not in self.errors:
                 self.add_error('material_gasto_gramas', 'Informe em gramas o material gasto do laboratório.')
-            elif own_material is True:
+            if own_material is False and cleaned.get('material_gasto') is None and 'material_gasto' not in self.errors:
+                self.add_error('material_gasto', 'Selecione o material utilizado do laboratório.')
+            if own_material is True:
                 cleaned['material_gasto_gramas'] = None
+                cleaned['material_gasto'] = None
         return cleaned
+
+    def clean_material_gasto(self):
+        material = self.cleaned_data['material_gasto']
+        return material.pk if material else None
 
     def clean_objeto(self):
         return self.cleaned_data['objeto'].pk

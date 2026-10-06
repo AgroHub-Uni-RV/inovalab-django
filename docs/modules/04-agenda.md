@@ -8,7 +8,7 @@ Entre com superusuário ativo ou conta ativa do grupo `Administradores` e abra `
 
 A tela reúne calendário mensal, contagem de reservas por dia e lista de até 25 registros por página. Filtros: mês e categoria. Reservas que atravessam dias ou meses aparecem em todos os períodos ocupados; uma reserva terminando à meia-noite não conta no dia seguinte. As contagens incluem todo o filtro, independentemente da página da lista. Os formulários usam horário de Brasília (`America/Sao_Paulo`).
 
-Selecione uma categoria e clique em **Atualizar opções**, escolha o objeto, preencha requerente, motivo, início e término e salve. A atualização das opções conserva textos/datas não salvos e a versão original de uma edição. Usa POST com CSRF para manter esses dados fora da URL. Não requer JavaScript. Depois de uma edição concorrente, recarregue o formulário antes de reaplicar alterações.
+Selecione uma categoria; as opções são atualizadas automaticamente via JavaScript. Escolha o objeto, preencha requerente, motivo, início e término e salve. Para Espaço, selecione um cartão com capacidade e indicação de restrição administrativa. Para Serviço com material do laboratório, escolha o material cadastrado e informe o gasto em gramas. A atualização das opções conserva textos/datas não salvos e a versão original de uma edição. Usa POST com CSRF para manter esses dados fora da URL. Depois de uma edição concorrente, recarregue o formulário antes de reaplicar alterações. Veja [seleção de espaços e material](../frontend/09-selecao-de-espacos-e-material.md).
 
 | Caminho web | Operação |
 | --- | --- |

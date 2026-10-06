@@ -12,14 +12,15 @@ from django.utils import timezone
 from accounts.policies import is_business_admin
 from agenda.models import Agendamento, EventoAgendamento
 from catalogo.models import Equipamento, Espaco, Servico
+from materiais.models import Material
 
 
 CATEGORY_MODELS = {'servico': Servico, 'equipamento': Equipamento, 'espaco': Espaco}
 BASE_FIELDS = {'categoria', 'objeto', 'requerente', 'motivo', 'inicio', 'fim'}
-SERVICE_FIELDS = {'equipamentos', 'material_proprio', 'material_gasto_gramas'}
+SERVICE_FIELDS = {'equipamentos', 'material_proprio', 'material_gasto', 'material_gasto_gramas'}
 PUBLIC_FIELDS = BASE_FIELDS | SERVICE_FIELDS
 STORED_FIELDS = ('servico_id', 'equipamento_id', 'espaco_id', 'requerente', 'motivo', 'inicio', 'fim', 'cancelado_em',
-                 'material_proprio', 'material_gasto_gramas')
+                 'material_proprio', 'material_gasto_id', 'material_gasto_gramas')
 
 
 class BookingConflict(Exception):
@@ -75,6 +76,7 @@ def _snapshot(booking):
     values = {name: getattr(booking, name) for name in (
         'requerente', 'motivo', 'inicio', 'fim', 'cancelado_em', 'material_proprio', 'material_gasto_gramas')}
     values.update(categoria=booking.categoria, objeto=booking.objeto_id)
+    values['material_gasto'] = booking.material_gasto_id
     values['equipamentos'] = sorted(booking.equipamentos.values_list('pk', flat=True))
     return {name: value.astimezone(dt_timezone.utc).isoformat() if isinstance(value, datetime) else value
             if not isinstance(value, Decimal) else format(value, '.3f')
@@ -134,6 +136,7 @@ def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=
             raise ValidationError({'equipamentos': 'Estes campos são exclusivos de agendamentos de serviço.'})
         equipment_ids = []
         booking.material_proprio = None
+        booking.material_gasto_id = None
         booking.material_gasto_gramas = None
     else:
         for name in ('material_proprio', 'material_gasto_gramas'):
@@ -143,6 +146,13 @@ def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=
             raise ValidationError({'material_proprio': 'Informe sim ou não.'})
         if booking.material_proprio is True and 'material_gasto_gramas' not in data:
             booking.material_gasto_gramas = None
+        if 'material_gasto' in data:
+            material_id = data['material_gasto']
+            if material_id is not None and (type(material_id) is not int or material_id < 1):
+                raise ValidationError({'material_gasto': 'Selecione um material válido.'})
+            booking.material_gasto_id = material_id
+        elif booking.material_proprio is True:
+            booking.material_gasto_id = None
     for name in ('requerente', 'motivo', 'inicio', 'fim'):
         if name in data:
             setattr(booking, name, data[name])
@@ -162,6 +172,12 @@ def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=
         if Equipamento.objects.filter(pk__in=equipment_ids, status='indisponivel').filter(
                 ~Q(pk__in=old_equipment_ids) if not period_changed else Q()).exists():
             raise ValidationError({'equipamentos': 'Um equipamento selecionado está indisponível.'})
+        if booking.material_gasto_id is not None:
+            material = Material.objects.select_for_update().filter(pk=booking.material_gasto_id).first()
+            if material is None:
+                raise ValidationError({'material_gasto': 'Selecione um material válido.'})
+            if material.status == 'indisponivel' and (period_changed or previous.material_gasto_id != material.pk):
+                raise ValidationError({'material_gasto': 'Este material está indisponível.'})
         booking.full_clean()
         overlap = Agendamento.objects.filter(cancelado_em__isnull=True, inicio__lt=booking.fim, fim__gt=booking.inicio,
                                              **{target[0] + '_id': target[1]})

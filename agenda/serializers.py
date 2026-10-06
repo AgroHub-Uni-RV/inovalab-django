@@ -9,6 +9,7 @@ from rest_framework import serializers
 from agenda.models import CATEGORIES, EventoAgendamento
 from agenda.services import save_booking
 from catalogo.models import Equipamento
+from materiais.models import Material
 
 
 class StrictPayloadMixin:
@@ -52,6 +53,8 @@ class BookingSerializer(StrictPayloadMixin, serializers.Serializer):
     equipamentos = serializers.PrimaryKeyRelatedField(queryset=Equipamento.objects.all(), many=True, required=False,
                                                       pk_field=VersionField(min_value=1))
     material_proprio = serializers.BooleanField(allow_null=True, required=False)
+    material_gasto = serializers.PrimaryKeyRelatedField(queryset=Material.objects.all(), allow_null=True, required=False,
+                                                       pk_field=VersionField(min_value=1))
     material_gasto_gramas = serializers.DecimalField(max_digits=12, decimal_places=3, min_value=Decimal('0.001'),
                                                     allow_null=True, required=False)
     versao = VersionField(min_value=1, required=False)
@@ -59,6 +62,8 @@ class BookingSerializer(StrictPayloadMixin, serializers.Serializer):
     criado_em = serializers.DateTimeField(read_only=True)
 
     def validate(self, attrs):
+        if 'material_gasto' in attrs:
+            attrs['material_gasto'] = attrs['material_gasto'].pk if attrs['material_gasto'] else None
         if 'equipamentos' in attrs:
             attrs['equipamentos'] = [equipment.pk for equipment in attrs['equipamentos']]
         if self.instance is None and 'versao' in attrs:

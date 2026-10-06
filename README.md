@@ -84,6 +84,8 @@ Os [padrões visuais compartilhados](docs/frontend/03-padroes-visuais.md) centra
 
 ## Processo
 
+A entrega de [seleção de espaços e material](docs/frontend/09-selecao-de-espacos-e-material.md) acrescenta cartões de espaços conforme a referência e um select para identificar o material utilizado nos serviços. Foram aprovados 355 testes Django e verificações no Chrome em desktop e celular. A migração local já foi aplicada; execute `python manage.py migrate` ao atualizar outro ambiente.
+
 A entrega de [agendamentos por categoria](docs/frontend/08-agendamento-por-categoria.md) acrescenta seleção opcional de máquinas e material próprio/gasto em gramas ao formulário de serviço, além da foto/nome do criador e do destaque de categoria no detalhe. Foram aprovados 345 testes Django e verificações básicas no Chrome. Execute `python manage.py migrate` ao atualizar; as migrações locais já foram aplicadas.
 
 A revisão seguinte adiciona [ativação/desativação de banners na coluna Ações](docs/frontend/07-acoes-de-banners-e-filtros.md), substitui Filtrar pelo rótulo Filtros e remove Atualizar opções da agenda. Validação: 329 testes Django aprovados e verificações básicas no Chrome; nenhuma migração nova.

@@ -16,6 +16,8 @@ class Agendamento(models.Model):
     espaco = models.ForeignKey('catalogo.Espaco', on_delete=models.PROTECT, null=True, blank=True)
     equipamentos = models.ManyToManyField('catalogo.Equipamento', blank=True, related_name='agendamentos_de_servico')
     material_proprio = models.BooleanField('tem material próprio', null=True, blank=True)
+    material_gasto = models.ForeignKey('materiais.Material', on_delete=models.PROTECT, null=True, blank=True,
+                                      verbose_name='material utilizado')
     material_gasto_gramas = models.DecimalField(
         'material gasto (g)', max_digits=12, decimal_places=3, null=True, blank=True,
         validators=[MinValueValidator(Decimal('0.001'))],
@@ -47,6 +49,10 @@ class Agendamento(models.Model):
                            material_proprio=False, material_gasto_gramas__gt=0)
                   & models.Q(material_gasto_gramas__isnull=False)
             ), name='agenda_material_de_servico_valido'),
+            models.CheckConstraint(condition=(
+                models.Q(material_gasto__isnull=True)
+                | models.Q(servico__isnull=False, material_proprio__isnull=False, material_proprio=False)
+            ), name='agenda_tipo_material_valido'),
         ]
         indexes = [models.Index(fields=['inicio', 'fim'], name='agenda_periodo_idx')]
 
@@ -68,6 +74,8 @@ class Agendamento(models.Model):
 
     def clean(self):
         errors = {}
+        if self.material_gasto_id is not None and (self.categoria != 'servico' or self.material_proprio is not False):
+            errors['material_gasto'] = 'Selecione material somente para serviços que utilizam material do laboratório.'
         if self.categoria != 'servico' and (self.material_proprio is not None or self.material_gasto_gramas is not None):
             errors['material_proprio'] = 'Material é informado somente em agendamentos de serviço.'
         elif self.material_proprio is False and self.material_gasto_gramas is None:

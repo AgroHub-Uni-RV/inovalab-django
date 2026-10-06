@@ -1,5 +1,7 @@
 # Agendamentos por categoria e identificação do criador — 06/10/2026
 
+Complemento posterior: [seleção visual de espaços e material utilizado](09-selecao-de-espacos-e-material.md). Serviços com material do laboratório agora também exigem selecionar o material cadastrado no formulário.
+
 O formulário adapta os campos à categoria selecionada. Serviço mantém os campos atuais e acrescenta Equipamentos, Tem material próprio? e Material gasto (g). Equipamento e Espaço mantêm os campos atuais, com a seleção do objeto identificada pelo nome da categoria. A troca continua automática por POST, preservando os campos comuns e a versão da edição; nenhum agendamento é salvo pela troca de categoria.
 
 O responsável confirmou que Equipamentos é uma seleção múltipla opcional: serviços como consultoria podem não utilizar máquinas. Esse vínculo descreve o uso no serviço e não cria reservas automáticas de equipamentos. O agendamento continua tendo um único alvo exclusivo. Máquinas indisponíveis não podem ser acrescentadas; vínculos anteriores podem ser mantidos ao editar somente dados descritivos.

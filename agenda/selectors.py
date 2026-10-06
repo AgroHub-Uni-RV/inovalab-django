@@ -12,7 +12,7 @@ from agenda.models import CATEGORIES
 
 def visible_bookings(actor):
     queryset = Agendamento.objects.filter(cancelado_em__isnull=True).select_related(
-        'servico', 'equipamento', 'espaco', 'criado_por',
+        'servico', 'equipamento', 'espaco', 'criado_por', 'material_gasto',
     )
     return queryset if is_business_admin(actor) else queryset.none()
 
