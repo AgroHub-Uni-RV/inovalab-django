@@ -8,7 +8,8 @@ Implementação direta na branch `feat/solicitacoes-agendamento`, derivada de `m
 
 Usuários autenticados e ativos acessam Agendamentos na sidebar, solicitam uma
 reserva e consultam somente os registros criados pela própria conta. A autoria
-é definida no servidor; o texto de Requerente não altera a permissão de acesso.
+é definida no servidor. A entrega seguinte remove o campo livre Requerente;
+veja [usuário e horários](12-usuario-e-horarios-do-agendamento.md).
 Detalhes, histórico, fotos e API seguem o mesmo isolamento.
 
 Pedidos de usuários comuns entram como **Pendente**, sem ocupar horários.

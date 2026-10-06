@@ -8,7 +8,7 @@ Entre com superusuário ativo ou conta ativa do grupo `Administradores` e abra `
 
 A tela reúne calendário mensal, contagem de reservas por dia e lista de até 25 registros por página. Filtros: mês e categoria. Reservas que atravessam dias ou meses aparecem em todos os períodos ocupados; uma reserva terminando à meia-noite não conta no dia seguinte. As contagens incluem todo o filtro, independentemente da página da lista. Os formulários usam horário de Brasília (`America/Sao_Paulo`).
 
-Selecione uma categoria; as opções são atualizadas automaticamente via JavaScript. Escolha o objeto, preencha requerente, motivo, início e término e salve. Para Espaço, selecione um cartão com capacidade e indicação de restrição administrativa. Para Serviço com material do laboratório, escolha o material cadastrado e informe o gasto em gramas. A atualização das opções conserva textos/datas não salvos e a versão original de uma edição. Usa POST com CSRF para manter esses dados fora da URL. Depois de uma edição concorrente, recarregue o formulário antes de reaplicar alterações. Veja [seleção de espaços e material](../frontend/09-selecao-de-espacos-e-material.md).
+Selecione uma categoria; as opções são atualizadas automaticamente via JavaScript. Escolha o objeto, preencha motivo, dia, hora de início e hora de término e salve. O responsável é o usuário autenticado que cadastrou o agendamento, definido pelo servidor. Para Espaço, selecione um cartão com capacidade e indicação de restrição administrativa. Para Serviço com material do laboratório, escolha o material cadastrado e informe o gasto em gramas. A atualização das opções conserva textos/datas não salvos e a versão original de uma edição. Usa POST com CSRF para manter esses dados fora da URL. Depois de uma edição concorrente, recarregue o formulário antes de reaplicar alterações. Veja [usuário e horários do agendamento](../frontend/12-usuario-e-horarios-do-agendamento.md).
 
 | Caminho web | Operação |
 | --- | --- |
@@ -24,8 +24,8 @@ O frontend de identidade foi preservado, com apenas um link para a agenda nas co
 ## Regras entregues
 
 - **Confirmado pelo responsável:** cada reserva tem exatamente um serviço, equipamento ou espaço. Em 02/10 foi confirmado que serviços também são exclusivos: uma reserva por objeto em cada horário, nas três categorias. Não há reserva automática de recursos associados.
-- Campos comuns: `categoria`, `objeto`, `requerente`, `motivo`, `inicio`, `fim`. Categoria pertence a `servico`, `equipamento`, `espaco`; o ID de objeto é interpretado nessa categoria. IDs iguais em categorias diferentes não identificam o mesmo objeto. Troca exige categoria e objeto juntos. A entrega de 06/10/2026 acrescenta `equipamentos`, `material_proprio` e `material_gasto_gramas` para serviços na API interna, preservando o contrato anterior dos pedidos externos. Veja [formulários por categoria e criador](../frontend/08-agendamento-por-categoria.md).
-- Requerente é nome obrigatório de até 150 caracteres, sem exigir conta local; motivo é obrigatório. Espaços no início/fim dos textos são removidos.
+- Campos comuns da API interna: `categoria`, `objeto`, `motivo`, `inicio`, `fim`. Categoria pertence a `servico`, `equipamento`, `espaco`; o ID de objeto é interpretado nessa categoria. IDs iguais em categorias diferentes não identificam o mesmo objeto. Troca exige categoria e objeto juntos. A entrega de 06/10/2026 acrescenta `equipamentos`, `material_proprio` e `material_gasto_gramas` para serviços na API interna, preservando o contrato anterior dos pedidos externos. Veja [formulários por categoria e criador](../frontend/08-agendamento-por-categoria.md).
+- O campo livre `requerente` foi removido do modelo e da API interna. `criado_por` identifica o usuário criador e não pode ser enviado ou alterado pelo cliente. A API também retorna `criado_por_nome`. Motivo é obrigatório e tem espaços nas extremidades removidos. Integrações conservam seus metadados externos, sem inventar uma conta interna.
 - Três FKs protegidas e restrição de exatamente uma preenchida; categoria derivada da FK. O banco também exige versão positiva e fim posterior ao início.
 - Intervalos `[início, fim)`; sobreposição no mesmo objeto retorna conflito, horários adjacentes são permitidos. A edição exclui o próprio registro da busca de conflito. Falhas não deixam mudanças parciais.
 - Cada criação, edição e cancelamento grava um evento na mesma transação, com ator, instante, ação e mudanças. Datas nas mudanças são normalizadas em UTC para evitar diferenças fictícias entre fusos equivalentes.
@@ -35,8 +35,8 @@ O frontend de identidade foi preservado, com apenas um link para a agenda nas co
 
 - Cancelamento lógico libera o intervalo e preserva o registro/eventos. Canceladas ficam fora da lista, detalhe e histórico operacionais; não há restauração nem consulta de canceladas nesta entrega. Os registros permanecem no banco, inclusive as referências protegidas ao catálogo.
 - Não há etapa adicional de aprovação ou criação automática de tarefa.
-- `indisponivel` impede reserva nova, troca de alvo ou mudança de período. Alteração apenas de requerente/motivo de uma reserva existente continua possível após desativar o alvo; cancelamento também. `ocupado` manual não bloqueia automaticamente reservas futuras. Reservar/cancelar não muda o status do catálogo.
-- Permitir datas passadas e atravessar meia-noite, sem impor funcionamento, feriados, antecedência, duração mínima/máxima ou margem entre reservas ainda não definidos. Não há campo de participantes nem validação de capacidade do espaço.
+- `indisponivel` impede reserva nova, troca de alvo ou mudança de período. Alteração apenas do motivo de uma reserva existente continua possível após desativar o alvo; cancelamento também. `ocupado` manual não bloqueia automaticamente reservas futuras. Reservar/cancelar não muda o status do catálogo.
+- O formulário escolhe um dia e um intervalo positivo dentro desse dia. Datas passadas continuam permitidas, sem impor funcionamento, feriados, antecedência, duração mínima/máxima ou margem entre reservas ainda não definidos. O armazenamento e a API conservam `inicio`/`fim` com fuso horário, inclusive períodos antigos que atravessam dias. Não há campo de participantes nem validação de capacidade do espaço.
 
 ## API entregue
 
@@ -58,7 +58,6 @@ Criação, usando um ID real obtido no catálogo:
 {
   "categoria": "servico",
   "objeto": 1,
-  "requerente": "Nome do requerente",
   "motivo": "Produzir protótipo",
   "inicio": "2026-11-01T14:00:00-03:00",
   "fim": "2026-11-01T15:00:00-03:00"

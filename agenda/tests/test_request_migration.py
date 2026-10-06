@@ -11,6 +11,7 @@ class BookingRequestMigrationTests(TransactionTestCase):
         previous = [('agenda', '0004_agendamento_material_gasto_and_more')]
         current = [('agenda', '0005_agendamento_avaliado_em_agendamento_avaliado_por_and_more')]
         executor = MigrationExecutor(connection)
+        latest = executor.loader.graph.leaf_nodes()
         executor.migrate(previous)
         try:
             apps = executor.loader.project_state(previous).apps
@@ -32,4 +33,4 @@ class BookingRequestMigrationTests(TransactionTestCase):
             self.assertIsNone(migrated.avaliado_por_id)
             self.assertIsNone(migrated.avaliado_em)
         finally:
-            MigrationExecutor(connection).migrate(current)
+            MigrationExecutor(connection).migrate(latest)

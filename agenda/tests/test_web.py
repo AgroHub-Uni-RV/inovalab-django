@@ -21,8 +21,8 @@ class BookingWebTests(TestCase):
 
     def setUp(self):
         self.client.force_login(self.admin)
-        self.data = {'categoria': 'servico', 'objeto': self.service.pk, 'requerente': 'Ana', 'motivo': 'Protótipo',
-                     'inicio': '2026-11-01T14:00:00', 'fim': '2026-11-01T15:00:00', 'material_proprio': 'sim'}
+        self.data = {'categoria': 'servico', 'objeto': self.service.pk, 'motivo': 'Protótipo',
+                     'dia': '2026-11-01', 'hora_inicio': '14:00:00', 'hora_termino': '15:00:00', 'material_proprio': 'sim'}
 
     def create(self, **overrides):
         data = {**self.data, **overrides}
@@ -30,8 +30,9 @@ class BookingWebTests(TestCase):
             data['material_proprio'] = data['material_proprio'] == 'sim'
         else:
             data.pop('material_proprio', None)
-        data['inicio'] = datetime.fromisoformat(data['inicio'] + '-03:00')
-        data['fim'] = datetime.fromisoformat(data['fim'] + '-03:00')
+        day, start, end = (data.pop(name) for name in ('dia', 'hora_inicio', 'hora_termino'))
+        data['inicio'] = datetime.fromisoformat(data.get('inicio', f'{day}T{start}') + '-03:00')
+        data['fim'] = datetime.fromisoformat(data.get('fim', f'{day}T{end}') + '-03:00')
         return save_booking(actor=self.admin, data=data)
 
     def test_login_redirect_and_normal_user_access_is_limited_by_owner_and_action(self):
@@ -78,7 +79,7 @@ class BookingWebTests(TestCase):
         self.assertContains(response, 'Faça uma escolha válida')
 
     def test_refresh_options_preserves_unsaved_fields_without_validation_or_writing(self):
-        response = self.client.post('/agenda/novo/', {'categoria': 'espaco', 'requerente': 'Nome temporário',
+        response = self.client.post('/agenda/novo/', {'categoria': 'espaco',
                                    'motivo': 'Texto ainda em edição', 'atualizar': '1'})
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.context['form'].errors)
@@ -104,9 +105,9 @@ class BookingWebTests(TestCase):
     def test_unchanged_web_dates_preserve_api_seconds_and_fractional_precision(self):
         booking = self.create(inicio='2026-11-01T14:00:37.123456', fim='2026-11-01T15:00:41.654321')
         response = self.client.get(f'/agenda/{booking.pk}/editar/')
-        self.assertContains(response, '2026-11-01T14:00:37')
+        self.assertContains(response, 'value="14:00:37"')
         response = self.client.post(f'/agenda/{booking.pk}/editar/', {**self.data, 'versao': 1,
-                                   'inicio': '2026-11-01T14:00:37', 'fim': '2026-11-01T15:00:41', 'motivo': 'Editado'})
+                                   'hora_inicio': '14:00:37', 'hora_termino': '15:00:41', 'motivo': 'Editado'})
         self.assertEqual(response.status_code, 302)
         booking.refresh_from_db()
         self.assertEqual((booking.inicio.microsecond, booking.fim.microsecond), (123456, 654321))

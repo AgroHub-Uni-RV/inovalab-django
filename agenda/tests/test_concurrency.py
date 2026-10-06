@@ -15,7 +15,7 @@ class BookingConcurrencyTests(TransactionTestCase):
     def setUp(self):
         self.admin = get_user_model().objects.create_user('gestor', is_superuser=True)
         self.service = Servico.objects.create(nome='Serviço exclusivo')
-        self.data = {'categoria': 'servico', 'objeto': self.service.pk, 'requerente': 'Ana', 'motivo': 'Protótipo',
+        self.data = {'categoria': 'servico', 'objeto': self.service.pk, 'motivo': 'Protótipo',
                      'inicio': datetime.fromisoformat('2026-11-01T14:00:00-03:00'),
                      'fim': datetime.fromisoformat('2026-11-01T15:00:00-03:00')}
 

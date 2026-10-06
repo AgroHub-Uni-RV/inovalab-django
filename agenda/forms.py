@@ -1,7 +1,9 @@
 from decimal import Decimal
+from datetime import datetime
 
 from django import forms
 from django.db.models import Q
+from django.utils import timezone
 from accounts.policies import is_business_admin
 
 from agenda.models import CATEGORIES
@@ -21,12 +23,14 @@ class StrictFormMixin:
 class BookingForm(StrictFormMixin, forms.Form):
     categoria = forms.ChoiceField(label='Categoria', choices=CATEGORIES.items())
     objeto = forms.ModelChoiceField(label='Objeto', queryset=CATEGORY_MODELS['servico'].objects.none())
-    requerente = forms.CharField(label='Requerente', max_length=150)
     motivo = forms.CharField(label='Motivo', widget=forms.Textarea(attrs={'rows': 3}))
-    inicio = forms.DateTimeField(label='Início', help_text='Horário de Brasília.', widget=forms.DateTimeInput(
-        format='%Y-%m-%dT%H:%M:%S', attrs={'type': 'datetime-local', 'step': '1'}))
-    fim = forms.DateTimeField(label='Término', widget=forms.DateTimeInput(
-        format='%Y-%m-%dT%H:%M:%S', attrs={'type': 'datetime-local', 'step': '1'}))
+    dia = forms.DateField(label='Dia', input_formats=['%Y-%m-%d'],
+                          widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}))
+    hora_inicio = forms.TimeField(label='Hora de início', help_text='Horário de Brasília.',
+                                 input_formats=['%H:%M', '%H:%M:%S'],
+                                 widget=forms.TimeInput(format='%H:%M:%S', attrs={'type': 'time', 'step': '1'}))
+    hora_termino = forms.TimeField(label='Hora de término', input_formats=['%H:%M', '%H:%M:%S'],
+                                  widget=forms.TimeInput(format='%H:%M:%S', attrs={'type': 'time', 'step': '1'}))
     equipamentos = forms.ModelMultipleChoiceField(
         label='Equipamentos', queryset=CATEGORY_MODELS['equipamento'].objects.none(), required=False,
         widget=EquipmentCheckboxSelectMultiple, help_text='Selecione as máquinas utilizadas neste serviço (opcional).',
@@ -51,9 +55,13 @@ class BookingForm(StrictFormMixin, forms.Form):
         self.actor = actor
         self.is_admin = bool(actor and is_business_admin(actor))
         initial = {}
+        self.legacy_multiday = False
         if booking:
-            initial.update(categoria=booking.categoria, objeto=booking.objeto_id, requerente=booking.requerente,
-                           motivo=booking.motivo, inicio=booking.inicio, fim=booking.fim, versao=booking.versao)
+            start, end = timezone.localtime(booking.inicio), timezone.localtime(booking.fim)
+            self.legacy_multiday = start.date() != end.date()
+            initial.update(categoria=booking.categoria, objeto=booking.objeto_id, motivo=booking.motivo,
+                           dia=start.date(), hora_inicio=start.time().replace(microsecond=0),
+                           hora_termino=end.time().replace(microsecond=0), versao=booking.versao)
             initial.update(equipamentos=list(booking.equipamentos.values_list('pk', flat=True)),
                            material_proprio='sim' if booking.material_proprio is True else
                            'nao' if booking.material_proprio is False else '',
@@ -98,6 +106,7 @@ class BookingForm(StrictFormMixin, forms.Form):
 
     def clean(self):
         cleaned = super().clean()
+        self._clean_period(cleaned)
         if self.category == 'servico':
             own_material = cleaned.get('material_proprio')
             spent = cleaned.get('material_gasto_gramas')
@@ -126,16 +135,30 @@ class BookingForm(StrictFormMixin, forms.Form):
             raise forms.ValidationError('A versão inicial é definida pelo sistema.')
         return value
 
-    def _preserve_precision(self, name):
-        value = self.cleaned_data[name]
+    def _preserve_precision(self, name, value):
         original = getattr(self.booking, name) if self.booking else None
         return original if original is not None and value == original.replace(microsecond=0) else value
 
-    def clean_inicio(self):
-        return self._preserve_precision('inicio')
-
-    def clean_fim(self):
-        return self._preserve_precision('fim')
+    def _clean_period(self, cleaned):
+        day, start, end = (cleaned.get(name) for name in ('dia', 'hora_inicio', 'hora_termino'))
+        if day is None or start is None or end is None:
+            return
+        if self.booking:
+            original_start, original_end = timezone.localtime(self.booking.inicio), timezone.localtime(self.booking.fim)
+            if (day, start, end) == (original_start.date(), original_start.time().replace(microsecond=0),
+                                      original_end.time().replace(microsecond=0)):
+                cleaned.update(inicio=self.booking.inicio, fim=self.booking.fim)
+                return
+        if end <= start:
+            self.add_error('hora_termino', 'O término deve ser posterior ao início, no mesmo dia.')
+            return
+        for name, hour, field in [('inicio', start, 'hora_inicio'), ('fim', end, 'hora_termino')]:
+            try:
+                value = forms.DateTimeField().clean(datetime.combine(day, hour))
+            except forms.ValidationError as error:
+                self.add_error(field, error)
+            else:
+                cleaned[name] = self._preserve_precision(name, value)
 
 
 class CancelForm(StrictFormMixin, forms.Form):

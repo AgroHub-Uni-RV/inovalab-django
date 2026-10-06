@@ -89,6 +89,8 @@ Os [padrões visuais compartilhados](docs/frontend/03-padroes-visuais.md) centra
 
 ## Processo
 
+A entrega de [usuário e horários do agendamento](docs/frontend/12-usuario-e-horarios-do-agendamento.md) remove o requerente livre e usa o usuário que cadastrou a reserva. O formulário escolhe um dia, hora de início e hora de término; períodos antigos e histórico são preservados. A API interna não aceita mais `requerente`, enquanto o contrato externo de integrações permanece. Execute `python manage.py migrate` ao atualizar outro ambiente; a migração local já foi aplicada. Validação: 424 testes Django aprovados e verificações básicas no Chrome.
+
 A entrega de [atualizações sem recarregar](docs/frontend/10-atualizacoes-sem-recarregar.md) aplica filtros, abas, paginação e troca de categoria da agenda por requisições assíncronas, preservando foco e rascunhos. Foram aprovados 355 testes Django e verificações no Chrome em desktop e celular, incluindo respostas atrasadas e falha de conexão. Sem migrações nesta entrega.
 
 A entrega de [seleção de espaços e material](docs/frontend/09-selecao-de-espacos-e-material.md) acrescenta cartões de espaços conforme a referência e um select para identificar o material utilizado nos serviços. Foram aprovados 355 testes Django e verificações no Chrome em desktop e celular. A migração local já foi aplicada; execute `python manage.py migrate` ao atualizar outro ambiente.

@@ -1,7 +1,8 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db.models import Q
+from django.db.models import Q, Value
+from django.db.models.functions import Concat
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -60,7 +61,12 @@ class BookingListView(AgendaAccessMixin, ListView):
         self.query = self.request.GET.get('q', '').strip()[:150]
         queryset = filter_bookings(super().get_queryset(), month=self.month, category=self.category, situation=self.situation)
         if self.query:
-            queryset = queryset.filter(Q(requerente__icontains=self.query) | Q(motivo__icontains=self.query)
+            queryset = queryset.annotate(nome_criador=Concat('criado_por__first_name', Value(' '),
+                                                             'criado_por__last_name'))
+            queryset = queryset.filter(Q(criado_por__username__icontains=self.query)
+                | Q(nome_criador__icontains=self.query)
+                | Q(criado_por__first_name__icontains=self.query) | Q(criado_por__last_name__icontains=self.query)
+                | Q(motivo__icontains=self.query)
                 | Q(servico__nome__icontains=self.query) | Q(equipamento__nome__icontains=self.query)
                 | Q(espaco__nome__icontains=self.query))
         return queryset
@@ -82,10 +88,8 @@ class BookingDetailView(AgendaAccessMixin, DetailView):
     template_name = 'agenda/detail.html'
 
     def get_context_data(self, **kwargs):
-        creator = self.object.criado_por
-        creator_name = (creator.get_full_name() or creator.username) if creator else (
-            self.object.eventos.filter(acao='criar').values_list('ator_nome', flat=True).first() or 'Não registrado')
-        return {**super().get_context_data(**kwargs), 'events': self.object.eventos.all()[:5], 'creator_name': creator_name}
+        return {**super().get_context_data(**kwargs), 'events': self.object.eventos.all()[:5],
+                'creator_name': self.object.criador_nome}
 
 
 @method_decorator(never_cache, name='dispatch')
@@ -119,7 +123,8 @@ class BookingWriteView(AgendaAccessMixin, View):
         booking = self.get_booking()
         if request.POST.get('atualizar') == '1':
             # POST keeps names, reasons and CSRF tokens out of URL/history/logs.
-            initial = {key: request.POST[key] for key in PUBLIC_FIELDS if key in request.POST}
+            initial = {key: request.POST[key] for key in PUBLIC_FIELDS | {'dia', 'hora_inicio', 'hora_termino'}
+                       if key in request.POST}
             if initial.get('categoria') == 'servico':
                 initial['equipamentos'] = request.POST.getlist('equipamentos')
             else:

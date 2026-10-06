@@ -29,7 +29,7 @@ class BookingServiceTests(TestCase):
     def create_booking(self, **overrides):
         return save_booking(actor=self.admin, data={
             'categoria': 'servico', 'objeto': self.service.pk,
-            'requerente': 'Ana', 'motivo': 'Produzir protótipo',
+            'motivo': 'Produzir protótipo',
             'inicio': self.start, 'fim': self.end, **overrides,
         })
 
@@ -58,8 +58,8 @@ class BookingServiceTests(TestCase):
             cancel_booking(actor=self.user, booking_id=booking.pk, expected_version=1)
 
     def test_required_text_is_trimmed_and_invalid_data_does_not_create_events(self):
-        booking = self.create_booking(requerente='  Ana  ', motivo='  Protótipo  ')
-        self.assertEqual((booking.requerente, booking.motivo), ('Ana', 'Protótipo'))
+        booking = self.create_booking(motivo='  Protótipo  ')
+        self.assertEqual(booking.motivo, 'Protótipo')
         for fields in ({'requerente': ' '}, {'motivo': ''}, {'requerente': 'A' * 151}, {'categoria': 'inexistente'},
                        {'objeto': 999999}, {'objeto': True}):
             with self.subTest(fields=fields), self.assertRaises(ValidationError):
@@ -67,7 +67,7 @@ class BookingServiceTests(TestCase):
         self.assertEqual((Agendamento.objects.count(), EventoAgendamento.objects.count()), (1, 1))
 
     def test_database_enforces_exactly_one_target_and_positive_interval(self):
-        base = {'requerente': 'Ana', 'motivo': 'Reserva', 'inicio': self.start, 'fim': self.end}
+        base = {'motivo': 'Reserva', 'inicio': self.start, 'fim': self.end}
         for targets in ({}, {'servico': self.service, 'espaco': self.space}):
             with self.assertRaises(IntegrityError), transaction.atomic():
                 Agendamento.objects.create(**base, **targets)

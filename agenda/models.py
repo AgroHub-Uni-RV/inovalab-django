@@ -23,7 +23,6 @@ class Agendamento(models.Model):
         'material gasto (g)', max_digits=12, decimal_places=3, null=True, blank=True,
         validators=[MinValueValidator(Decimal('0.001'))],
     )
-    requerente = models.CharField(max_length=150)
     motivo = models.TextField()
     inicio = models.DateTimeField()
     fim = models.DateTimeField()
@@ -78,6 +77,17 @@ class Agendamento(models.Model):
     def categoria_display(self):
         return {'servico': 'Serviços', 'equipamento': 'Equipamentos', 'espaco': 'Espaço'}.get(self.categoria, '')
 
+    @property
+    def criador_nome(self):
+        if self.criado_por:
+            return self.criado_por.get_full_name() or self.criado_por.username
+        if self.pk is None:
+            return 'Não registrado'
+        events = getattr(self, 'eventos_de_criacao', None)
+        if events is not None:
+            return events[0].ator_nome if events else 'Não registrado'
+        return self.eventos.filter(acao='criar').values_list('ator_nome', flat=True).first() or 'Não registrado'
+
     def clean(self):
         errors = {}
         if self.material_gasto_id is not None and (self.categoria != 'servico' or self.material_proprio is not False):
@@ -88,7 +98,7 @@ class Agendamento(models.Model):
             errors['material_gasto_gramas'] = 'Informe em gramas o material gasto do laboratório.'
         elif self.material_proprio is not False and self.material_gasto_gramas is not None:
             errors['material_gasto_gramas'] = 'O gasto é informado somente quando o material não é próprio.'
-        for name in ('requerente', 'motivo'):
+        for name in ('motivo',):
             value = getattr(self, name)
             if isinstance(value, str):
                 setattr(self, name, value.strip())
@@ -104,7 +114,7 @@ class Agendamento(models.Model):
             raise ValidationError(errors)
 
     def __str__(self):
-        return f'{self.objeto_nome} — {self.requerente}'
+        return f'{self.objeto_nome} — {self.criador_nome}'
 
 
 class EventoAgendamento(models.Model):

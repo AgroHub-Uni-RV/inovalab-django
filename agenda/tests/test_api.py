@@ -24,7 +24,7 @@ class BookingAPITests(TestCase):
         self.client = APIClient()
         self.client.force_login(self.admin)
         self.url = '/api/v1/agendamentos/'
-        self.data = {'categoria': 'servico', 'objeto': self.service.pk, 'requerente': 'Ana', 'motivo': 'Protótipo',
+        self.data = {'categoria': 'servico', 'objeto': self.service.pk, 'motivo': 'Protótipo',
                      'inicio': '2026-11-01T14:00:00-03:00', 'fim': '2026-11-01T15:00:00-03:00'}
 
     def create(self, **overrides):

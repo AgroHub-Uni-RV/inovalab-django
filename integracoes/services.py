@@ -17,7 +17,7 @@ from integracoes.credentials import CredentialRejected, IntegrationPrincipal, is
 from integracoes.models import ClienteIntegracao, PedidoIntegracao
 
 
-REQUEST_FIELDS = BASE_FIELDS | {'id_externo', 'requerente_id'}
+REQUEST_FIELDS = BASE_FIELDS | {'id_externo', 'requerente_id', 'requerente'}
 
 
 def _require_admin(actor):

@@ -11,7 +11,7 @@
       <td><a href="{% url 'agenda:detail' booking.pk %}">{{ booking.objeto_nome }}</a><br>{{ booking.categoria_display }}</td>
       <td>{% if booking.criado_por %}{{ booking.criado_por.get_full_name|default:booking.criado_por.username }}{% else %}Conta removida{% endif %}</td>
       <td>{{ booking.inicio|date:'d/m/Y H:i' }}<br>até {{ booking.fim|date:'d/m/Y H:i' }}</td>
-      <td>{{ booking.requerente }}<br>{{ booking.motivo|truncatechars:100 }}</td>
+      <td>{{ booking.motivo|truncatechars:100 }}</td>
       <td><span class="badge booking-status {{ booking.situacao }}">{{ booking.get_situacao_display }}</span></td>
       <td><a href="{% url 'agenda:detail' booking.pk %}">Ver detalhes</a>{% if booking.situacao == 'pendente' %}{% include 'agenda/review_actions.html' %}{% endif %}</td>
     </tr>{% empty %}<tr><td colspan="6">Nenhuma solicitação neste filtro.</td></tr>{% endfor %}</tbody>

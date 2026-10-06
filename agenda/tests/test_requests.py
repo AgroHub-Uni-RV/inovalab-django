@@ -27,7 +27,7 @@ class BookingRequestFixtures:
         cls.machine = Equipamento.objects.create(nome='Máquina para pedido')
         cls.material = Material.objects.create(nome='PLA pedido', categoria='Filamento', quantidade=500,
                                                unidade='g', fonte='Laboratório')
-        cls.data = {'categoria': 'servico', 'objeto': cls.service.pk, 'requerente': 'Nome informado',
+        cls.data = {'categoria': 'servico', 'objeto': cls.service.pk,
                     'motivo': 'Pedido próprio', 'material_proprio': True,
                     'inicio': datetime.fromisoformat('2026-11-01T14:00:00-03:00'),
                     'fim': datetime.fromisoformat('2026-11-01T15:00:00-03:00')}
@@ -168,15 +168,16 @@ class BookingRequestTests(BookingRequestFixtures, TestCase):
         booking = self.create(actor=self.admin)
         self.assertEqual(booking.situacao, 'confirmado')
         self.assertIsNone(booking.avaliado_por_id)
-        legacy = Agendamento.objects.create(servico=self.service, requerente='Existente', motivo='Importado',
+        legacy = Agendamento.objects.create(servico=self.service, motivo='Importado',
                                             inicio=self.data['inicio'], fim=self.data['fim'])
         self.assertEqual(legacy.situacao, 'confirmado')
 
 
 class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
     def web_data(self, **overrides):
-        return {**self.data, 'inicio': self.data['inicio'].strftime('%Y-%m-%dT%H:%M:%S'),
-                'fim': self.data['fim'].strftime('%Y-%m-%dT%H:%M:%S'), 'material_proprio': 'sim', **overrides}
+        data = {key: value for key, value in self.data.items() if key not in ('inicio', 'fim')}
+        return {**data, 'dia': '2026-11-01', 'hora_inicio': '14:00:00',
+                'hora_termino': '15:00:00', 'material_proprio': 'sim', **overrides}
 
     def test_user_can_create_and_read_own_requests_without_admin_actions(self):
         self.client.force_login(self.user)
@@ -194,7 +195,7 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
 
     def test_owner_isolation_covers_pages_api_history_photo_and_filters(self):
         own = self.create()
-        foreign = self.create(actor=self.other, requerente='SEGREDO de outro')
+        foreign = self.create(actor=self.other, motivo='SEGREDO de outro')
         self.client.force_login(self.user)
         response = self.client.get('/agenda/')
         self.assertEqual([booking.pk for booking in response.context['object_list']], [own.pk])

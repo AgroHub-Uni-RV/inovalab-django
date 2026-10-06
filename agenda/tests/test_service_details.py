@@ -34,7 +34,7 @@ class BookingServiceDetailsTests(TestCase):
 
     def setUp(self):
         self.client.force_login(self.admin)
-        self.data = {'categoria': 'servico', 'objeto': self.service.pk, 'requerente': 'Requerente distinto',
+        self.data = {'categoria': 'servico', 'objeto': self.service.pk,
                      'motivo': 'Produção', 'inicio': datetime.fromisoformat('2026-11-01T10:00:00-03:00'),
                      'fim': datetime.fromisoformat('2026-11-01T11:00:00-03:00')}
 
@@ -42,7 +42,8 @@ class BookingServiceDetailsTests(TestCase):
         return save_booking(actor=self.admin, data={**self.data, **overrides})
 
     def web_data(self, **overrides):
-        return {**self.data, 'inicio': '2026-11-01T10:00:00', 'fim': '2026-11-01T11:00:00',
+        data = {key: value for key, value in self.data.items() if key not in ('inicio', 'fim')}
+        return {**data, 'dia': '2026-11-01', 'hora_inicio': '10:00:00', 'hora_termino': '11:00:00',
                 'material_proprio': 'sim', **overrides}
 
     def test_multiple_equipment_and_lab_material_are_saved_and_recorded(self):
@@ -183,7 +184,7 @@ class BookingServiceDetailsTests(TestCase):
         response = self.client.get(f'/agenda/{booking.pk}/')
         self.assertEqual(response.context['creator_name'], 'Nicole Dias')
         self.assertContains(response, 'aria-label="Criado por Nicole Dias"')
-        self.assertContains(response, 'Requerente distinto')
+        self.assertNotContains(response, '<dt>Requerente</dt>')
         self.assertContains(response, 'class="booking-category">Serviços')
         self.assertNotContains(response, 'aria-label="Criado por Requerente distinto"')
 

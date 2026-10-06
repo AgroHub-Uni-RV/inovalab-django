@@ -51,7 +51,7 @@ class IntegrationAPITests(TestCase):
         for room in Espaco.objects.filter(somente_administradores=True):
             with self.subTest(room=room.nome):
                 data = {key: value for key, value in self.data.items()
-                        if key not in ('id_externo', 'requerente_id')}
+                        if key not in ('id_externo', 'requerente_id', 'requerente')}
                 response = self.client.post('/api/v1/agendamentos/',
                     {**data, 'categoria': 'espaco', 'objeto': room.pk}, format='json')
                 self.assertEqual(response.status_code, 201, response.data)

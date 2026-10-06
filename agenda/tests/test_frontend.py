@@ -14,10 +14,10 @@ class AgendaFrontendTests(TestCase):
         cls.service = Servico.objects.first()
         cls.equipment = Equipamento.objects.create(nome='Equipamento especial')
 
-    def booking(self, requester='Nome buscável', **kwargs):
+    def booking(self, reason='Nome buscável', **kwargs):
         start = datetime.fromisoformat('2026-12-30T10:00:00-03:00')
         return Agendamento.objects.create(servico=self.service, inicio=start, fim=start+timedelta(hours=1),
-            requerente=requester, motivo='Motivo', criado_por=self.admin, **kwargs)
+            motivo=reason, criado_por=self.admin, **kwargs)
 
     def test_calendar_sunday_first_and_real_booking_content(self):
         booking = self.booking()
@@ -30,7 +30,7 @@ class AgendaFrontendTests(TestCase):
     def test_search_category_counts_and_cancelled_are_filtered(self):
         booking = self.booking()
         self.booking('Cancelado', cancelado_em=booking.inicio)
-        Agendamento.objects.create(equipamento=self.equipment, requerente='Outro', motivo='Motivo',
+        Agendamento.objects.create(equipamento=self.equipment, motivo='Motivo',
             inicio=booking.inicio, fim=booking.fim, criado_por=self.admin)
         self.client.force_login(self.admin)
         response = self.client.get('/agenda/', {'mes': '2026-12', 'q': 'buscável'})
@@ -43,7 +43,7 @@ class AgendaFrontendTests(TestCase):
         for end, occurrences in [('2026-10-07T08:00:00-03:00', 3), ('2026-10-06T00:00:00-03:00', 1)]:
             with self.subTest(end=end):
                 Agendamento.objects.all().delete()
-                Agendamento.objects.create(servico=self.service, requerente='Reserva longa', motivo='Motivo',
+                Agendamento.objects.create(servico=self.service, motivo='Motivo',
                     criado_por=self.admin, inicio=datetime.fromisoformat('2026-10-05T22:00:00-03:00'),
                     fim=datetime.fromisoformat(end))
                 response = self.client.get('/agenda/?mes=2026-10')
@@ -54,7 +54,7 @@ class AgendaFrontendTests(TestCase):
         start = datetime.fromisoformat('2026-12-31T22:00:00-03:00')
         end = datetime.fromisoformat('2027-01-01T00:00:00-03:00')
         Agendamento.objects.bulk_create([Agendamento(servico=self.service, inicio=start, fim=end,
-            requerente='Virada', motivo='Motivo', criado_por=self.admin) for _ in range(26)])
+            motivo='Virada', criado_por=self.admin) for _ in range(26)])
         self.client.force_login(self.admin)
         response = self.client.get('/agenda/?mes=2026-12&q=Virada')
         day = next(d for w in response.context['weeks'] for d in w if d['in_month'] and d['date'].day == 31)

@@ -24,7 +24,7 @@ def _months(bookings, today):
     first = timezone.make_aware(_month_date(today.year, today.month, 0))
     last = timezone.make_aware(_month_date(today.year, today.month, 6))
     counts = {}
-    for begin, end in bookings.filter(inicio__lt=last, fim__gt=first).values_list('inicio', 'fim').iterator():
+    for begin, end in bookings.filter(inicio__lt=last, fim__gt=first).prefetch_related(None).values_list('inicio', 'fim').iterator():
         day = timezone.localtime(max(begin, first)).date()
         final = timezone.localtime(min(end, last)-timedelta(microseconds=1)).date()
         while day <= final:

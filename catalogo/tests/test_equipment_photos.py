@@ -91,13 +91,13 @@ class EquipmentPhotoTests(TestCase):
     def test_equipment_selection_persists_on_error_and_photo_appears_in_booking_detail(self):
         self.client.force_login(self.user)
         machine = Equipamento.objects.get(codigo_inicial='impressora-3d')
-        data = {'categoria': 'equipamento', 'objeto': machine.pk, 'requerente': '', 'motivo': 'Protótipo',
-                'inicio': '2026-11-01T14:00:00', 'fim': '2026-11-01T15:00:00'}
-        response = self.client.post('/agenda/novo/', data)
+        data = {'categoria': 'equipamento', 'objeto': machine.pk, 'motivo': 'Protótipo',
+                'dia': '2026-11-01', 'hora_inicio': '14:00:00', 'hora_termino': '15:00:00'}
+        response = self.client.post('/agenda/novo/', {**data, 'motivo': ''})
         options = response.context['form'].fields['objeto'].widget.optgroups('objeto', [str(machine.pk)])
         selected = [option for _, options, _ in options for option in options if option['selected']]
         self.assertEqual(len(selected), 1)
         self.assertEqual(selected[0]['value'].value, machine.pk)
-        response = self.client.post('/agenda/novo/', {**data, 'requerente': 'Meu projeto'})
+        response = self.client.post('/agenda/novo/', data)
         self.assertEqual(response.status_code, 302)
         self.assertContains(self.client.get(response.url), machine.foto.url)

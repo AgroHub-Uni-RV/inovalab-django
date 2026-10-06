@@ -3,10 +3,11 @@ import re
 from datetime import datetime, timedelta
 
 from django.core.exceptions import ValidationError
+from django.db.models import Prefetch
 from django.utils import timezone
 
 from accounts.policies import is_business_admin
-from agenda.models import Agendamento
+from agenda.models import Agendamento, EventoAgendamento
 from agenda.models import BOOKING_STATUSES, CATEGORIES
 from agenda.policies import can_access_agenda
 
@@ -14,7 +15,8 @@ from agenda.policies import can_access_agenda
 def visible_bookings(actor):
     queryset = Agendamento.objects.filter(cancelado_em__isnull=True).select_related(
         'servico', 'equipamento', 'espaco', 'criado_por', 'material_gasto', 'avaliado_por',
-    )
+    ).prefetch_related(Prefetch('eventos', queryset=EventoAgendamento.objects.filter(acao='criar'),
+                               to_attr='eventos_de_criacao'))
     if not can_access_agenda(actor):
         return queryset.none()
     return queryset if is_business_admin(actor) else queryset.filter(criado_por=actor)
@@ -51,7 +53,7 @@ def calendar_weeks(queryset, month):
     start, end = month_bounds(month)
     # Count from the entire filtered month, independently of table pagination.
     counts, previews = {}, {}
-    for booking in queryset.filter(situacao='confirmado', cancelado_em__isnull=True).iterator():
+    for booking in queryset.filter(situacao='confirmado', cancelado_em__isnull=True).iterator(chunk_size=100):
         first, last = booking.inicio, booking.fim
         first, last = max(first, start), min(last, end)
         day = timezone.localtime(first).date()

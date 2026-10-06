@@ -30,7 +30,7 @@ class SpacesAndMaterialTests(TestCase):
     def setUp(self):
         self.client.force_login(self.admin)
         start = timezone.now() + timedelta(days=30)
-        self.data = dict(categoria='servico', objeto=self.service.pk, requerente='Ana', motivo='Protótipo',
+        self.data = dict(categoria='servico', objeto=self.service.pk, motivo='Protótipo',
                          inicio=start, fim=start+timedelta(hours=1), material_proprio=False,
                          material_gasto=self.material.pk, material_gasto_gramas='12.125')
 
@@ -38,8 +38,9 @@ class SpacesAndMaterialTests(TestCase):
         return save_booking(actor=self.admin, data={**self.data, **overrides})
 
     def web_data(self, **overrides):
-        return {**self.data, 'material_proprio': 'nao',
-                'inicio': '2026-12-01T10:00:00', 'fim': '2026-12-01T11:00:00', **overrides}
+        data = {key: value for key, value in self.data.items() if key not in ('inicio', 'fim')}
+        return {**data, 'material_proprio': 'nao', 'dia': '2026-12-01',
+                'hora_inicio': '10:00:00', 'hora_termino': '11:00:00', **overrides}
 
     def test_web_requires_material_when_lab_supplies_it_and_shows_it_in_detail(self):
         response = self.client.post('/agenda/novo/', self.web_data(material_gasto=''))
@@ -143,7 +144,7 @@ class SpacesAndMaterialTests(TestCase):
         room = Espaco.objects.get(codigo_inicial='sala-01')
         data = {key: value for key, value in self.web_data().items() if not key.startswith('material_')}
         data.update(categoria='espaco', objeto=room.pk)
-        invalid = self.client.post('/agenda/novo/', {**data, 'requerente': ''})
+        invalid = self.client.post('/agenda/novo/', {**data, 'motivo': ''})
         self.assertContains(invalid, f'value="{room.pk}" required id=')
         self.assertContains(invalid, 'checked')
         response = self.client.post('/agenda/novo/', data)
