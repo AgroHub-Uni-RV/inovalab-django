@@ -125,16 +125,36 @@ passaram. `collectstatic --noinput` coletou 177 arquivos. No navegador,
 o login abriu com CSS e logo sem imagens quebradas; `/index/` redirecionou
 visitantes ao login, e `/publico/` renderizou corretamente.
 
-Na inspeção de 06/10/2026, `inovalab-test` não tinha variáveis de ambiente
-configuradas. A integração Neon existe na equipe, mas não está conectada a
-este projeto. O conector Neon requer um ID de projeto e não expõe uma
-operação para listar projetos nesta sessão; é necessário identificar o banco
-alvo antes de aplicar migrações. O CLI local Vercel está sem login; as leituras
-da Vercel foram realizadas pelo plugin autenticado.
+Após autorização do responsável, em 06/10/2026 foi criado o recurso Neon
+`inovalab-test`, projeto `spring-art-33956581`, banco `neondb`, na região
+`aws-us-east-1` (`iad1`), plano Free. O recurso Vercel
+`store_PLN2O27WKc42JoGq` está conectado ao projeto em Production e Preview.
+Esses dois ambientes compartilham **este banco de teste**, portanto qualquer
+push de Preview também aplica migrações nele. A autenticação Neon foi
+desativada no provisionamento; as contas continuam geridas pelo Django.
 
-Pendentes até identificar/conectar o Neon: configurar os segredos, executar
-as migrações no PostgreSQL, publicar este commit e verificar o deployment
-real (login, estáticos, sessão, catálogo, escrita e builds concorrentes).
+As duas URLs PostgreSQL com TLS foram configuradas pela integração. Chaves
+Django distintas foram geradas para Production e Preview e armazenadas como
+Secret, sem valores em logs ou Git. `DJANGO_DEBUG=false`, hosts permitidos e
+exposição das variáveis de sistema foram configurados no projeto.
+O CLI Vercel foi autenticado pelo responsável; `.env.production.local` é um
+arquivo privado e ignorado, separado do ambiente de desenvolvimento local.
+
+O script de build executou a verificação de segurança e todas as migrações
+com sucesso no Neon recém-criado: 36 migrações registradas, 11 serviços,
+6 equipamentos e 9 espaços. Nenhum usuário ou senha padrão foi criado.
+Os **36 testes básicos PostgreSQL** (`setup.tests`,
+`accounts.tests.test_identity`, `catalogo.tests.test_models`) passaram em
+`test_inovalab_deploy_20261006`, removido automaticamente pelo test runner.
+A suíte SQLite foi repetida após o ajuste de compatibilidade de overflow:
+**410 testes passaram**. As verificações de modelos e dependências passaram.
+
+O bloqueio de build foi verificado no PostgreSQL: mantendo o advisory lock
+em outra conexão, o build aguardou; depois da liberação, concluiu com sucesso.
+A publicação pelo push e a verificação do deployment hospedado são os
+próximos passos desta ativação. Testes de todos os módulos no PostgreSQL,
+uploads persistentes e fluxos autenticados completos ainda precisam de
+validação posterior pelo responsável.
 Após essa entrega, aguardar a depuração do responsável antes de outro módulo.
 
 Fontes: [Django na Vercel](https://vercel.com/docs/frameworks/full-stack/django)

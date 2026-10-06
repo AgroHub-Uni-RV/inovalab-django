@@ -7,5 +7,7 @@ media/
 *.sqlite3
 Referencias/
 .superpowers/
+.agents/
+skills-lock.json
 docs/
 __pycache__/

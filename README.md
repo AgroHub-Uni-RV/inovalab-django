@@ -3,8 +3,8 @@
 Sistema Django para demandas do laboratório, tarefas, agenda, materiais e banners, com frontend básico e API para futuras integrações.
 
 O deploy no projeto **inovalab-test** usa o preset Django da Vercel e executa
-as migrações do Neon no build de cada push. A ativação depende de conectar o
-banco e configurar as variáveis da Vercel. Consulte o [guia de deploy,
+as migrações do Neon no build de cada push. O banco Neon dedicado e as
+variáveis de Production/Preview já estão configurados. Consulte o [guia de deploy,
 segurança, ambientes e limitações de uploads](docs/deploy/vercel-neon.md).
 
 Os sete módulos planejados estão implementados localmente: **Identidade e acesso**, **Catálogo**, **Tarefas**, **Agenda interna**, **Recebimento de reservas externas**, **Materiais** e **Conteúdo/Banners**. Banners oferece gestão administrativa, upload WebP, publicação por local/período e consulta pública por páginas/API. A conexão a um AgroHub real ainda depende do consumidor e ambiente. Aguardar depuração desta entrega antes de novas etapas.

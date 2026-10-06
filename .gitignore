@@ -85,6 +85,8 @@ celerybeat-schedule
 .env.*
 !.env.example
 .vercel/
+.agents/
+skills-lock.json
 staticfiles/
 
 # virtualenv
