@@ -5,7 +5,7 @@ from django.contrib.auth.views import LoginView
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
-from django.http import FileResponse, Http404, HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
@@ -14,11 +14,15 @@ from django.views.decorators.http import require_http_methods, require_safe
 from accounts.policies import is_business_admin
 from accounts.forms import ProfileForm
 from accounts.models import User
+from accounts.remote_forms import AgroHubLoginForm
+from accounts.remote_views import remote_profile
+from accounts.photos import profile_photo_response
 
 
 class AccountLoginView(LoginView):
     template_name = 'accounts/login.html'
     redirect_authenticated_user = True
+    authentication_form = AgroHubLoginForm
 
     def get_success_url(self):
         destination = super().get_success_url()
@@ -33,6 +37,8 @@ class AccountLoginView(LoginView):
 @login_required
 @require_http_methods(['GET', 'POST'])
 def home(request: HttpRequest) -> HttpResponse:
+    if request.user.agrohub_id is not None:
+        return remote_profile(request)
     form = ProfileForm(request.POST if request.method == 'POST' else None,
                        request.FILES if request.method == 'POST' else None, instance=request.user)
     if request.method == 'POST' and form.is_valid():
@@ -57,12 +63,4 @@ def profile_photo(request, pk):
     if request.user.pk != pk and not request.user.is_superuser:
         raise PermissionDenied
     user = get_object_or_404(User, pk=pk)
-    if not user.foto:
-        raise Http404
-    try:
-        stream = user.foto.open('rb')
-    except OSError as error:
-        raise Http404 from error
-    response = FileResponse(stream, content_type='image/webp')
-    response['X-Content-Type-Options'] = 'nosniff'
-    return response
+    return profile_photo_response(user)

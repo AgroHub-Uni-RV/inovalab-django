@@ -4,7 +4,8 @@
 <section class="card login-card" aria-labelledby="login-title">
     <span class="eyebrow">Bem-vindo ao InovaLab</span>
     <h2 id="login-title">Entre na sua conta</h2>
-    <p class="subtitle">Use suas credenciais para acessar o laboratório.</p>
+    <p class="subtitle">Use sua conta do AgroHub para acessar o laboratório.</p>
+    {% for message in messages %}<div class="alert" role="status"><p>{{ message }}</p></div>{% endfor %}
     {% if form.non_field_errors %}
     <div class="alert" role="alert">
         {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
@@ -14,7 +15,7 @@
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ next }}">
         <div class="field">
-            <label for="id_username">Usuário</label>
+            <label for="id_username">Usuário ou e-mail</label>
             {{ form.username }}
             {{ form.username.errors }}
         </div>
@@ -25,6 +26,7 @@
         </div>
         <button class="button primary" type="submit">Entrar <span aria-hidden="true">→</span></button>
     </form>
-    <p class="help-text">Precisa de acesso? Procure o administrador do laboratório.</p>
+    <p class="help-text"><a href="{% url 'accounts:register' %}">Criar conta</a> · <a href="{% url 'accounts:password-reset' %}">Esqueci minha senha</a></p>
+    <p class="help-text"><a href="{% url 'accounts:password-reset-confirm' %}">Confirmar recuperação de senha</a></p>
 </section>
 {% endblock %}

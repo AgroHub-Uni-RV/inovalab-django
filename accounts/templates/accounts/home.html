@@ -6,10 +6,10 @@
     <h2 id="account-title">Olá, {{ user.first_name|default:user.username }}.</h2>
     <p class="subtitle">Bem-vindo ao InovaLab.</p>
     <div class="account-heading">
-        <span class="avatar" aria-hidden="true">{% if user.foto %}<img src="{% url 'accounts:photo' user.pk %}" alt="">{% else %}{{ user.username|first|upper }}{% endif %}</span>
+        <span class="avatar" aria-hidden="true">{% if user.tem_foto %}<img src="{% url 'accounts:photo' user.pk %}" alt="">{% else %}{{ user.username|first|upper }}{% endif %}</span>
         <div>
             <strong>{{ user.get_full_name|default:user.username }}</strong>
-            <span class="account-username">{{ user.username }}</span>
+            <span class="account-username">{{ user.agrohub_username|default:user.username }}</span>
         </div>
     </div>
     <dl class="account-details">
@@ -17,6 +17,7 @@
         <dd>{% if is_business_admin %}Administrador do laboratório{% else %}Usuário interno{% endif %}</dd>
         <dt>Conta</dt><dd><span class="status-dot" aria-hidden="true"></span> Ativa</dd>
     </dl>
+    {% if agrohub_account %}<dl class="account-details"><dt>Usuário</dt><dd>{{ user.agrohub_username }}</dd><dt>E-mail</dt><dd>{{ user.email }}</dd></dl><p>Usuário e e-mail são definidos pelo AgroHub.</p>{% endif %}
     <form class="profile-form" method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {{ form.non_field_errors }}
@@ -30,6 +31,7 @@
         {% endfor %}
         <button class="button" type="submit">Salvar perfil</button>
     </form>
+    {% if photo_form %}<form class="profile-form" method="post" enctype="multipart/form-data" action="{% url 'accounts:update-photo' %}">{% csrf_token %}{{ photo_form.non_field_errors }}{% for field in photo_form %}<div class="field">{{ field.label_tag }}{{ field }}{{ field.errors }}<small>{{ field.help_text }}</small></div>{% endfor %}<button class="button" type="submit">Atualizar foto</button></form>{% endif %}
     <div class="account-actions">
         <form action="{% url 'accounts:logout' %}" method="post">
             {% csrf_token %}

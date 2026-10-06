@@ -2,9 +2,10 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from accounts.tests.test_identity import PASSWORD
+from accounts.tests.agrohub_stub import AccountsProviderMixin
 
 
-class FrontendRoutesTests(TestCase):
+class FrontendRoutesTests(AccountsProviderMixin, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = get_user_model().objects.create_user('frontend-user', password=PASSWORD)

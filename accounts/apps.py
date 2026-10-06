@@ -5,3 +5,6 @@ class AccountsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'accounts'
     verbose_name = 'Contas e acesso'
+
+    def ready(self):
+        from accounts import signals  # noqa: F401

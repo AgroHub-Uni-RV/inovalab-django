@@ -1,0 +1,3 @@
+{% extends 'accounts/base.html' %}
+{% block title %}AgroHub indisponível · InovaLab{% endblock %}
+{% block content %}<section class="card login-card"><h2>Não foi possível acessar o AgroHub</h2><p class="subtitle">Tente novamente em instantes.</p><a class="button primary" href="">Tentar novamente</a><form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="button secondary" type="submit">Sair</button></form></section>{% endblock %}

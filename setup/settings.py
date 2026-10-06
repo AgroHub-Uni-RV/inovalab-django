@@ -77,6 +77,10 @@ INSTALLED_APPS = [
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
+AUTHENTICATION_BACKENDS = ['accounts.backends.AgroHubBackend']
+AGROHUB_API_BASE_URL = os.environ.get('AGROHUB_API_BASE_URL', 'https://agrohub.unirv.edu.br/api/v1/')
+AGROHUB_API_TIMEOUT = 10
+AGROHUB_PHOTO_ALLOWED_HOSTS = tuple(value.strip() for value in os.environ.get('AGROHUB_PHOTO_ALLOWED_HOSTS', '').split(',') if value.strip())
 LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = '/index/'
 LOGOUT_REDIRECT_URL = 'accounts:login'
@@ -87,6 +91,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'accounts.middleware.AgroHubSessionMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]

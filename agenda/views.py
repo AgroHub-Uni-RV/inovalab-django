@@ -16,6 +16,7 @@ from agenda.models import BOOKING_STATUSES, CATEGORIES, Agendamento
 from agenda.policies import can_access_agenda
 from agenda.selectors import calendar_weeks, category_filter, filter_bookings, month_bounds, visible_bookings
 from agenda.services import PUBLIC_FIELDS, SERVICE_FIELDS, BookingConflict, cancel_booking, review_booking, save_booking
+from accounts.photos import profile_photo_response
 
 
 class AgendaAccessMixin(LoginRequiredMixin):
@@ -96,15 +97,9 @@ class BookingDetailView(AgendaAccessMixin, DetailView):
 class BookingCreatorPhotoView(AgendaAccessMixin, View):
     def get(self, request, pk):
         booking = get_object_or_404(self.get_queryset(), pk=pk)
-        if not booking.criado_por or not booking.criado_por.foto:
+        if not booking.criado_por or not booking.criado_por.tem_foto:
             raise Http404
-        try:
-            stream = booking.criado_por.foto.open('rb')
-        except OSError as error:
-            raise Http404 from error
-        response = FileResponse(stream, content_type='image/webp')
-        response['X-Content-Type-Options'] = 'nosniff'
-        return response
+        return profile_photo_response(booking.criado_por)
 
 
 class BookingWriteView(AgendaAccessMixin, View):

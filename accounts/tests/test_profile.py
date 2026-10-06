@@ -40,7 +40,7 @@ class ProfileTests(TestCase):
         self.assertEqual(int(self.client.session['_auth_user_id']), self.user.pk)
         self.assertTrue(self.user.check_password(PASSWORD))
         self.client.logout()
-        self.assertTrue(self.client.login(username='ana.nova', password=PASSWORD))
+        self.assertFalse(self.client.login(username='ana.nova', password=PASSWORD))
 
     def test_duplicate_and_invalid_usernames_leave_account_unchanged(self):
         for username in ('outra', 'nome inválido!', ''):

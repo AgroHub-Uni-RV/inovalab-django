@@ -3,9 +3,10 @@ from django.contrib.auth.models import Group
 from django.test import Client, TestCase
 
 from accounts.tests.test_identity import PASSWORD
+from accounts.tests.agrohub_stub import AccountsProviderMixin
 
 
-class WebAccessTests(TestCase):
+class WebAccessTests(AccountsProviderMixin, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.ana = get_user_model().objects.create_user(
