@@ -1,0 +1,163 @@
+Icon (10).svg
+Icon (11).svg
+Icon (12).svg
+Icon (13).svg
+Icon (14).svg
+Icon (15).svg
+Icon (16).svg
+Icon (17).svg
+Icon (18).svg
+Icon (19).svg
+Icon (2).svg
+Icon (3).svg
+Icon (4).svg
+Icon (5).svg
+Icon (6).svg
+Icon (7).svg
+Icon (8).svg
+Icon (9).svg
+Icon.svg
+alarm-clock-check.svg
+alarm-clock-minus.svg
+alarm-clock-off.svg
+alarm-clock-plus.svg
+alarm-clock.svg
+annotation-info.svg
+annotation-question.svg
+announcement-03.svg
+award-03.svg
+award-04.svg
+bank-note-03.svg
+bar-chart-06.svg
+bar-chart-07.svg
+bar-chart-10.svg
+bar-chart-11.svg
+bar-chart-12.svg
+bell-01.svg
+book-open-01.svg
+bookmark-check.svg
+box.svg
+building-01.svg
+building-08.svg
+calendar-check-01.svg
+calendar-plus-02.svg
+camera-01.svg
+camera-off.svg
+chart-breakout-square.svg
+check-circle-broken.svg
+check-square-broken.svg
+check-verified-01.svg
+clock-refresh.svg
+clock-rewind.svg
+clock-snooze.svg
+clock-stopwatch.svg
+clock.svg
+coins-hand.svg
+coins-stacked-01.svg
+container.svg
+copy-07.svg
+crop-01.svg
+dots-horizontal.svg
+dots-vertical.svg
+download-01.svg
+download-cloud-01.svg
+edit-05.svg
+face-content.svg
+face-happy.svg
+face-id.svg
+face-neutral.svg
+face-sad.svg
+file-02.svg
+file-04.svg
+file-05.svg
+file-07.svg
+file-attachment-02.svg
+file-check-03.svg
+file-download-02.svg
+file-question-02.svg
+file-search-02.svg
+file-x-02.svg
+fingerprint-03.svg
+flag-01.svg
+folder-x.svg
+gift-01.svg
+globe-01.svg
+graduation-hat-02.svg
+heart-hand.svg
+heart.svg
+hourglass-01.svg
+info-circle.svg
+key-01.svg
+link-01.svg
+link-02.svg
+link-broken-01.svg
+lock-01.svg
+lock-unlocked-01.svg
+log-in-01.svg
+mail-02.svg
+map-01.svg
+marker-pin-04.svg
+maximize-01.svg
+maximize-02.svg
+menu-01.svg
+message-alert-circle.svg
+message-alert-square.svg
+message-chat-circle.svg
+message-question-circle.svg
+message-question-square.svg
+message-smile-circle.svg
+message-smile-square.svg
+message-text-circle-01.svg
+message-text-square-01.svg
+minimize-01.svg
+minus-circle.svg
+monitor-05.svg
+move.svg
+passcode-lock.svg
+passcode.svg
+phone-hang-up.svg
+pie-chart-02.svg
+placeholder.svg
+plus-circle.svg
+presentation-chart-01.svg
+rocket-02.svg
+scissors-01.svg
+search-lg.svg
+settings-02.svg
+settings-04.svg
+share-01.svg
+share-03.svg
+share-06.svg
+shield-tick.svg
+shopping-bag-03.svg
+shopping-cart-03.svg
+tag-02.svg
+thumbs-up.svg
+tool-01.svg
+translate-01.svg
+trash-04.svg
+trend-down-01.svg
+trend-down-02.svg
+trend-up-01.svg
+trend-up-02.svg
+trophy-01.svg
+truck-02.svg
+upload-cloud-02.svg
+user-01.svg
+user-check-01.svg
+user-edit.svg
+user-plus-01.svg
+user-x-01.svg
+user-x-02.svg
+users-check.svg
+users-down.svg
+users-edit.svg
+users-left.svg
+users-minus.svg
+users-plus.svg
+users-right.svg
+users-up.svg
+wallet-02.svg
+x-circle.svg
+zoom-in.svg
+zoom-out.svg
