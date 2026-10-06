@@ -70,7 +70,7 @@ class Agendamento(models.Model):
 
     @property
     def categoria_display(self):
-        return {'servico': 'Serviços', 'equipamento': 'Equipamentos', 'espaco': 'Salas'}.get(self.categoria, '')
+        return {'servico': 'Serviços', 'equipamento': 'Equipamentos', 'espaco': 'Espaço'}.get(self.categoria, '')
 
     def clean(self):
         errors = {}

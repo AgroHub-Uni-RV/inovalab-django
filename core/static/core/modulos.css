@@ -149,8 +149,7 @@
 .booking-creator { color:#555; gap:var(--space-3); }
 .booking-creator-avatar { width:var(--space-8); height:var(--space-8); border-radius:var(--radius-round); overflow:hidden; background:#ddd; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--navy); font-size:var(--font-label); }
 .booking-creator-avatar img { width:100%; height:100%; object-fit:cover; }
-.booking-category { display:inline-flex; align-items:center; justify-content:space-between; gap:var(--space-6); background:#f0c4ff; color:#a340ff; border-radius:var(--radius-control); padding:var(--space-4) var(--space-6); font-size:var(--font-section); font-weight:700; }
-.booking-category .icon { width:var(--space-8); height:var(--space-8); }
+.booking-category { display:inline-flex; align-items:center; justify-content:center; background:#f0c4ff; color:#a340ff; border-radius:var(--radius-control); padding:var(--space-4) var(--space-6); font-size:var(--font-section); font-weight:700; }
 .sheet-close { font-size:var(--font-display); line-height:1; padding:var(--space-1); }
 .sheet-layout { display:grid; grid-template-columns:minmax(0,2.5fr) minmax(0,1fr); gap:var(--space-6); padding:var(--space-10); }
 .sheet-content { min-width:0; }

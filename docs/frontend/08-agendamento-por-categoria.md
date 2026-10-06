@@ -14,7 +14,9 @@ O topo de `/agenda/<id>/` mostra foto e nome completo do criador, com fallback p
 
 A foto usa `/agenda/<id>/criador/foto/`, acessível somente a administradores ativos que possam consultar o agendamento. O acesso geral às fotos em `/usuarios/<id>/foto/` permanece restrito como antes. A resposta de foto não permite cache e usa `nosniff`.
 
-A categoria recebe um destaque lilás, com texto e seta conforme a referência, usando os rótulos Serviços, Equipamentos e Salas. O detalhe de serviço também apresenta máquinas, escolha de material próprio e gasto quando aplicável.
+A categoria recebe um destaque lilás somente com texto, usando os rótulos Serviços, Equipamentos e Espaço. A correção posterior de 06/10/2026 removeu a seta e substituiu Salas por Espaço, inclusive no campo Categoria do detalhe. O detalhe de serviço também apresenta máquinas, escolha de material próprio e gasto quando aplicável.
+
+Validação dessa correção: `python manage.py test --noinput` aprovou 355 testes; `python manage.py check`, `python manage.py makemigrations --check --dry-run` e `git diff --check` passaram. Chrome em desktop e celular de 360 px confirmou Espaço sem ícone no destaque e sem transbordamento da página. Sem migrações. Resta ao responsável conferir os dispositivos e navegadores de uso diário.
 
 ## Persistência e API
 
