@@ -157,7 +157,7 @@ class MaterialApiTests(TestCase):
     def test_session_csrf_enforced_and_json_only(self):
         client = Client(enforce_csrf_checks=True)
         client.force_login(self.admin)
-        client.get('/')
+        client.get('/perfil/')
         self.assertEqual(client.post('/api/v1/materiais/', DATA,
                                      content_type='application/json').status_code, 403)
         token = client.cookies['csrftoken'].value

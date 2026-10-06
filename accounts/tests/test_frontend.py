@@ -1,0 +1,46 @@
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+
+from accounts.tests.test_identity import PASSWORD
+
+
+class FrontendRoutesTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = get_user_model().objects.create_user('frontend-user', password=PASSWORD)
+
+    def test_root_is_login_and_index_requires_authentication(self):
+        self.assertContains(self.client.get('/'), 'Entre na sua conta')
+        self.assertRedirects(self.client.get('/index/'), '/?next=/index/', fetch_redirect_response=False)
+
+    def test_login_default_and_authenticated_root_go_to_index(self):
+        self.assertRedirects(self.client.post('/', {'username': self.user.username, 'password': PASSWORD}), '/index/')
+        self.assertRedirects(self.client.get('/'), '/index/')
+        self.assertContains(self.client.get('/perfil/'), 'Minha conta')
+
+    def test_login_alias_and_safe_next(self):
+        for destination, expected in [('/materiais/', '/materiais/'), ('https://externo.example', '/index/')]:
+            self.client.logout()
+            self.assertRedirects(self.client.post('/entrar/', {
+                'username': self.user.username, 'password': PASSWORD, 'next': destination,
+            }), expected)
+
+    def test_shared_layout_menu_marks_current_module(self):
+        self.client.force_login(self.user)
+        for path in ('/index/', '/tarefas/', '/materiais/', '/catalogo/servicos/', '/perfil/'):
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'id="sidebar"')
+                self.assertContains(response, 'aria-current="page"')
+                self.assertNotContains(response, '/usuarios/')
+                self.assertNotContains(response, '/integracoes/')
+        self.assertEqual(self.client.get('/painel/').status_code, 200)
+
+    def test_logout_returns_to_root_and_public_remains_public(self):
+        self.client.force_login(self.user)
+        self.assertRedirects(self.client.post('/sair/'), '/')
+        response = self.client.get('/publico/')
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'id="sidebar"')
+        self.assertNotContains(response, 'frontend-user')

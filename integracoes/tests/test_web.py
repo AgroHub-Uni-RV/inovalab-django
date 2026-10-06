@@ -107,6 +107,6 @@ class IntegrationWebTests(TestCase):
         self.assertEqual((response.context['paginator'].count, len(response.context['object_list'])), (26, 25))
         self.assertContains(response, 'Próxima')
         self.assertEqual(len(self.client.get('/integracoes/', {'page': 2}).context['object_list']), 1)
-        self.assertContains(self.client.get('/'), '/integracoes/')
+        self.assertContains(self.client.get('/perfil/'), '/integracoes/')
         self.client.force_login(self.user)
-        self.assertNotContains(self.client.get('/'), '/integracoes/')
+        self.assertNotContains(self.client.get('/perfil/'), '/integracoes/')

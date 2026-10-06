@@ -1,0 +1,5 @@
+{% if is_paginated %}<nav class="pagination" aria-label="Paginação">
+{% if page_obj.has_previous %}<a href="{% querystring page=page_obj.previous_page_number %}" aria-label="Página anterior">‹</a>{% endif %}
+{% for number in paginator.page_range %}{% if number >= page_obj.number|add:'-2' and number <= page_obj.number|add:'2' %}<a href="{% querystring page=number %}"{% if number == page_obj.number %} aria-current="page"{% endif %}>{{ number }}</a>{% endif %}{% endfor %}
+{% if page_obj.has_next %}<a href="{% querystring page=page_obj.next_page_number %}" aria-label="Próxima página">›</a>{% endif %}
+<span>Página {{ page_obj.number }} de {{ paginator.num_pages }}</span></nav>{% endif %}

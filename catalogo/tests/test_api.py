@@ -67,7 +67,7 @@ class CatalogApiTests(TestCase):
     def test_api_writes_require_csrf_for_session_authentication(self):
         client = Client(enforce_csrf_checks=True)
         client.force_login(self.admin)
-        client.get('/')
+        client.get('/perfil/')
         data = {'nome': 'API com CSRF'}
         path = '/api/v1/servicos/'
         self.assertEqual(client.post(path, data, content_type='application/json').status_code, 403)
@@ -144,7 +144,7 @@ class CatalogApiTests(TestCase):
     def test_logout_revokes_catalog_api_session(self):
         client = Client(enforce_csrf_checks=True)
         client.force_login(self.admin)
-        client.get('/')
+        client.get('/perfil/')
         self.assertEqual(client.get('/api/v1/servicos/').status_code, 200)
         client.post('/sair/', {'csrfmiddlewaretoken': client.cookies['csrftoken'].value})
         self.assertEqual(client.get('/api/v1/servicos/').status_code, 403)

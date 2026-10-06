@@ -142,7 +142,7 @@ class DashboardTests(TestCase):
 
     def test_account_link_and_logout_are_real_csrf_forms(self):
         self.client.force_login(self.admin)
-        self.assertContains(self.client.get('/'), '/painel/')
+        self.assertContains(self.client.get('/perfil/'), '/index/')
         response = self.panel()
         self.assertContains(response, 'action="/sair/" method="post"')
         self.assertContains(response, '/admin/accounts/user/')

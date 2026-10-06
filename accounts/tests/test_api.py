@@ -43,7 +43,7 @@ class IdentityApiTests(TestCase):
     def test_authenticated_writes_with_csrf_return_405(self):
         client = Client(enforce_csrf_checks=True)
         client.force_login(self.ana)
-        client.get('/')
+        client.get('/perfil/')
         token = client.cookies['csrftoken'].value
         for method in ('post', 'put', 'patch', 'delete'):
             with self.subTest(method=method):
@@ -70,7 +70,7 @@ class IdentityApiTests(TestCase):
     def test_valid_logout_revokes_api_access(self):
         client = Client(enforce_csrf_checks=True)
         client.force_login(self.ana)
-        client.get('/')
+        client.get('/perfil/')
         self.assertEqual(client.get('/api/v1/me/').status_code, 200)
         client.post('/sair/', {'csrfmiddlewaretoken': client.cookies['csrftoken'].value})
         self.assertEqual(client.get('/api/v1/me/').status_code, 403)

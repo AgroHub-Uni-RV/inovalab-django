@@ -2,7 +2,6 @@ import calendar
 from datetime import datetime, timedelta
 from urllib.parse import urlencode
 
-from django.urls import reverse
 from django.utils import timezone
 from django.utils.dates import MONTHS
 
@@ -61,18 +60,6 @@ def dashboard_context(actor, *, now=None, task_tab='pendentes', booking_tab='sem
         bookings = all_bookings.filter(inicio__gte=end)
     else:
         bookings = all_bookings.filter(inicio__lt=end, fim__gt=max(start, now))
-    nav = [('Dashboard', 'core:dashboard', 'home'), ('Estoque/materiais', 'materiais:list', 'box'),
-           ('Tarefas', 'tarefas:board', 'task')]
-    if admin:
-        nav.insert(1, ('Agendamentos', 'agenda:list', 'calendar'))
-        if actor.is_superuser:
-            nav.append(('Usuários', 'admin:accounts_user_changelist', 'users'))
-        nav.append(('Banners', 'conteudo:list', 'image'))
-    nav.extend([('Páginas', 'conteudo:public-home', 'layers'),
-                ('Estrutura', 'catalogo:servicos-list', 'building')])
-    if admin:
-        nav.append(('Integrações', 'integracoes:list', 'link'))
-    nav.append(('Perfil', 'accounts:home', 'profile'))
     return {
         'is_business_admin': admin, 'tasks': tasks, 'bookings': list(bookings[:10]) if admin else [],
         'task_tab': task_tab, 'booking_tab': booking_tab, 'months': _months(all_bookings, today),
@@ -81,6 +68,4 @@ def dashboard_context(actor, *, now=None, task_tab='pendentes', booking_tab='sem
                       for key, value in TASK_TABS.items()],
         'booking_tabs': [{'key': key, 'label': label, 'query': urlencode({'tarefas': task_tab, 'agenda': key})}
                          for key, label in BOOKING_TABS.items()],
-        'nav_items': [{'label': label, 'href': reverse(route), 'icon': icon, 'current': route == 'core:dashboard'}
-                      for label, route, icon in nav],
     }

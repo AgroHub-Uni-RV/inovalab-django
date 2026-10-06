@@ -6,6 +6,8 @@
   <link rel="icon" href="data:,">
   <link rel="preload" href="{% static 'core/assets/Montserrat.ttf' %}" as="font" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="{% static 'core/painel.css' %}">
+  <link rel="stylesheet" href="{% static 'core/modulos.css' %}">
+  {% block extra_head %}{% endblock %}
   <script src="{% static 'core/painel.js' %}" defer></script>
 </head>
 <body class="panel-page">
@@ -25,7 +27,10 @@
         </div>
       </div>
     </header>
-    <main id="main" tabindex="-1">{% block content %}{% endblock %}</main>
+    <main id="main" class="{% block main_class %}{% endblock %}" tabindex="-1"><div class="{% block content_class %}{% endblock %}">
+      {% if messages %}<div class="flash-messages" role="status">{% for message in messages %}<p>{{ message }}</p>{% endfor %}</div>{% endif %}
+      {% block content %}{% endblock %}
+    </div></main>
     <footer class="footer"><div class="footer-inner"><p>Razão Social: FESURV - UNIVERSIDADE DE RIO VERDE CNPJ: 01.815.216/0001-78</p><div class="partner-slots" aria-hidden="true"><span></span><span></span></div></div></footer>
   </div>
 </body>

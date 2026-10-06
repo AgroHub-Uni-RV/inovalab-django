@@ -128,7 +128,7 @@ class BannerApiTests(BannerFixtures, TestCase):
     def test_csrf_and_account_revocation_apply_to_admin_api(self):
         client = Client(enforce_csrf_checks=True)
         client.force_login(self.admin)
-        client.get('/')
+        client.get('/perfil/')
         self.assertEqual(client.patch(self.path, {'versao': 1, 'titulo': 'Negado'}, content_type='application/json').status_code, 403)
         response = client.patch(self.path, {'versao': 1, 'titulo': 'Aceito'}, content_type='application/json',
                                 HTTP_X_CSRFTOKEN=client.cookies['csrftoken'].value)

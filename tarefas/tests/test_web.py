@@ -11,7 +11,7 @@ from tarefas.tests.helpers import TaskFixtures
 class TaskWebTests(TaskFixtures, TestCase):
     def test_anonymous_redirects_to_login(self):
         for path in ('/tarefas/', '/tarefas/nova/', f'/tarefas/{self.mine.pk}/'):
-            self.assertRedirects(self.client.get(path), f'/entrar/?next={path}', fetch_redirect_response=False)
+            self.assertRedirects(self.client.get(path), f'/?next={path}', fetch_redirect_response=False)
 
     def test_owner_board_counts_and_detail_only_include_own_tasks(self):
         self.client.force_login(self.owner)
@@ -124,7 +124,7 @@ class TaskWebTests(TaskFixtures, TestCase):
 
     def test_home_has_task_navigation(self):
         self.client.force_login(self.owner)
-        self.assertContains(self.client.get('/'), '/tarefas/')
+        self.assertContains(self.client.get('/perfil/'), '/tarefas/')
 
     def test_editing_description_preserves_existing_deadline_precision(self):
         deadline = datetime.fromisoformat('2026-11-01T14:22:59.123456-03:00')

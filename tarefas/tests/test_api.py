@@ -136,7 +136,7 @@ class TaskApiTests(TaskFixtures, TestCase):
     def test_writes_require_csrf_and_inactive_session_is_revoked(self):
         client = Client(enforce_csrf_checks=True)
         client.force_login(self.admin)
-        client.get('/')
+        client.get('/perfil/')
         path = f'/api/v1/tarefas/{self.mine.pk}/transicoes/'
         data = {'acao': 'iniciar', 'versao': 1}
         self.assertEqual(client.post(path, data, content_type='application/json').status_code, 403)

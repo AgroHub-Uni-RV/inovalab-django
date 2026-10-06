@@ -14,14 +14,14 @@ class WebAccessTests(TestCase):
         cls.admin = get_user_model().objects.create_superuser('admin', password=PASSWORD)
 
     def test_anonymous_home_redirects_to_login(self):
-        self.assertRedirects(self.client.get('/'), '/entrar/?next=/', fetch_redirect_response=False)
+        self.assertRedirects(self.client.get('/perfil/'), '/?next=/perfil/', fetch_redirect_response=False)
 
     def test_login_and_private_home(self):
         self.assertRedirects(self.client.post('/entrar/', {
             'username': 'ana', 'password': PASSWORD,
-        }), '/')
-        self.assertContains(self.client.get('/'), 'ana')
-        self.assertContains(self.client.get('/'), 'Ana Silva')
+        }), '/index/')
+        self.assertContains(self.client.get('/perfil/'), 'ana')
+        self.assertContains(self.client.get('/perfil/'), 'Ana Silva')
 
     def test_wrong_credentials_and_unknown_account_have_same_message(self):
         errors = []
@@ -42,9 +42,9 @@ class WebAccessTests(TestCase):
 
     def test_local_next_is_honored(self):
         response = self.client.post('/entrar/', {
-            'username': 'ana', 'password': PASSWORD, 'next': '/?origem=login',
+            'username': 'ana', 'password': PASSWORD, 'next': '/perfil/?origem=login',
         })
-        self.assertRedirects(response, '/?origem=login')
+        self.assertRedirects(response, '/perfil/?origem=login')
 
     def test_external_next_is_rejected(self):
         for destination in ('https://externo.example/', '//externo.example/'):
@@ -52,13 +52,13 @@ class WebAccessTests(TestCase):
                 response = self.client.post('/entrar/', {
                     'username': 'ana', 'password': PASSWORD, 'next': destination,
                 })
-                self.assertRedirects(response, '/')
+                self.assertRedirects(response, '/index/')
                 self.client.logout()
 
     def test_get_logout_does_not_end_session(self):
         self.client.force_login(self.ana)
         self.assertEqual(self.client.get('/sair/').status_code, 405)
-        self.assertEqual(self.client.get('/').status_code, 200)
+        self.assertEqual(self.client.get('/perfil/').status_code, 200)
 
     def test_login_and_logout_enforce_csrf(self):
         client = Client(enforce_csrf_checks=True)
@@ -67,30 +67,30 @@ class WebAccessTests(TestCase):
         self.assertEqual(client.post('/entrar/', login).status_code, 403)
         self.assertNotIn('_auth_user_id', client.session)
         login['csrfmiddlewaretoken'] = client.cookies['csrftoken'].value
-        self.assertRedirects(client.post('/entrar/', login), '/')
+        self.assertRedirects(client.post('/entrar/', login), '/index/')
         self.assertEqual(client.post('/sair/').status_code, 403)
-        self.assertEqual(client.get('/').status_code, 200)
+        self.assertEqual(client.get('/perfil/').status_code, 200)
         self.assertRedirects(client.post('/sair/', {
             'csrfmiddlewaretoken': client.cookies['csrftoken'].value,
-        }), '/entrar/')
-        self.assertRedirects(client.get('/'), '/entrar/?next=/', fetch_redirect_response=False)
+        }), '/')
+        self.assertRedirects(client.get('/perfil/'), '/?next=/perfil/', fetch_redirect_response=False)
 
     def test_deactivation_revokes_existing_session(self):
         self.client.force_login(self.ana)
         self.ana.is_active = False
         self.ana.save(update_fields=['is_active'])
-        self.assertRedirects(self.client.get('/'), '/entrar/?next=/', fetch_redirect_response=False)
+        self.assertRedirects(self.client.get('/perfil/'), '/?next=/perfil/', fetch_redirect_response=False)
 
     def test_business_admin_cannot_manage_accounts(self):
         self.ana.groups.add(Group.objects.get(name='Administradores'))
         self.client.force_login(self.ana)
-        self.assertContains(self.client.get('/'), 'Administrador do laboratório')
-        self.assertNotContains(self.client.get('/'), 'Administrar contas')
+        self.assertContains(self.client.get('/perfil/'), 'Administrador do laboratório')
+        self.assertNotContains(self.client.get('/perfil/'), 'Administrar contas')
         self.assertEqual(self.client.get('/admin/accounts/user/').status_code, 302)
 
     def test_superuser_sees_admin_link(self):
         self.client.force_login(self.admin)
-        self.assertContains(self.client.get('/'), 'Administrar contas')
+        self.assertContains(self.client.get('/perfil/'), 'Administrar contas')
         self.assertEqual(self.client.get('/admin/accounts/user/').status_code, 200)
 
     def test_login_fields_are_labeled_and_logout_form_is_post(self):
@@ -99,4 +99,4 @@ class WebAccessTests(TestCase):
         self.assertContains(response, 'for="id_password"')
         self.assertContains(response, 'autocomplete="current-password"')
         self.client.force_login(self.ana)
-        self.assertContains(self.client.get('/'), 'action="/sair/" method="post"')
+        self.assertContains(self.client.get('/perfil/'), 'action="/sair/" method="post"')

@@ -22,7 +22,7 @@ class BannerWebTests(BannerFixtures, TestCase):
         self.client.force_login(self.user)
         for path in paths:
             self.assertEqual(self.client.get(path).status_code, 403)
-        self.assertNotContains(self.client.get('/'), '/banners/')
+        self.assertNotContains(self.client.get('/perfil/'), '/banners/')
 
     def test_admin_creates_webp_with_csrf_and_edits_without_reupload(self):
         client = Client(enforce_csrf_checks=True)
@@ -32,7 +32,7 @@ class BannerWebTests(BannerFixtures, TestCase):
         data = {**DATA, 'banner_img': image_upload(), 'csrfmiddlewaretoken': client.cookies['csrftoken'].value}
         response = client.post('/banners/novo/', data)
         self.assertEqual(response.status_code, 302)
-        self.assertContains(client.get('/'), '/banners/')
+        self.assertContains(client.get('/perfil/'), '/banners/')
         response = client.post(self.detail+'editar/', {**DATA, 'titulo': 'Editado', 'versao': 1,
                               'csrfmiddlewaretoken': client.cookies['csrftoken'].value})
         self.assertEqual(response.status_code, 302)
@@ -66,7 +66,7 @@ class BannerWebTests(BannerFixtures, TestCase):
         self.assertNotContains(self.client.get('/publico/sobre/'), self.image)
         self.assertIn('no-store', home['Cache-Control'])
         self.assertEqual(self.client.get(f'/banners/{hidden.pk}/imagem/').status_code, 404)
-        self.assertEqual(self.client.get('/').status_code, 302)
+        self.assertEqual(self.client.get('/perfil/').status_code, 302)
 
     def test_image_route_hides_unpublished_but_allows_admin_preview(self):
         save_banner(actor=self.admin, banner_id=self.banner.pk, expected_version=1, data={'status': 'inativo'})

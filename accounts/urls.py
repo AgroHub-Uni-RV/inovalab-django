@@ -6,7 +6,8 @@ from accounts.views import home
 
 app_name = 'accounts'
 urlpatterns = [
-    path('', home, name='home'),
-    path('entrar/', LoginView.as_view(template_name='accounts/login.html'), name='login'),
+    path('', LoginView.as_view(template_name='accounts/login.html', redirect_authenticated_user=True), name='login'),
+    path('entrar/', LoginView.as_view(template_name='accounts/login.html', redirect_authenticated_user=True), name='login-alias'),
+    path('perfil/', home, name='home'),
     path('sair/', LogoutView.as_view(), name='logout'),
 ]
