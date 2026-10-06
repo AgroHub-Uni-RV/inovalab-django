@@ -80,6 +80,8 @@ Use **Materiais** ou `/materiais/` para consultar; administradores cadastram/cor
 
 Administradores usam **Banners** ou `/banners/`. API interna por sessão/CSRF: `/api/v1/banners/`, versão em edição/exclusão e upload multipart WebP. Visitantes consultam `/publico/`, `/publico/sobre/` ou `/api/v1/publico/banners/?local=home|sobre`; imagens passam por `/banners/{id}/imagem/`, sem acesso direto ao diretório `media/`. [Contrato, escolhas provisórias e retenção](docs/modules/07-conteudo.md). Administração exclusiva, leitura pública, vários banners ordenados e período obrigatório são escolhas iniciais para Q10/Q12/Q15, ainda sujeitas à validação do responsável.
 
+Os [padrões visuais compartilhados](docs/frontend/03-padroes-visuais.md) centralizam Montserrat, tipografia, margens, gaps e arredondamentos em `core/static/core/ui.css`. Banners usa o mesmo alinhamento dos módulos; filtros, contadores e componentes equivalentes seguem a mesma escala. A revisão do Dashboard incluiu 1201 px com menu expandido. O guia registra comandos, resultados, capturas e a verificação reutilizável no navegador.
+
 ## Processo
 
 Revisar requisitos e decisões de cada etapa, validar seu desenho, preparar o plano, implementar o fluxo web/API e verificar cenários relevantes. A coleção de skills [Superpowers](https://github.com/obra/superpowers) foi instalada neste ambiente do Codex; não é dependência da aplicação e não acompanha um clone do projeto.

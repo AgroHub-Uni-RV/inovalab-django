@@ -46,7 +46,7 @@ Chrome: 45 páginas administrativas/públicas renderizaram com sucesso; 122 comb
 
 Uma revisão final independente identificou dois problemas importantes, corrigidos numa única passada com casos RED→GREEN e suíte309/309: retorno `next` destinado à própria entrada agora segue ao index sem erro/loop, preservando destinos internos válidos e a validação do Django para destinos externos; reservas de vários dias exibem o intervalo completo em cada dia ocupado, preservando o término à meia-noite. Ambos também foram conferidos no Chrome após a correção. Não houve segunda revisão.
 
-Ajuste menor adiado: rótulos longos dos contadores podem quebrar dentro da palavra quando o cartão tem pouca largura. O ajuste das proporções dos cartões fica para a próxima depuração visual.
+Ajuste menor identificado nesta entrega: rótulos longos dos contadores podiam quebrar dentro da palavra quando o cartão tinha pouca largura. Essa pendência foi tratada na [padronização visual posterior](03-padroes-visuais.md), com reorganização responsiva dos cartões e verificação do espaço dos rótulos.
 
 Capturas: [Usuários](screenshots/usuarios-1920.png), [Materiais](screenshots/materiais-1920.png), [Banners](screenshots/banners-1920.png), [Agenda](screenshots/agenda-1920.png), [Detalhe da tarefa](screenshots/tarefa-detalhe-1920.png) e [Formulário em 360 px](screenshots/material-form-360.png).
 
