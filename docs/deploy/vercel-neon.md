@@ -151,10 +151,22 @@ A suíte SQLite foi repetida após o ajuste de compatibilidade de overflow:
 
 O bloqueio de build foi verificado no PostgreSQL: mantendo o advisory lock
 em outra conexão, o build aguardou; depois da liberação, concluiu com sucesso.
-A publicação pelo push e a verificação do deployment hospedado são os
-próximos passos desta ativação. Testes de todos os módulos no PostgreSQL,
-uploads persistentes e fluxos autenticados completos ainda precisam de
-validação posterior pelo responsável.
+A publicação pelo push para `main` foi concluída: deployment
+`dpl_Fi7vf9rAiSN2WbaQNU4hGn9n4Zqe`, commit `2a55f48`, estado **READY**,
+em [inovalab-test.vercel.app](https://inovalab-test.vercel.app).
+Os logs confirmaram a execução de `python scripts/vercel_build.py`,
+verificação de segurança, `migrate` sem pendências e `collectstatic` antes
+da publicação. Login, CSS, logo, página pública e
+`/api/v1/publico/banners/?local=home` responderam HTTP 200; `/index/`
+redirecionou visitantes para o login. Os headers HTTPS/MIME/iframe foram
+verificados. As requisições usaram `vercel curl` autenticado; a proteção
+de acesso da Vercel foi preservada. No navegador local, login e página
+pública foram novamente verificados, sem imagens quebradas.
+
+Testes de todos os módulos no PostgreSQL, uploads persistentes e fluxos
+autenticados completos ainda precisam de validação posterior pelo responsável.
+O banco hospedado começa sem contas: criar o superusuário explicitamente,
+com um ambiente administrativo conectado ao Neon, antes de usar a área interna.
 Após essa entrega, aguardar a depuração do responsável antes de outro módulo.
 
 Fontes: [Django na Vercel](https://vercel.com/docs/frameworks/full-stack/django)
