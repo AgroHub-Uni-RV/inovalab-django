@@ -1,0 +1,57 @@
+/* Escala visual compartilhada por login, páginas internas e páginas públicas. */
+@font-face {
+  font-family:Montserrat;
+  src:url('assets/Montserrat.ttf') format('truetype');
+  font-weight:100 900;
+  font-style:normal;
+  font-display:swap;
+}
+:root {
+  --font-family:Montserrat,Arial,sans-serif;
+  --font-caption:10px;
+  --font-small:12px;
+  --font-label:14px;
+  --font-body:16px;
+  --font-section:20px;
+  --font-section-compact:18px;
+  --font-title:28px;
+  --font-title-compact:24px;
+  --font-display:40px;
+  --font-stat:56px;
+  --font-stat-compact:48px;
+  --font-error:80px;
+  --line-body:1.6;
+  --line-heading:1.3;
+  --space-1:4px;
+  --space-2:8px;
+  --space-3:12px;
+  --space-4:16px;
+  --space-5:20px;
+  --space-6:24px;
+  --space-8:32px;
+  --space-10:40px;
+  --space-12:48px;
+  --space-16:64px;
+  --radius-small:8px;
+  --radius-control:12px;
+  --radius-card:12px;
+  --radius-round:50%;
+  --content-width:1436px;
+  --page-gutter:32px;
+  --page-top:64px;
+  --page-bottom:48px;
+  --control-height:56px;
+  --tabs-border-width:2px;
+}
+body { font-family:var(--font-family); font-size:var(--font-body); line-height:var(--line-body); }
+button, input, select, textarea { font-family:inherit; }
+input::file-selector-button { font:inherit; }
+h1, h2, h3 { line-height:var(--line-heading); }
+@media(max-width:760px) {
+  :root {
+    --font-title:24px;
+    --page-gutter:16px;
+    --page-top:24px;
+    --page-bottom:32px;
+  }
+}
