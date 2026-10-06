@@ -53,15 +53,22 @@ class BookingAPITests(TestCase):
             booking = self.create(categoria=category, objeto=target.pk)
             self.assertEqual((booking['categoria'], booking['objeto']), (category, target.pk))
 
-    def test_non_admin_and_anonymous_cannot_read_details_lists_history_or_write(self):
+    def test_anonymous_denied_and_normal_user_can_only_read_own_or_create_pending(self):
         booking = self.create()
+        self.client.logout()
+        for suffix in ('', f'{booking["id"]}/', f'{booking["id"]}/historico/'):
+            self.assertEqual(self.client.get(self.url + suffix).status_code, 403)
+        self.assertEqual(self.client.post(self.url, self.data, format='json').status_code, 403)
+        self.client.force_login(self.user)
+        self.assertEqual(self.client.get(self.url).data['count'], 0)
+        for suffix in (f'{booking["id"]}/', f'{booking["id"]}/historico/'):
+            self.assertEqual(self.client.get(self.url + suffix).status_code, 404)
+        own = self.create()
+        self.assertEqual(own['situacao'], 'pendente')
         for actor in (None, self.user):
             self.client.logout()
             if actor:
                 self.client.force_login(actor)
-            for suffix in ('', f'{booking["id"]}/', f'{booking["id"]}/historico/'):
-                self.assertEqual(self.client.get(self.url + suffix).status_code, 403)
-            self.assertEqual(self.client.post(self.url, self.data, format='json').status_code, 403)
             self.assertEqual(self.client.patch(f'{self.url}{booking["id"]}/', {'versao': 1}, format='json').status_code, 403)
             self.assertEqual(self.client.delete(f'{self.url}{booking["id"]}/', {'versao': 1}, format='json').status_code, 403)
 

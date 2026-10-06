@@ -60,6 +60,9 @@ class BookingSerializer(StrictPayloadMixin, serializers.Serializer):
     versao = VersionField(min_value=1, required=False)
     criado_por = serializers.IntegerField(source='criado_por_id', read_only=True)
     criado_em = serializers.DateTimeField(read_only=True)
+    situacao = serializers.CharField(read_only=True)
+    avaliado_por = serializers.IntegerField(source='avaliado_por_id', read_only=True)
+    avaliado_em = serializers.DateTimeField(read_only=True)
 
     def validate(self, attrs):
         if 'material_gasto' in attrs:

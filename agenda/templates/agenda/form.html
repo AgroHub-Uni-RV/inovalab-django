@@ -5,20 +5,21 @@
   <div class="sheet-topbar"><a class="secondary-button" href="{% url 'agenda:list' %}">Voltar à agenda</a><span class="sheet-meta">{% include 'core/icon.html' with name='calendar' %}Agendamento</span></div>
   <div class="sheet-content">
     <h1>{% if booking %}Editar agendamento #{{ booking.pk }}{% else %}Novo agendamento{% endif %}</h1>
+    {% if not is_business_admin %}<p>O pedido será enviado para avaliação. Aguarde a confirmação de um administrador para ter o horário reservado.</p>{% endif %}
     <form method="post" class="sheet-form" data-booking-category="{{ form.category }}">
       {% csrf_token %}{{ form.non_field_errors }}{{ form.versao }}{{ form.versao.errors }}
       <div class="form-grid">
         <div class="form-field" data-booking-field="categoria">{{ form.categoria.label_tag }}{{ form.categoria }}{{ form.categoria.errors }}</div>
         {% for field in form.visible_fields %}{% if field.name != 'categoria' %}
         {% if field.name == 'objeto' and form.category == 'espaco' %}
-        <fieldset class="form-field full-width space-picker-field" data-booking-field="objeto" data-refresh-field><legend>Selecione o espaço</legend>{{ field }}{{ field.errors }}<small class="field-help">Cadeados indicam espaços exclusivos de administradores. Selecione um cartão; use as setas do teclado para navegar.</small></fieldset>
+        <fieldset class="form-field full-width space-picker-field" data-booking-field="objeto" data-refresh-field><legend>Selecione o espaço</legend>{{ field }}{{ field.errors }}<small class="field-help">{% if not is_business_admin %}Cadeados indicam espaços exclusivos de administradores. {% endif %}Selecione um cartão; use as setas do teclado para navegar.</small></fieldset>
         {% else %}
         <div data-booking-field="{{ field.name }}"{% if field.name == 'objeto' or field.name == 'equipamentos' or field.name == 'material_proprio' or field.name == 'material_gasto' or field.name == 'material_gasto_gramas' %} data-refresh-field{% endif %} class="form-field{% if field.name == 'motivo' or field.name == 'equipamentos' %} full-width{% endif %}{% if field.name == 'equipamentos' %} booking-equipment-options{% endif %}">
           {{ field.label_tag }}{{ field }}{{ field.errors }}{% if field.help_text %}<small class="field-help">{{ field.help_text }}</small>{% endif %}
         </div>
         {% endif %}{% endif %}{% endfor %}
       </div>
-      <div class="sheet-actions"><button type="submit">Salvar agendamento</button>{% if booking %}<a class="secondary-button" href="{% url 'agenda:detail' booking.pk %}">Voltar</a>{% else %}<a class="secondary-button" href="{% url 'agenda:list' %}">Voltar</a>{% endif %}</div>
+      <div class="sheet-actions"><button type="submit">{% if is_business_admin %}Salvar agendamento{% else %}Solicitar agendamento{% endif %}</button>{% if booking %}<a class="secondary-button" href="{% url 'agenda:detail' booking.pk %}">Voltar</a>{% else %}<a class="secondary-button" href="{% url 'agenda:list' %}">Voltar</a>{% endif %}</div>
     </form>
   </div>
 </div>

@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from accounts.policies import is_business_admin
 from agenda.models import Agendamento
-from agenda.models import CATEGORIES
+from agenda.models import BOOKING_STATUSES, CATEGORIES
 from agenda.policies import can_access_agenda
 
 
@@ -32,7 +32,11 @@ def month_bounds(value):
     return timezone.make_aware(start), timezone.make_aware(end)
 
 
-def filter_bookings(queryset, *, month=None, category=None):
+def filter_bookings(queryset, *, month=None, category=None, situation=None):
+    if situation:
+        if situation not in BOOKING_STATUSES:
+            raise ValidationError({'situacao': 'Selecione uma situação válida.'})
+        queryset = queryset.filter(situacao=situation)
     if category:
         if category not in CATEGORIES:
             raise ValidationError({'categoria': 'Selecione uma categoria válida.'})

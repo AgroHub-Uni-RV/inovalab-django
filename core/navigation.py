@@ -1,6 +1,7 @@
 from django.urls import reverse
 
 from accounts.policies import is_business_admin
+from agenda.policies import can_access_agenda
 
 
 def panel_navigation(request):
@@ -9,8 +10,10 @@ def panel_navigation(request):
         return {}
     admin = is_business_admin(actor)
     routes = [('Dashboard', 'core:dashboard', 'home')]
-    if admin:
+    if can_access_agenda(actor):
         routes.append(('Agendamentos', 'agenda:list', 'calendar'))
+    if admin:
+        routes.append(('Solicitações de agendamento', 'agenda:requests', 'calendar'))
     routes.extend([('Estoque/materiais', 'materiais:list', 'box'), ('Tarefas', 'tarefas:board', 'task')])
     if actor.is_active and actor.is_superuser:
         routes.append(('Usuários', 'accounts:users', 'users'))
@@ -28,5 +31,7 @@ def panel_navigation(request):
             current = request.path in ('/index/', '/painel/')
         elif route == 'catalogo:servicos-list':
             current = request.path.startswith('/catalogo/')
+        elif route == 'agenda:list':
+            current = request.path.startswith(href) and not request.path.startswith(reverse('agenda:requests'))
         items.append({'label': label, 'href': href, 'icon': icon, 'current': current})
     return {'is_business_admin': admin, 'nav_items': items}

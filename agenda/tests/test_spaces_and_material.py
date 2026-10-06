@@ -131,7 +131,7 @@ class SpacesAndMaterialTests(TestCase):
         positions = [html.index(f'value="{Espaco.objects.get(codigo_inicial=code).pk}"')
                      for code, *_ in INITIAL_SPACES]
         self.assertEqual(positions, sorted(positions))
-        self.assertContains(response, 'Só administradores', count=3)
+        self.assertNotContains(response, 'Só administradores')
         room = Espaco.objects.get(codigo_inicial='sala-01')
         room.capacidade_maxima_de_pessoas = 8
         room.nome = 'Sala alterada'

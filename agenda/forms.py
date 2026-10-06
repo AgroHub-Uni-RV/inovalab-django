@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django import forms
 from django.db.models import Q
+from accounts.policies import is_business_admin
 
 from agenda.models import CATEGORIES
 from agenda.services import CATEGORY_MODELS, SERVICE_FIELDS
@@ -45,8 +46,10 @@ class BookingForm(StrictFormMixin, forms.Form):
     )
     versao = forms.IntegerField(min_value=1, required=False, widget=forms.HiddenInput)
 
-    def __init__(self, *args, booking=None, **kwargs):
+    def __init__(self, *args, booking=None, actor=None, **kwargs):
         self.booking = booking
+        self.actor = actor
+        self.is_admin = bool(actor and is_business_admin(actor))
         initial = {}
         if booking:
             initial.update(categoria=booking.categoria, objeto=booking.objeto_id, requerente=booking.requerente,
@@ -71,7 +74,9 @@ class BookingForm(StrictFormMixin, forms.Form):
             self.fields['objeto'].label = CATEGORIES[category]
             if category == 'espaco':
                 self.fields['objeto'].empty_label = None
-                self.fields['objeto'].widget = SpaceRadioSelect(choices=self.fields['objeto'].choices)
+                self.fields['objeto'].widget = SpaceRadioSelect(
+                    choices=self.fields['objeto'].choices, is_admin=self.is_admin,
+                )
         if category == 'servico':
             self.fields['material_gasto'].queryset = Material.objects.filter(
                 ~Q(status='indisponivel') | Q(pk=booking.material_gasto_id if booking else None),
@@ -107,7 +112,10 @@ class BookingForm(StrictFormMixin, forms.Form):
         return material.pk if material else None
 
     def clean_objeto(self):
-        return self.cleaned_data['objeto'].pk
+        resource = self.cleaned_data['objeto']
+        if self.category == 'espaco' and resource.somente_administradores and not self.is_admin:
+            raise forms.ValidationError('Este espaço só pode ser agendado por administradores do laboratório.')
+        return resource.pk
 
     def clean_versao(self):
         value = self.cleaned_data.get('versao')
@@ -129,3 +137,8 @@ class BookingForm(StrictFormMixin, forms.Form):
 
 class CancelForm(StrictFormMixin, forms.Form):
     versao = forms.IntegerField(min_value=1, widget=forms.HiddenInput)
+
+
+class ReviewForm(StrictFormMixin, forms.Form):
+    versao = forms.IntegerField(min_value=1, widget=forms.HiddenInput)
+    decisao = forms.ChoiceField(choices=[('aprovar', 'Aceitar'), ('rejeitar', 'Rejeitar')])

@@ -45,7 +45,7 @@ def _busy_as_conflict(operation):
 
 
 def _require_admin(actor):
-    if not is_business_admin(actor):
+    if not can_access_agenda(actor) or not is_business_admin(actor):
         raise PermissionDenied('Somente administradores do laboratório podem acessar a agenda.')
 
 

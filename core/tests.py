@@ -57,7 +57,8 @@ class DashboardTests(TestCase):
             self.assertFalse(any(day['reservations'] for month in response.context['months']
                                  for week in month['weeks'] for day in week))
             self.assertNotContains(response, 'Reserva confidencial')
-            self.assertNotContains(response, '/agenda/')
+            self.assertContains(response, '/agenda/')
+            self.assertNotContains(response, '/agenda/solicitacoes/')
             self.assertNotContains(response, '/banners/')
             self.assertNotContains(response, '/admin/accounts/user/')
 

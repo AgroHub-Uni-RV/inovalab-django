@@ -1,6 +1,6 @@
 from django import template
 
-from accounts.policies import is_business_admin
+from agenda.policies import can_access_agenda
 
 register = template.Library()
-register.simple_tag(is_business_admin, name='can_access_agenda')
+register.simple_tag(can_access_agenda, name='can_access_agenda')

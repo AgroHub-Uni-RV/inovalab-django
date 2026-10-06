@@ -1,0 +1,7 @@
+<form method="get" class="filter-bar" data-auto-apply>
+  <div class="filter-field search-field"><label for="agenda-q">Pesquisar agendamento</label><input id="agenda-q" name="q" value="{{ query }}" placeholder="Pesquisar Agendamento"></div>
+  <div class="filter-field"><label for="categoria">Categoria</label><select id="categoria" name="categoria"><option value="">Todas as categorias</option>{% for value,label in categories %}<option value="{{ value }}"{% if selected_category == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="filter-field"><label for="situacao">Situação</label><select id="situacao" name="situacao"><option value="">Todas as situações</option>{% for value,label in situations %}<option value="{{ value }}"{% if selected_situation == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="filter-field month-field"><label for="mes">Mês (opcional)</label><input id="mes" name="mes" type="month" value="{{ month }}"></div>
+  <span class="filter-label">Filtros</span>
+</form>

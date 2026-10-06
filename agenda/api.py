@@ -9,16 +9,19 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from accounts.policies import is_business_admin
+from agenda.policies import can_access_agenda
 from agenda.selectors import filter_bookings, visible_bookings
 from agenda.serializers import BookingSerializer, CancelSerializer, EventSerializer
 from agenda.services import BookingConflict, cancel_booking
 
 
 class AgendaPermission(BasePermission):
-    message = 'Somente administradores do laboratório podem acessar a agenda.'
+    message = 'Esta ação exige uma conta ativa com permissão para acessar a agenda.'
 
     def has_permission(self, request, view):
-        return is_business_admin(request.user)
+        if view.action in ('update', 'partial_update', 'destroy'):
+            return is_business_admin(request.user)
+        return can_access_agenda(request.user)
 
 
 class BookingPagination(PageNumberPagination):
@@ -37,7 +40,8 @@ class BookingViewSet(ModelViewSet):
         queryset = visible_bookings(self.request.user).prefetch_related('equipamentos')
         if self.action == 'list':
             return filter_bookings(queryset, month=self.request.query_params.get('mes'),
-                                   category=self.request.query_params.get('categoria'))
+                                   category=self.request.query_params.get('categoria'),
+                                   situation=self.request.query_params.get('situacao'))
         return queryset
 
     def handle_exception(self, error):

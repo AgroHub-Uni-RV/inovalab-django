@@ -209,6 +209,6 @@ class BookingServiceDetailsTests(TestCase):
             response.close()
             self.assertEqual(self.client.get(f'/usuarios/{self.admin.pk}/foto/').status_code, 403)
             self.client.force_login(self.reader)
-            self.assertEqual(self.client.get(url).status_code, 403)
+            self.assertEqual(self.client.get(url).status_code, 404)
             self.client.logout()
             self.assertEqual(self.client.get(url).status_code, 302)

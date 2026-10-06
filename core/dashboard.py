@@ -49,7 +49,7 @@ def dashboard_context(actor, *, now=None, task_tab='pendentes', booking_tab='sem
     tasks = list(visible_tasks(actor).filter(status__in=TASK_TABS[task_tab][1])[:10])
     for task in tasks:
         task.overdue = bool(task.prazo and task.prazo < now and task.status != 'concluido')
-    all_bookings = visible_bookings(actor)
+    all_bookings = visible_bookings(actor).filter(situacao='confirmado')
     today = timezone.localdate(now)
     monday = today - timedelta(days=today.weekday())
     start = timezone.make_aware(datetime.combine(monday, datetime.min.time()))

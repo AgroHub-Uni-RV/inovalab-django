@@ -34,7 +34,7 @@ class BookingWebTests(TestCase):
         data['fim'] = datetime.fromisoformat(data['fim'] + '-03:00')
         return save_booking(actor=self.admin, data=data)
 
-    def test_login_redirect_and_non_admin_denial_for_all_pages(self):
+    def test_login_redirect_and_normal_user_access_is_limited_by_owner_and_action(self):
         booking = self.create()
         urls = ['/agenda/', '/agenda/novo/', f'/agenda/{booking.pk}/', f'/agenda/{booking.pk}/editar/',
                 f'/agenda/{booking.pk}/cancelar/', f'/agenda/{booking.pk}/historico/']
@@ -42,9 +42,13 @@ class BookingWebTests(TestCase):
         for url in urls:
             self.assertEqual(self.client.get(url).status_code, 302)
         self.client.force_login(self.user)
-        for url in urls:
-            self.assertEqual(self.client.get(url).status_code, 403)
-        self.assertEqual(self.client.post('/agenda/novo/', self.data).status_code, 403)
+        self.assertEqual(self.client.get('/agenda/').status_code, 200)
+        self.assertEqual(self.client.get('/agenda/novo/').status_code, 200)
+        for suffix in ('', 'historico/'):
+            self.assertEqual(self.client.get(f'/agenda/{booking.pk}/{suffix}').status_code, 404)
+        for suffix in ('editar/', 'cancelar/'):
+            self.assertEqual(self.client.get(f'/agenda/{booking.pk}/{suffix}').status_code, 403)
+        self.assertEqual(self.client.post('/agenda/novo/', self.data).status_code, 302)
 
     def test_admin_can_create_each_category_edit_view_history_and_cancel(self):
         for category, target in (('servico', self.service), ('equipamento', self.equipment), ('espaco', self.space)):
