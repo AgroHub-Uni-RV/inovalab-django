@@ -2,6 +2,12 @@
 
 O responsável solicitou aplicar as referências a todas as páginas, colocar o login em `/`, redirecionar a entrada para o index e fazer **Administrar contas** abrir a página **Usuários**, exclusiva de administradores. Esta solicitação reúne as entregas visuais restantes em uma etapa. Continua a decisão anterior: funcionalidades existentes, logos vazias e novos recursos de domínio em etapas próprias.
 
+## Referência no Figma
+
+Arquivo indicado pelo responsável: [INOVALAB](https://www.figma.com/design/6PL44EZWM82SdZ9dkcJ4S8/INOVALAB?node-id=0-1). Consultar somente para leitura, sem alterar o projeto no Figma. Desconsiderar qualquer tela que contenha um grupo chamado `Group 17`, inclusive em grupos aninhados; verificar a composição antes de selecionar cada referência.
+
+A consulta ainda está pendente: o plugin aparece instalado, mas suas ferramentas de leitura não estão disponíveis nesta sessão; o acesso direto pelo navegador retornou HTTP 403. Nenhuma tela, fonte, medida ou asset foi extraído do arquivo. Até verificar a composição no Figma, as adaptações baseadas nos PNGs locais permanecem provisórias quanto a esse critério.
+
 ## Rotas e autoridade
 
 - `/`: login atual, preservado visualmente; autenticado segue para `/index/`.
