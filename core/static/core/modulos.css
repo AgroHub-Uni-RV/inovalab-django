@@ -89,7 +89,85 @@
 .user-photo .icon { width:40%; height:40%; stroke-width:1.2; }
 .user-card h2 { margin:16px 0 8px; font-size:20px; font-weight:700; }
 .user-card p { margin:5px 0; font-size:16px; color:#777; }
+.task-board { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
+.task-board.task-board-filtered { grid-template-columns:minmax(0,1fr); }
+.task-column { min-width:0; background:white; border:1px solid #d8d8d8; border-radius:10px; min-height:1000px; overflow:hidden; }
+.task-column > h2 { margin:0; font-size:20px; font-weight:600; text-align:center; padding:13px; background:var(--lavender); border-bottom:1px solid #ddd; }
+.task-column.criacao > h2, .criacao .kanban-icon { background:#fff2d7; color:#eba200; }
+.task-column.avaliacao > h2, .avaliacao .kanban-icon { background:#ffd8d9; color:#df1d26; }
+.task-column.concluido > h2, .concluido .kanban-icon { background:#edffd7; color:#70b626; }
+.task-column > h2 { color:#666; }
+.column-cards { padding:9px; }
+.kanban-card { min-height:122px; padding:9px 14px; border:1px solid #ddd; border-radius:10px; margin-bottom:9px; display:flex; gap:12px; }
+.kanban-icon { display:flex; align-items:center; justify-content:center; background:var(--lavender); width:100px; min-height:100px; border-radius:10px; color:var(--navy); flex-shrink:0; }
+.kanban-icon .icon { width:58px; height:58px; stroke-width:1; }
+.kanban-copy { min-width:0; display:flex; flex-direction:column; position:relative; width:100%; padding:12px 0 3px; }
+.kanban-copy h3 { margin:0 0 4px; font-size:16px; line-height:1.55; font-weight:700; }
+.kanban-copy .task-description { font-size:10px; margin:0 0 5px; line-height:1.4; }
+.kanban-id { font-size:9px; color:#777; }
+.kanban-deadline { display:flex; align-items:center; gap:7px; color:#cc1a23; font-size:10px; margin-top:7px; }
+.kanban-deadline .icon { width:16px; height:16px; }
+.kanban-owner { font-size:10px; color:#777; margin-top:8px; align-self:end; max-width:100%; overflow-wrap:anywhere; }
+.column-empty { font-size:12px; padding:20px 12px; text-align:center; }
+.month-field { width:220px; }
+.monthly-calendar-wrapper { background:white; border-radius:12px; overflow:auto; margin:50px 0 20px; padding:0 20px 20px; scrollbar-width:thin; }
+.monthly-calendar { min-width:840px; }
+.agenda-week { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); }
+.agenda-week.weekday-row { background:#f4f4f4; color:var(--navy); font-size:21px; font-weight:800; text-align:center; margin:0 -20px; padding:24px 20px; }
+.agenda-day { padding:10px; border-right:2px solid var(--navy); border-bottom:2px solid var(--navy); min-height:220px; min-width:0; }
+.agenda-day:last-child { border-right:0; }
+.agenda-week:last-child .agenda-day { border-bottom:0; }
+.agenda-day time { font-size:20px; font-weight:600; display:block; color:var(--navy); margin:0 0 12px; }
+.agenda-day.sunday time { color:#70ad25; }
+.agenda-day.outside-month { background:#d5d5d5; }
+.agenda-day.outside-month time { color:#666; }
+.calendar-booking { background:var(--navy); color:white; display:flex; flex-direction:column; gap:6px; border-radius:10px; padding:12px; font-size:12px; margin-bottom:8px; overflow-wrap:anywhere; }
+.calendar-booking.servico { background:#76b82a; color:#173600; }
+.calendar-booking.equipamento { background:#e91e27; }
+.calendar-booking span { font-size:10px; line-height:1.4; }
+.calendar-overflow { display:block; font-size:11px; font-weight:600; color:var(--navy); padding:8px 0; }
+.calendar-key { display:flex; gap:15px; flex-wrap:wrap; margin:20px 0 40px; }
+.detail-sheet { background:white; border:1px solid #e3e3e3; border-radius:15px; overflow:hidden; }
+.sheet-topbar { padding:25px 35px; background:var(--lavender); display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; color:var(--navy); }
+.sheet-topbar .task-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.module-page .sheet-topbar button[type=submit] { border-radius:30px; font-size:14px; min-height:48px; padding:12px 20px; }
+.sheet-meta { display:flex; align-items:center; gap:14px; font-size:18px; overflow-wrap:anywhere; min-width:0; }
+.sheet-meta .icon { width:32px; height:32px; }
+.sheet-close { font-size:38px; line-height:1; padding:5px; }
+.sheet-layout { display:grid; grid-template-columns:minmax(0,2.5fr) minmax(0,1fr); gap:25px; padding:40px; }
+.sheet-content { min-width:0; }
+.detail-sheet > .sheet-content { padding:40px; }
+.sheet-content h1 { color:var(--navy); font-size:40px; padding:0 0 28px; margin:0; border-bottom:3px solid #d5d5d5; }
+.sheet-content h1 > span { font-weight:400; }
+.sheet-metadata { padding:12px 0 24px; }
+.sheet-metadata p { display:flex; gap:24px; margin:8px 0; font-size:18px; flex-wrap:wrap; }
+.sheet-metadata strong { font-size:16px; }
+.inline-details { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; margin:0 0 28px; }
+.inline-details dt { font-size:15px; margin-bottom:12px; }
+.inline-details dd { margin:0; padding:15px; border:1px solid #bbb; border-radius:10px; font-size:15px; overflow-wrap:anywhere; }
+.description-block { padding:24px 8px; border-top:3px solid #d5d5d5; border-bottom:3px solid #d5d5d5; margin:32px 0; }
+.description-block h2 { font-size:22px; color:var(--navy); margin:0 0 20px; }
+.description-block p { font-size:17px; line-height:1.8; }
+.sheet-sidebar { background:#f6f6f6; padding:28px; border-radius:24px; min-width:0; }
+.sheet-sidebar > h2 { color:var(--navy); font-size:24px; border-bottom:5px solid var(--navy); padding:10px 0 22px; margin:0 0 28px; }
+.task-event, .agenda-event { background:white; border:1px solid #eee; border-radius:12px; padding:20px; margin-bottom:24px; box-shadow:0 2px 12px #0002; overflow-wrap:anywhere; }
+.task-event p, .agenda-event p { font-size:14px; margin:0; }
+.agenda-event h2 { font-size:18px; color:var(--navy); }
+.history-link { color:var(--navy); display:inline-block; margin:10px 0; font-size:14px; }
+.sheet-form { margin-top:35px; }
+.form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:30px 24px; }
+.form-field { min-width:0; }
+.form-field.full-width { grid-column:1/-1; }
+.form-field label { display:block; margin-bottom:12px; font-size:16px; }
+.sheet-actions { display:flex; gap:18px; flex-wrap:wrap; align-items:center; margin-top:32px; }
+.category-refresh { display:flex; align-items:end; }
 @container(max-width:1200px) {
+  .kanban-icon { width:65px; min-height:75px; }
+  .kanban-icon .icon { width:42px; height:42px; }
+  .kanban-card { padding:9px; gap:10px; }
+  .kanban-copy h3 { font-size:13px; }
+  .sheet-layout { grid-template-columns:minmax(0,2fr) minmax(0,1fr); padding:28px; }
+  .sheet-content h1 { font-size:30px; }
   .user-grid { gap:20px; }
   .users-toolbar { flex-direction:column; gap:15px; }
   .users-toolbar .module-tabs { width:100%; }
@@ -102,6 +180,12 @@
   .module-tabs a { font-size:20px; padding:16px; }
 }
 @container(max-width:900px) {
+  .task-board { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .task-column { min-height:500px; }
+  .sheet-layout { grid-template-columns:minmax(0,1fr); }
+  .sheet-topbar { padding:20px; }
+  .sheet-meta { font-size:14px; }
+  .sheet-sidebar { padding:24px; }
   .user-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
   .statistics, .statistics.three { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-bottom:35px; }
   .stat-card { min-height:132px; }
@@ -109,6 +193,20 @@
   .filter-field.search-field { width:100%; }
 }
 @container(max-width:650px) {
+  .task-board { grid-template-columns:minmax(0,1fr); }
+  .task-column { min-height:240px; }
+  .kanban-icon { width:80px; min-height:90px; }
+  .kanban-copy h3 { font-size:15px; }
+  .sheet-layout, .detail-sheet > .sheet-content { padding:20px; }
+  .sheet-content h1 { font-size:25px; padding-bottom:20px; }
+  .sheet-metadata p { font-size:14px; gap:8px; }
+  .sheet-metadata strong { font-size:14px; }
+  .inline-details, .form-grid { grid-template-columns:minmax(0,1fr); }
+  .form-field.full-width { grid-column:auto; }
+  .sheet-actions > *, .sheet-actions button { width:100%; }
+  .sheet-topbar .task-actions > form { width:100%; }
+  .sheet-topbar .task-actions button { width:100%; }
+  .description-block p { font-size:14px; }
   .user-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
   .user-card { padding:14px; }
   .user-card h2 { font-size:14px; }

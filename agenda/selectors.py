@@ -43,14 +43,19 @@ def filter_bookings(queryset, *, month=None, category=None):
 def calendar_weeks(queryset, month):
     start, end = month_bounds(month)
     # Count from the entire filtered month, independently of table pagination.
-    counts = {}
-    for first, last in queryset.values_list('inicio', 'fim').iterator():
+    counts, previews = {}, {}
+    for booking in queryset.iterator():
+        first, last = booking.inicio, booking.fim
         first, last = max(first, start), min(last, end)
         day = timezone.localtime(first).date()
         final_day = timezone.localtime(last - timedelta(microseconds=1)).date()
         while day <= final_day:
             counts[day] = counts.get(day, 0) + 1
+            items = previews.setdefault(day, [])
+            if len(items) < 3:
+                items.append(booking)
             day += timedelta(days=1)
-    weeks = calendar.Calendar(firstweekday=0).monthdatescalendar(start.year, start.month)
-    return [[{'date': day, 'in_month': day.month == start.month, 'count': counts.get(day, 0)}
+    weeks = calendar.Calendar(firstweekday=6).monthdatescalendar(start.year, start.month)
+    return [[{'date': day, 'in_month': day.month == start.month, 'count': counts.get(day, 0),
+              'bookings': previews.get(day, []), 'sunday': day.weekday() == 6}
              for day in week] for week in weeks]

@@ -2,13 +2,14 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, ListView, UpdateView, View
 
 from accounts.policies import is_business_admin
+from catalogo.models import Servico
 from tarefas.forms import ACTION_LABELS, DeleteForm, TaskForm, TransitionForm
 from tarefas.models import StatusTarefa, Tarefa
 from tarefas.selectors import visible_tasks
@@ -39,14 +40,38 @@ class TaskBoardView(LoginRequiredMixin, TaskContextMixin, ListView):
     template_name = 'tarefas/board.html'
     paginate_by = 25
 
+    def filtered_tasks(self):
+        queryset = super().get_queryset()
+        self.query = self.request.GET.get('q', '').strip()[:150]
+        value = self.request.GET.get('servico', '')
+        self.selected_service = value if value.isascii() and value.isdecimal() and len(value) <= 12 else ''
+        if self.query:
+            queryset = queryset.filter(Q(descricao__icontains=self.query) | Q(servico__nome__icontains=self.query)
+                                       | Q(responsavel__username__icontains=self.query)
+                                       | Q(responsavel__first_name__icontains=self.query))
+        if self.selected_service:
+            queryset = queryset.filter(servico_id=self.selected_service)
+        return queryset
+
+    def get_queryset(self):
+        queryset = self.filtered_tasks()
+        self.selected_status = self.request.GET.get('status', '')
+        if self.selected_status not in StatusTarefa.values:
+            self.selected_status = ''
+        return queryset.filter(status=self.selected_status) if self.selected_status else queryset
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         counts = dict(self.get_queryset().order_by().values('status').annotate(total=Count('pk')).values_list('status', 'total'))
         context['columns'] = [
-            {'label': label, 'count': counts.get(status, 0),
+            {'label': label, 'status': status, 'count': counts.get(status, 0),
              'tasks': [task for task in context['object_list'] if task.status == status]}
             for status, label in StatusTarefa.choices
         ]
+        totals = dict(self.filtered_tasks().order_by().values('status').annotate(total=Count('pk')).values_list('status', 'total'))
+        context.update(stat_counts={status: totals.get(status, 0) for status in StatusTarefa.values},
+                       query=self.query, selected_service=self.selected_service, selected_status=self.selected_status,
+                       services=Servico.objects.order_by('nome', 'pk'), statuses=StatusTarefa.choices)
         return context
 
 
@@ -60,6 +85,7 @@ class TaskDetailView(LoginRequiredMixin, TaskContextMixin, DetailView):
         context['actions'] = [{'name': action, 'label': ACTION_LABELS[action]}
                               for action in allowed_actions(self.request.user, self.object)]
         context['events'] = self.object.eventos.all()[:5]
+        context['created_event'] = self.object.eventos.filter(acao='criar').first()
         return context
 
 

@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.generic import DetailView, ListView, View
@@ -36,12 +37,19 @@ class BookingListView(AgendaAccessMixin, ListView):
         self.month = self.request.GET.get('mes') or timezone.localdate().strftime('%Y-%m')
         month_bounds(self.month)
         self.category = self.request.GET.get('categoria', '')
-        return filter_bookings(super().get_queryset(), month=self.month, category=self.category)
+        self.query = self.request.GET.get('q', '').strip()[:150]
+        queryset = filter_bookings(super().get_queryset(), month=self.month, category=self.category)
+        if self.query:
+            queryset = queryset.filter(Q(requerente__icontains=self.query) | Q(motivo__icontains=self.query)
+                | Q(servico__nome__icontains=self.query) | Q(equipamento__nome__icontains=self.query)
+                | Q(espaco__nome__icontains=self.query))
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(month=self.month, selected_category=self.category, categories=CATEGORIES.items(),
-                       weeks=calendar_weeks(self.object_list, self.month))
+                       weeks=calendar_weeks(self.object_list, self.month), query=self.query,
+                       category_counts={name: self.object_list.filter(**{name+'__isnull': False}).count() for name in CATEGORIES})
         return context
 
 
@@ -49,6 +57,9 @@ class BookingDetailView(AgendaAccessMixin, DetailView):
     model = Agendamento
     context_object_name = 'booking'
     template_name = 'agenda/detail.html'
+
+    def get_context_data(self, **kwargs):
+        return {**super().get_context_data(**kwargs), 'events': self.object.eventos.all()[:5]}
 
 
 class BookingWriteView(AgendaAccessMixin, View):

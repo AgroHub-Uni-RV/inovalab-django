@@ -1,0 +1,53 @@
+from datetime import datetime, timedelta
+
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+
+from agenda.models import Agendamento
+from catalogo.models import Equipamento, Servico
+
+
+class AgendaFrontendTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.admin = get_user_model().objects.create_superuser('frontend-admin')
+        cls.service = Servico.objects.first()
+        cls.equipment = Equipamento.objects.create(nome='Equipamento especial')
+
+    def booking(self, requester='Nome buscável', **kwargs):
+        start = datetime.fromisoformat('2026-12-30T10:00:00-03:00')
+        return Agendamento.objects.create(servico=self.service, inicio=start, fim=start+timedelta(hours=1),
+            requerente=requester, motivo='Motivo', criado_por=self.admin, **kwargs)
+
+    def test_calendar_sunday_first_and_real_booking_content(self):
+        booking = self.booking()
+        self.client.force_login(self.admin)
+        response = self.client.get('/agenda/?mes=2026-12')
+        self.assertEqual(response.context['weeks'][0][0]['date'].weekday(), 6)
+        day = next(d for w in response.context['weeks'] for d in w if d['in_month'] and d['date'].day == 30)
+        self.assertEqual([b.pk for b in day['bookings']], [booking.pk])
+
+    def test_search_category_counts_and_cancelled_are_filtered(self):
+        booking = self.booking()
+        self.booking('Cancelado', cancelado_em=booking.inicio)
+        Agendamento.objects.create(equipamento=self.equipment, requerente='Outro', motivo='Motivo',
+            inicio=booking.inicio, fim=booking.fim, criado_por=self.admin)
+        self.client.force_login(self.admin)
+        response = self.client.get('/agenda/', {'mes': '2026-12', 'q': 'buscável'})
+        self.assertEqual([b.pk for b in response.context['object_list']], [booking.pk])
+        self.assertEqual(response.context['category_counts'], {'servico': 1, 'equipamento': 0, 'espaco': 0})
+        self.assertNotContains(response, 'Cancelado')
+
+    def test_midnight_and_pagination_keep_all_calendar_bookings(self):
+        start = datetime.fromisoformat('2026-12-31T22:00:00-03:00')
+        end = datetime.fromisoformat('2027-01-01T00:00:00-03:00')
+        Agendamento.objects.bulk_create([Agendamento(servico=self.service, inicio=start, fim=end,
+            requerente='Virada', motivo='Motivo', criado_por=self.admin) for _ in range(26)])
+        self.client.force_login(self.admin)
+        response = self.client.get('/agenda/?mes=2026-12&q=Virada')
+        day = next(d for w in response.context['weeks'] for d in w if d['in_month'] and d['date'].day == 31)
+        self.assertEqual(day['count'], 26)
+        self.assertLessEqual(len(day['bookings']), 3)
+        january = self.client.get('/agenda/?mes=2027-01&q=Virada')
+        self.assertEqual(january.context['paginator'].count, 0)
+        self.assertContains(response, 'q=Virada')

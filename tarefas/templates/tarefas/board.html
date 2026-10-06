@@ -1,23 +1,19 @@
 {% extends 'tarefas/base.html' %}
+{% block content_class %}module-page tasks-page{% endblock %}
 {% block content %}
-<h1>Tarefas</h1>
-<p>{% if can_manage %}Todas as tarefas do laboratório.{% else %}Suas tarefas.{% endif %} Selecione uma tarefa para consultar ou alterar seu status.</p>
-{% if can_manage %}<p><a class="button" href="{% url 'tarefas:create' %}">Nova tarefa</a></p>{% endif %}
-<div class="task-board">
-    {% for column in columns %}
-    <section class="task-column" aria-label="{{ column.label }}">
-        <h2>{{ column.label }} ({{ column.count }})</h2>
-        {% for task in column.tasks %}
-        <article class="task-card">
-            <h3><a href="{% url 'tarefas:detail' task.pk %}">#{{ task.pk }} · {{ task.servico.nome }}</a></h3>
-            <p>{{ task.descricao|truncatechars:180 }}</p>
-            <p>Responsável: {{ task.responsavel.username }}</p>
-            <p>Prazo: {{ task.prazo|date:'d/m/Y H:i'|default:'Não definido' }}</p>
-        </article>
-        {% empty %}<p>Nenhuma tarefa nesta página.</p>{% endfor %}
-    </section>
-    {% endfor %}
+<div class="page-heading"><div><h1>Controle de Tarefas</h1></div>{% if can_manage %}<a class="primary-button" href="{% url 'tarefas:create' %}">Adicionar Tarefa {% include 'core/icon.html' with name='plus' %}</a>{% endif %}</div>
+<div class="statistics">
+{% include 'core/stat_card.html' with label='Demanda' count=stat_counts.demanda icon='task' %}
+{% include 'core/stat_card.html' with label='Criação' count=stat_counts.criacao icon='edit' tone='amber' %}
+{% include 'core/stat_card.html' with label='Avaliação' count=stat_counts.avaliacao icon='users' tone='red' %}
+{% include 'core/stat_card.html' with label='Concluídos' count=stat_counts.concluido icon='warning' tone='green' %}
 </div>
-<p>As contagens abrangem todas as tarefas que você pode consultar; cada página mostra até 25 cartões.</p>
-{% include 'tarefas/pagination.html' %}
+<form class="filter-bar" method="get"><div class="filter-field search-field"><label for="task-q">Buscar tarefa</label><input id="task-q" name="q" value="{{ query }}" placeholder="Busca de tarefas, serviços, etc"></div><div class="filter-field"><label for="task-service">Serviço</label><select id="task-service" name="servico"><option value="">Todos os serviços</option>{% for service in services %}<option value="{{ service.pk }}"{% if selected_service == service.pk|stringformat:'s' %} selected{% endif %}>{{ service.nome }}</option>{% endfor %}</select></div><input type="hidden" name="status" value="{{ selected_status }}"><button type="submit">Filtrar</button></form>
+<nav class="module-tabs" aria-label="Filtrar tarefas por status"><a href="{% querystring status='' page=None %}"{% if not selected_status %} aria-current="page"{% endif %}>Todas as tarefas</a>{% for value,label in statuses %}<a href="{% querystring status=value page=None %}"{% if selected_status == value %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}</nav>
+<div class="task-board{% if selected_status %} task-board-filtered{% endif %}">
+{% for column in columns %}{% if not selected_status or selected_status == column.status %}
+<section class="task-column {{ column.status }}" aria-label="{{ column.label }}"><h2>{{ column.label }} <span class="sr-only">({{ column.count }})</span></h2>
+<div class="column-cards">{% for task in column.tasks %}<article class="kanban-card"><span class="kanban-icon" aria-hidden="true">{% include 'core/icon.html' with name='box' %}</span><div class="kanban-copy"><h3><a href="{% url 'tarefas:detail' task.pk %}">{{ task.servico.nome }}</a></h3><p class="task-description">{{ task.descricao|truncatechars:90 }}</p><span class="kanban-id">#{{ task.pk|stringformat:'03d' }}</span>{% if task.prazo %}<span class="kanban-deadline">{% include 'core/icon.html' with name='clock' %}{{ task.prazo|date:'d/m/y' }}</span>{% endif %}<span class="kanban-owner" title="{{ task.responsavel.get_full_name|default:task.responsavel.username }}">{{ task.responsavel.username }}</span></div></article>{% empty %}<p class="column-empty">Nenhuma tarefa nesta página.</p>{% endfor %}</div></section>
+{% endif %}{% endfor %}</div>
+{% include 'core/pagination.html' %}
 {% endblock %}
