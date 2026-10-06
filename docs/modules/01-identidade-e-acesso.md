@@ -1,5 +1,7 @@
 # Módulo 1 — Identidade e acesso
 
+**Atualização de 06/10/2026:** login, cadastro, perfil/foto e recuperação de senha agora usam exclusivamente Accounts do AgroHub. Consulte o [contrato e a execução atuais](09-agrohub-accounts.md). As instruções de senha local e `createsuperuser` abaixo documentam a entrega histórica de 01/10 e não autenticam na versão atual.
+
 Entrega de 01/10/2026: contas internas pelo Django Admin, login por usuário/senha, página privada, logout e API da identidade atual. A próxima etapa depende da depuração deste módulo pelo responsável.
 
 ## Executar localmente

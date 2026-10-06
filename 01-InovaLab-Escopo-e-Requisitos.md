@@ -1,6 +1,6 @@
 # InovaLab — Escopo e requisitos
 
-Versão 0.8 • 06/10/2026 • PDF original conferido; decisões do responsável identificadas por fonte.
+Versão 0.9 • 06/10/2026 • PDF original conferido; decisões do responsável identificadas por fonte.
 
 ## 1. Fontes e limites
 
@@ -16,6 +16,8 @@ Na passagem seguinte, F3 autorizou o módulo5 e escolheu preparar a API de receb
 Em 04/10/2026, F3 autorizou desenvolver o módulo 7. Conteúdo/banners entregue localmente: WebP, gestão, publicação e API. As escolhas iniciais para Q10/Q12/Q15 estão no [contrato do módulo](docs/modules/07-conteudo.md); a pergunta opcional sobre esses pontos não foi respondida. Autorização para desenvolver não transforma cada escolha técnica em regra C.
 
 **F5 — correção de 06/10/2026:** o responsável substituiu Espaços por Visitas na agenda. Categorias atuais: Equipamentos, Serviços e Visitas. Visitas recebem apenas dia, hora de início e hora de término. A autoria é o usuário que cadastrou; equipamentos/serviços possuem observações opcionais. F5 prevalece sobre as decisões anteriores de reservar espaços. O catálogo de espaços continua existente. Preservação de reservas antigas como legado e exclusividade das visitas são escolhas operacionais provisórias, documentadas no contrato da agenda.
+
+**F6 — Accounts de 06/10/2026:** o responsável solicitou login, registro, atualização de perfil/foto e solicitação/confirmação da recuperação de senha pela [API documentada do AgroHub](https://agrohub.unirv.edu.br/api/v1/schema/redoc/), e confirmou **somente login pelo AgroHub**. F6 substitui senha local como forma de entrada. Permissões do InovaLab permanecem locais; identificação por ID remoto, sem associação automática por nome/e-mail, é decisão de implementação documentada no [contrato Accounts](docs/modules/09-agrohub-accounts.md).
 
 Classificação usada em todos os arquivos: **C = confirmado pela fonte**, **D = derivado da fonte para permitir funcionamento coerente**, **P = proposta a validar**. Uma regra D ou P não representa aprovação do responsável. Uma observação C de uma tela confirma o elemento visual, sem aprovar automaticamente suas regras de negócio. Prioridades são propostas: **MVP**, **seguinte** e **condicional**.
 
@@ -49,7 +51,7 @@ Os critérios abaixo são a especificação operacional proposta; onde o comport
 
 | ID | Requisito | Origem | Prioridade | Critério de aceite |
 | --- | --- | --- | --- | --- |
-| RF01 | Autenticar usuários internos e identificar seu perfil | D — permissões F1 p. 3 | MVP | Uma sessão identifica um usuário e suas permissões; sessão encerrada não acessa dados privados |
+| RF01 | Autenticar exclusivamente pelo Accounts do AgroHub e identificar o perfil local | C — F6; permissões F1 p. 3 | MVP | Login por usuário/e-mail e senha usa a API, inclusive no admin; não aceita senha local; sessão identifica uma única conta e mantém permissões locais |
 | RF02 | Restringir consulta de tarefas por responsável | C — F1 p. 3 | MVP | Admin vê todas; usuário não recebe tarefas alheias em listas, detalhes ou buscas |
 | RF03 | Permitir ao administrador criar, editar e excluir tarefas de qualquer responsável | C — F1 p. 3 | MVP | Alterações válidas persistem; usuário interno não executa essas operações |
 | RF04 | Registrar serviço, descrição, responsável, status, início, prazo e conclusão da tarefa | C — F1 p. 2 | MVP | Dados salvos reaparecem na consulta; obrigatoriedade de cada data depende de Q04 |
@@ -73,6 +75,11 @@ Os critérios abaixo são a especificação operacional proposta; onde o comport
 | RF22 | Tratar reenvios de agendamento externo sem duplicação | P — integração RF14 | MVP | Mesma origem e chave, com o mesmo conteúdo, retornam o registro anterior; conteúdo diferente gera conflito |
 | RF23 | Expor operações por API para integração com outros sistemas | Objetivo C — F3; contrato P | MVP por etapa | Cada módulo entregue possui os endpoints acordados, documentação de contrato e as mesmas permissões e validações da interface |
 | RF24 | Oferecer frontend básico para as operações internas | C — F3; telas F4 como referência | MVP por etapa | Usuário realiza o fluxo entregue pelo navegador; interface mostra erros e respeita o acesso definido no servidor |
+| RF25 | Registrar conta pelo AgroHub | C — F6 | MVP | Cadastro envia os campos Accounts e a confirmação de senha; retorno válido autentica sem conceder privilégios administrativos |
+| RF26 | Atualizar o próprio perfil pelo AgroHub | C — F6; campos do contrato Accounts | MVP | Nome, sobrenome, CPF e telefone usam PATCH me; usuário/e-mail são somente leitura; flags e grupos não entram no formulário |
+| RF27 | Atualizar a própria foto pelo AgroHub | C — F6 | MVP | Foto validada usa PUT multipart me/picture; avatares exibem a foto remota com as permissões existentes |
+| RF28 | Solicitar recuperação de senha pelo AgroHub | C — F6 | MVP | E-mail usa password-reset; a interface mostra confirmação genérica sem revelar existência da conta |
+| RF29 | Confirmar recuperação de senha pelo AgroHub | C — F6 | MVP | UID/token e nova senha confirmada usam password-reset/confirm; sucesso limpa a sessão e solicita novo login |
 
 O PDF apresenta dois modelos de agendamento na página 2: “Agendamento Figma” (`servico`, `data_hora`, `requerente`) e “Agendamento AgroHub já existente” (`categoria`, `objeto_agendadado`, `motivo`, `data`, `horario_inicio`, `horario_fim`). A página 3 confirma sua unificação. Representar `data_hora` por início completo ou por data/horário é derivação técnica; a fonte não define a conversão nem fornece horário final no primeiro modelo. Não inventar duração para registros antigos; esclarecer essa eventual migração em Q07.
 
