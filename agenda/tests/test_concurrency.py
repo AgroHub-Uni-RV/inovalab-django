@@ -40,6 +40,23 @@ class BookingConcurrencyTests(TransactionTestCase):
         self.assertEqual(sum(isinstance(result, BookingConflict) for result in results), 1)
         self.assertEqual((Agendamento.objects.count(), EventoAgendamento.objects.count()), (1, 1))
 
+    def test_parallel_visits_commit_only_one_booking_and_event(self):
+        data = {key: value for key, value in self.data.items() if key in ('inicio', 'fim')}
+        results = self.run_parallel(lambda index: save_booking(actor=self.admin, data={**data, 'categoria': 'visita'}))
+        self.assertEqual(sum(isinstance(result, Agendamento) for result in results), 1)
+        self.assertEqual(sum(isinstance(result, BookingConflict) for result in results), 1)
+        self.assertEqual((Agendamento.objects.count(), EventoAgendamento.objects.count()), (1, 1))
+
+    def test_parallel_visit_approvals_confirm_only_one(self):
+        user = get_user_model().objects.create_user('solicitante_visita')
+        data = {'categoria': 'visita', 'inicio': self.data['inicio'], 'fim': self.data['fim']}
+        bookings = [save_booking(actor=user, data=data) for _ in range(2)]
+        results = self.run_parallel(lambda index: review_booking(actor=self.admin, booking_id=bookings[index].pk,
+                                   expected_version=1, decision='aprovar'))
+        self.assertEqual(sum(isinstance(result, Agendamento) for result in results), 1)
+        self.assertEqual(Agendamento.objects.filter(situacao='confirmado', visita=True).count(), 1)
+        self.assertEqual(EventoAgendamento.objects.filter(acao='aprovar').count(), 1)
+
     def test_parallel_edits_from_same_version_cannot_overwrite_or_duplicate_events(self):
         booking = save_booking(actor=self.admin, data=self.data)
         results = self.run_parallel(lambda index: save_booking(actor=self.admin, booking_id=booking.pk,

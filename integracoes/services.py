@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from accounts.policies import is_business_admin
-from agenda.services import BASE_FIELDS, CATEGORY_MODELS, BookingConflict, _busy_as_conflict, _save_booking
+from agenda.services import BASE_FIELDS, LEGACY_CATEGORY_MODELS, BookingConflict, _busy_as_conflict, _save_booking
 from integracoes.credentials import CredentialRejected, IntegrationPrincipal, issue_token
 from integracoes.models import ClienteIntegracao, PedidoIntegracao
 
@@ -96,19 +96,25 @@ def normalize_request(data):
     if not isinstance(data, Mapping):
         raise ValidationError('Informe um objeto JSON.')
     errors = {name: 'Este campo não pode ser alterado.' for name in set(data) - REQUEST_FIELDS}
-    errors.update({name: 'Este campo é obrigatório.' for name in REQUEST_FIELDS - set(data)})
+    required = REQUEST_FIELDS - {'objeto', 'motivo'} if data.get('categoria') == 'visita' else REQUEST_FIELDS
+    errors.update({name: 'Este campo é obrigatório.' for name in required - set(data)})
+    if data.get('categoria') == 'visita':
+        errors.update({name: 'Visitas possuem somente dia e horários.' for name in {'objeto', 'motivo'} & set(data)})
     if errors:
         raise ValidationError(errors)
     normalized = dict(data)
     for name in ('id_externo', 'requerente_id', 'requerente', 'motivo'):
+        if name not in data:
+            continue
         value = data[name]
         if not isinstance(value, str) or not value.strip() or (name != 'motivo' and len(value.strip()) > 150):
             errors[name] = 'Informe texto não vazio' + (' com até 150 caracteres.' if name != 'motivo' else '.')
         else:
             normalized[name] = value.strip()
-    if not isinstance(data['categoria'], str) or data['categoria'] not in CATEGORY_MODELS:
+    # Espaço é reconhecido somente para reenvios idempotentes anteriores.
+    if not isinstance(data['categoria'], str) or data['categoria'] not in (*LEGACY_CATEGORY_MODELS, 'visita'):
         errors['categoria'] = 'Selecione uma categoria válida.'
-    if type(data['objeto']) is not int or data['objeto'] < 1:
+    if 'objeto' in data and (type(data['objeto']) is not int or data['objeto'] < 1):
         errors['objeto'] = 'Informe um ID inteiro positivo.'
     for name in ('inicio', 'fim'):
         value = data[name]
@@ -145,7 +151,7 @@ def receive_booking(*, principal, data):
                 raise BookingConflict('idempotencia_conflitante', 'Este pedido externo já foi recebido com conteúdo diferente.')
             return receipt.agendamento, receipt, True
         booking = _save_booking(actor=None, actor_name=f'Integração: {client.nome}',
-                                data={name: normalized[name] for name in BASE_FIELDS})
+                                data={name: normalized[name] for name in BASE_FIELDS if name in normalized})
         receipt = PedidoIntegracao.objects.create(cliente=client, id_externo=normalized['id_externo'],
             requerente_id=normalized['requerente_id'], conteudo_digest=digest, agendamento=booking)
     return booking, receipt, False

@@ -42,11 +42,15 @@ def filter_bookings(queryset, *, month=None, category=None, situation=None):
     if category:
         if category not in CATEGORIES:
             raise ValidationError({'categoria': 'Selecione uma categoria válida.'})
-        queryset = queryset.filter(**{category + '__isnull': False})
+        queryset = queryset.filter(**category_filter(category))
     if month:
         start, end = month_bounds(month)
         queryset = queryset.filter(inicio__lt=end, fim__gt=start)
     return queryset
+
+
+def category_filter(category):
+    return {'visita': True} if category == 'visita' else {category + '__isnull': False}
 
 
 def calendar_weeks(queryset, month):

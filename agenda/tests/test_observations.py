@@ -6,7 +6,7 @@ from rest_framework.test import APIClient
 
 from agenda.models import Agendamento
 from agenda.services import save_booking
-from catalogo.models import Equipamento, Espaco, Servico
+from catalogo.models import Equipamento, Servico
 
 
 class BookingObservationsTests(TestCase):
@@ -14,14 +14,14 @@ class BookingObservationsTests(TestCase):
     def setUpTestData(cls):
         cls.user = get_user_model().objects.create_user('autor-observacoes')
         cls.admin = get_user_model().objects.create_superuser('editor-observacoes')
-        cls.space = Espaco.objects.create(nome='Sala de observações')
+        cls.equipment = Equipamento.objects.create(nome='Sala de observações')
 
     def setUp(self):
         self.client.force_login(self.user)
-        self.data = dict(categoria='espaco', objeto=self.space.pk, motivo='Projeto',
+        self.data = dict(categoria='equipamento', objeto=self.equipment.pk, motivo='Projeto',
                          inicio=datetime.fromisoformat('2026-11-01T14:00:00-03:00'),
                          fim=datetime.fromisoformat('2026-11-01T15:00:00-03:00'))
-        self.web = dict(categoria='espaco', objeto=self.space.pk, motivo='Projeto',
+        self.web = dict(categoria='equipamento', objeto=self.equipment.pk, motivo='Projeto',
                         dia='2026-11-01', hora_inicio='14:00', hora_termino='15:00')
 
     def test_web_saves_optional_observations_and_escapes_html_in_detail(self):
@@ -78,9 +78,9 @@ class BookingObservationsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['observacoes'], '')
 
-    def test_observations_are_available_in_all_categories(self):
+    def test_observations_are_available_in_resource_categories(self):
         equipment = Equipamento.objects.create(nome='Máquina de teste')
-        for category, resource in [('espaco', self.space), ('equipamento', equipment),
+        for category, resource in [('equipamento', equipment),
                                    ('servico', Servico.objects.first())]:
             response = self.client.get('/agenda/novo/', {'categoria': category})
             self.assertFalse(response.context['form'].fields['observacoes'].required)

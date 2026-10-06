@@ -48,8 +48,8 @@ class BookingAPITests(TestCase):
         self.assertEqual(Agendamento.objects.get(pk=booking['id']).eventos.count(), 3)
         self.create()
 
-    def test_three_categories_are_supported(self):
-        for category, target in (('servico', self.service), ('equipamento', self.equipment), ('espaco', self.space)):
+    def test_resource_categories_are_supported(self):
+        for category, target in (('servico', self.service), ('equipamento', self.equipment)):
             booking = self.create(categoria=category, objeto=target.pk)
             self.assertEqual((booking['categoria'], booking['objeto']), (category, target.pk))
 
@@ -117,7 +117,7 @@ class BookingAPITests(TestCase):
         self.create(inicio='2026-10-31T23:00:00-03:00', fim='2026-11-01T01:00:00-03:00')
         other = Servico.objects.create(nome='Outro serviço')
         self.create(objeto=other.pk, inicio='2026-10-31T20:00:00-03:00', fim='2026-11-01T00:00:00-03:00')
-        self.create(categoria='espaco', objeto=self.space.pk)
+        self.create(categoria='equipamento', objeto=self.equipment.pk)
         response = self.client.get(self.url, {'mes': '2026-11', 'categoria': 'servico'})
         self.assertEqual((response.status_code, response.data['count']), (200, 1))
         self.assertEqual(self.client.get(self.url).data['count'], 3)

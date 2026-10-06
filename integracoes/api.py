@@ -51,10 +51,8 @@ class ExternalCatalogView(IntegrationAPIView):
     def get(self, request):
         category = request.query_params.get('categoria')
         if category not in CATEGORY_MODELS:
-            raise serializers.ValidationError({'categoria': 'Informe servico, equipamento ou espaco.'})
+            raise serializers.ValidationError({'categoria': 'Informe servico ou equipamento. Visita não utiliza objeto de catálogo.'})
         queryset = CATEGORY_MODELS[category].objects.exclude(status='indisponivel').order_by('nome', 'pk')
-        if category == 'espaco':
-            queryset = queryset.filter(somente_administradores=False)
         pagination = CatalogPagination()
         page = pagination.paginate_queryset(queryset, request, view=self)
         return pagination.get_paginated_response([{'id': entry.pk, 'categoria': category, 'nome': entry.nome} for entry in page])

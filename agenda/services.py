@@ -10,17 +10,18 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from accounts.policies import is_business_admin
-from agenda.models import Agendamento, EventoAgendamento
+from agenda.models import Agendamento, ControleAgendaVisitas, EventoAgendamento
 from agenda.policies import can_access_agenda
 from catalogo.models import Equipamento, Espaco, Servico
 from materiais.models import Material
 
 
-CATEGORY_MODELS = {'servico': Servico, 'equipamento': Equipamento, 'espaco': Espaco}
+CATEGORY_MODELS = {'servico': Servico, 'equipamento': Equipamento}
+LEGACY_CATEGORY_MODELS = {**CATEGORY_MODELS, 'espaco': Espaco}
 BASE_FIELDS = {'categoria', 'objeto', 'motivo', 'inicio', 'fim'}
 SERVICE_FIELDS = {'equipamentos', 'material_proprio', 'material_gasto', 'material_gasto_gramas'}
 PUBLIC_FIELDS = BASE_FIELDS | SERVICE_FIELDS | {'observacoes'}
-STORED_FIELDS = ('servico_id', 'equipamento_id', 'espaco_id', 'motivo', 'observacoes', 'inicio', 'fim', 'cancelado_em',
+STORED_FIELDS = ('servico_id', 'equipamento_id', 'espaco_id', 'visita', 'motivo', 'observacoes', 'inicio', 'fim', 'cancelado_em',
                  'material_proprio', 'material_gasto_id', 'material_gasto_gramas',
                  'situacao', 'avaliado_por_id', 'avaliado_em')
 
@@ -70,7 +71,12 @@ def _lock_targets(*targets):
     # First database access inside atomic: acquire write locks before reading conflicts.
     # A no-op UPDATE also works on SQLite, where select_for_update is ineffective.
     for category, pk in sorted(set(targets)):
-        if not CATEGORY_MODELS[category].objects.filter(pk=pk).update(status=F('status')):
+        if category == 'visita':
+            if not ControleAgendaVisitas.objects.filter(pk=1).update(id=F('id')):
+                # Também funciona após flush em testes: escreva antes de ler.
+                ControleAgendaVisitas.objects.get_or_create(pk=1)
+                ControleAgendaVisitas.objects.filter(pk=1).update(id=F('id'))
+        elif not LEGACY_CATEGORY_MODELS[category].objects.filter(pk=pk).update(status=F('status')):
             raise ValidationError({'objeto': 'Selecione um cadastro válido.'})
 
 
@@ -125,16 +131,26 @@ def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=
     )
     old_equipment_ids = set(booking.equipamentos.values_list('pk', flat=True)) if booking.pk else set()
     old_target = _target(booking) if booking_id is not None else None
-    if ('categoria' in data) != ('objeto' in data):
+    if booking.espaco_id is not None:
+        raise ValidationError({'categoria': 'Reservas de espaços são legado: consulte ou cancele o registro.'})
+    category = data.get('categoria', booking.categoria)
+    if category == 'visita':
+        extra = set(data) & ({'objeto', 'motivo', 'observacoes'} | SERVICE_FIELDS)
+        if extra:
+            raise ValidationError({name: 'Visitas possuem somente dia e horários.' for name in extra})
+    elif ('categoria' in data) != ('objeto' in data):
         raise ValidationError({'objeto': 'Informe categoria e objeto juntos.'})
     if 'categoria' in data:
-        category, pk = data['categoria'], data['objeto']
-        if not isinstance(category, str) or category not in CATEGORY_MODELS:
+        if not isinstance(category, str) or category not in (*CATEGORY_MODELS, 'visita'):
             raise ValidationError({'categoria': 'Selecione uma categoria válida.'})
-        if type(pk) is not int or pk < 1:
+        pk = data.get('objeto')
+        if category != 'visita' and (type(pk) is not int or pk < 1):
             raise ValidationError({'objeto': 'Informe um ID inteiro positivo.'})
-        for name in CATEGORY_MODELS:
+        booking.visita = category == 'visita'
+        for name in LEGACY_CATEGORY_MODELS:
             setattr(booking, name + '_id', pk if name == category else None)
+        if booking.visita:
+            booking.motivo = booking.observacoes = ''
     if booking.categoria is None:
         raise ValidationError({'objeto': 'Selecione categoria e objeto.'})
     equipment_ids = data.get('equipamentos', sorted(old_equipment_ids))
@@ -173,12 +189,9 @@ def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=
                       *(('equipamento', pk) for pk in set(equipment_ids) | old_equipment_ids))
         previous = _load(booking_id, expected_version) if booking_id is not None else None
         before = _snapshot(previous) if previous else {}
-        resource = CATEGORY_MODELS[target[0]].objects.get(pk=target[1])
-        if (isinstance(resource, Espaco) and resource.somente_administradores
-                and (actor is None or not is_business_admin(actor))):
-            raise PermissionDenied('Este espaço só pode ser agendado por administradores do laboratório.')
+        resource = CATEGORY_MODELS[target[0]].objects.get(pk=target[1]) if not booking.visita else None
         period_changed = previous is None or target != _target(previous) or (booking.inicio, booking.fim) != (previous.inicio, previous.fim)
-        if period_changed and resource.status == 'indisponivel':
+        if period_changed and resource is not None and resource.status == 'indisponivel':
             raise ValidationError({'objeto': 'Este cadastro está indisponível para reservar este período.'})
         if Equipamento.objects.filter(pk__in=equipment_ids, status='indisponivel').filter(
                 ~Q(pk__in=old_equipment_ids) if not period_changed else Q()).exists():
@@ -202,12 +215,14 @@ def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=
 
 
 def _check_overlap(booking):
+    target_filter = {'visita': True} if booking.visita else {booking.categoria + '_id': booking.objeto_id}
     overlap = Agendamento.objects.filter(situacao='confirmado', cancelado_em__isnull=True,
-        inicio__lt=booking.fim, fim__gt=booking.inicio, **{booking.categoria + '_id': booking.objeto_id})
+        inicio__lt=booking.fim, fim__gt=booking.inicio, **target_filter)
     if booking.pk:
         overlap = overlap.exclude(pk=booking.pk)
     if overlap.exists():
-        raise BookingConflict('horario_ocupado', 'Já existe uma reserva deste objeto no período informado.')
+        raise BookingConflict('horario_ocupado', 'Já existe uma visita no período informado.' if booking.visita
+                              else 'Já existe uma reserva deste objeto no período informado.')
 
 
 @_busy_as_conflict
@@ -224,8 +239,10 @@ def review_booking(*, actor, booking_id, expected_version, decision):
             raise BookingConflict('pedido_avaliado', 'Esta solicitação já foi avaliada.')
         before = _snapshot(booking)
         if decision == 'aprovar':
-            resource = CATEGORY_MODELS[booking.categoria].objects.get(pk=booking.objeto_id)
-            if resource.status == 'indisponivel':
+            if booking.espaco_id is not None:
+                raise ValidationError({'categoria': 'Reservas de espaços são legado e não podem ser aprovadas.'})
+            resource = CATEGORY_MODELS[booking.categoria].objects.get(pk=booking.objeto_id) if not booking.visita else None
+            if resource is not None and resource.status == 'indisponivel':
                 raise ValidationError({'objeto': 'Este cadastro está indisponível para reservar este período.'})
             if Equipamento.objects.filter(pk__in=equipment_ids, status='indisponivel').exists():
                 raise ValidationError({'equipamentos': 'Um equipamento selecionado está indisponível.'})

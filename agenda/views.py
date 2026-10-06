@@ -14,7 +14,7 @@ from accounts.policies import is_business_admin
 from agenda.forms import BookingForm, CancelForm, ReviewForm
 from agenda.models import BOOKING_STATUSES, CATEGORIES, Agendamento
 from agenda.policies import can_access_agenda
-from agenda.selectors import calendar_weeks, filter_bookings, month_bounds, visible_bookings
+from agenda.selectors import calendar_weeks, category_filter, filter_bookings, month_bounds, visible_bookings
 from agenda.services import PUBLIC_FIELDS, SERVICE_FIELDS, BookingConflict, cancel_booking, review_booking, save_booking
 
 
@@ -77,7 +77,7 @@ class BookingListView(AgendaAccessMixin, ListView):
                        calendar_month=self.calendar_month, selected_situation=self.situation,
                        situations=BOOKING_STATUSES.items(), query=self.query,
                        weeks=calendar_weeks(filter_bookings(self.object_list, month=self.calendar_month), self.calendar_month),
-                       category_counts={name: self.object_list.filter(situacao='confirmado', **{name+'__isnull': False}).count()
+                       category_counts={name: self.object_list.filter(situacao='confirmado', **category_filter(name)).count()
                                         for name in CATEGORIES})
         return context
 
@@ -111,7 +111,10 @@ class BookingWriteView(AgendaAccessMixin, View):
     def get_booking(self):
         if 'pk' in self.kwargs and not is_business_admin(self.request.user):
             raise PermissionDenied('Somente administradores do laboratório podem editar agendamentos.')
-        return get_object_or_404(self.get_queryset(), pk=self.kwargs['pk']) if 'pk' in self.kwargs else None
+        booking = get_object_or_404(self.get_queryset(), pk=self.kwargs['pk']) if 'pk' in self.kwargs else None
+        if booking and booking.espaco_id is not None:
+            raise PermissionDenied('Reservas de espaços são legado: consulte ou cancele o registro.')
+        return booking
 
     def get(self, request, **kwargs):
         booking = self.get_booking()

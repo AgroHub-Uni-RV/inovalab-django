@@ -139,12 +139,12 @@ class BookingRequestTests(BookingRequestFixtures, TestCase):
             with self.assertRaises(PermissionDenied):
                 self.create(actor=actor)
 
-    def test_restricted_spaces_remain_admin_only(self):
+    def test_spaces_cannot_be_reserved_by_any_role(self):
         for space in Espaco.objects.filter(somente_administradores=True):
             fields = {'categoria': 'espaco', 'objeto': space.pk, 'material_proprio': None}
-            with self.assertRaises(PermissionDenied):
-                self.create(**fields)
-            self.assertEqual(self.create(actor=self.admin, **fields).situacao, 'confirmado')
+            for actor in (self.user, self.admin):
+                with self.subTest(actor=actor), self.assertRaises(ValidationError):
+                    self.create(actor=actor, **fields)
 
     def test_approval_revalidates_target_machine_and_material_availability(self):
         for resource in (self.service, self.machine, self.material):
@@ -257,27 +257,18 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         self.client.force_login(self.user)
         self.assertContains(self.client.get('/agenda/'), 'Rejeitado')
 
-    def test_space_widget_and_forged_submission_respect_current_actor(self):
-        spaces = list(Espaco.objects.filter(somente_administradores=True))
+    def test_forged_space_submission_is_rejected_for_both_roles(self):
+        space = Espaco.objects.filter(somente_administradores=True).first()
         for actor in (self.admin, self.user):
             self.client.force_login(actor)
-            response = self.client.get('/agenda/novo/', {'categoria': 'espaco'})
-            widget = response.context['form'].fields['objeto'].widget
-            options = [group[1][0] for group in widget.optgroups('objeto', [])]
-            for space in spaces:
-                option = next(opt for opt in options if opt['value'].value == space.pk)
-                self.assertEqual(option['attrs'].get('disabled', False), actor == self.user)
-                self.assertEqual(option['restricted'], actor == self.user)
-            if actor == self.admin:
-                self.assertNotContains(response, 'Só administradores')
-            else:
-                self.assertContains(response, 'Só administradores', count=3)
-        data = self.web_data(categoria='espaco', objeto=spaces[0].pk)
-        data.pop('material_proprio')
-        self.assertEqual(self.client.post('/agenda/novo/', data).status_code, 200)
+            response = self.client.get('/agenda/novo/')
+            self.assertNotContains(response, '<option value="espaco"')
+            data = self.web_data(categoria='espaco', objeto=space.pk)
+            data.pop('material_proprio')
+            response = self.client.post('/agenda/novo/', data)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('categoria', response.context['form'].errors)
         self.assertFalse(Agendamento.objects.exists())
-        refreshed = self.client.post('/agenda/novo/', {**data, 'atualizar': '1'})
-        self.assertContains(refreshed, 'Só administradores', count=3)
 
     def test_api_normal_creation_cannot_spoof_state_owner_or_manage_booking(self):
         api = APIClient()
@@ -292,7 +283,7 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
             self.assertEqual(api.post('/api/v1/agendamentos/', {**self.data, field: 'confirmado'}, format='json').status_code, 400)
         space = Espaco.objects.filter(somente_administradores=True).first()
         self.assertEqual(api.post('/api/v1/agendamentos/', {**self.data, 'categoria': 'espaco',
-            'objeto': space.pk, 'material_proprio': None}, format='json').status_code, 403)
+            'objeto': space.pk, 'material_proprio': None}, format='json').status_code, 400)
 
     def test_navigation_is_role_scoped_and_only_review_entry_is_current(self):
         self.client.force_login(self.user)

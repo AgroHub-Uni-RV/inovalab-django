@@ -52,7 +52,7 @@ class BookingWebTests(TestCase):
         self.assertEqual(self.client.post('/agenda/novo/', self.data).status_code, 302)
 
     def test_admin_can_create_each_category_edit_view_history_and_cancel(self):
-        for category, target in (('servico', self.service), ('equipamento', self.equipment), ('espaco', self.space)):
+        for category, target in (('servico', self.service), ('equipamento', self.equipment)):
             category_data = {**self.data, 'categoria': category, 'objeto': target.pk}
             if category != 'servico':
                 category_data.pop('material_proprio')
@@ -70,22 +70,22 @@ class BookingWebTests(TestCase):
             self.assertEqual(Agendamento.objects.get(pk=booking.pk).eventos.count(), 3)
 
     def test_form_options_follow_selected_category_and_reject_foreign_or_disabled_target(self):
-        response = self.client.get('/agenda/novo/', {'categoria': 'espaco'})
+        response = self.client.get('/agenda/novo/', {'categoria': 'equipamento'})
         self.assertQuerySetEqual(response.context['form'].fields['objeto'].queryset,
-                                 Espaco.objects.exclude(status='indisponivel').order_by('nome', 'pk'))
-        self.space.status = 'indisponivel'
-        self.space.save()
-        response = self.client.post('/agenda/novo/', {**self.data, 'categoria': 'espaco', 'objeto': self.space.pk})
+                                 Equipamento.objects.exclude(status='indisponivel').order_by('nome', 'pk'))
+        self.equipment.status = 'indisponivel'
+        self.equipment.save()
+        response = self.client.post('/agenda/novo/', {**self.data, 'categoria': 'equipamento', 'objeto': self.equipment.pk})
         self.assertContains(response, 'Faça uma escolha válida')
 
     def test_refresh_options_preserves_unsaved_fields_without_validation_or_writing(self):
-        response = self.client.post('/agenda/novo/', {'categoria': 'espaco',
+        response = self.client.post('/agenda/novo/', {'categoria': 'equipamento',
                                    'motivo': 'Texto ainda em edição', 'atualizar': '1'})
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.context['form'].errors)
         self.assertContains(response, 'Texto ainda em edição')
         self.assertQuerySetEqual(response.context['form'].fields['objeto'].queryset,
-                                 Espaco.objects.exclude(status='indisponivel').order_by('nome', 'pk'))
+                                 Equipamento.objects.exclude(status='indisponivel').order_by('nome', 'pk'))
         self.assertFalse(Agendamento.objects.exists())
         response = self.client.post('/agenda/novo/', {**self.data, 'categoria': 'equipamento', 'objeto': 999999})
         self.assertEqual(Agendamento.objects.count(), 0)
@@ -149,8 +149,8 @@ class BookingWebTests(TestCase):
 
     def test_category_filter_and_invalid_filters(self):
         self.create()
-        self.create(categoria='espaco', objeto=self.space.pk)
-        response = self.client.get('/agenda/', {'mes': '2026-11', 'categoria': 'espaco'})
+        self.create(categoria='equipamento', objeto=self.equipment.pk)
+        response = self.client.get('/agenda/', {'mes': '2026-11', 'categoria': 'equipamento'})
         self.assertEqual(response.context['paginator'].count, 1)
         for fields in ({'mes': '2026-13'}, {'categoria': 'outro'}):
             self.assertEqual(self.client.get('/agenda/', fields).status_code, 400)

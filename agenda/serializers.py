@@ -44,9 +44,9 @@ class AwareDateTimeField(serializers.DateTimeField):
 class BookingSerializer(StrictPayloadMixin, serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     categoria = serializers.ChoiceField(choices=CATEGORIES)
-    objeto = VersionField(source='objeto_id', min_value=1)
+    objeto = VersionField(source='objeto_id', min_value=1, required=False, allow_null=True)
     objeto_nome = serializers.CharField(read_only=True)
-    motivo = serializers.CharField()
+    motivo = serializers.CharField(required=False)
     observacoes = serializers.CharField(required=False, allow_blank=True)
     inicio = AwareDateTimeField()
     fim = AwareDateTimeField()
@@ -74,8 +74,11 @@ class BookingSerializer(StrictPayloadMixin, serializers.Serializer):
             raise serializers.ValidationError({'versao': 'A versão inicial é definida pelo sistema.'})
         if self.instance is not None and 'versao' not in attrs:
             raise serializers.ValidationError({'versao': 'Informe a versão do agendamento.'})
-        if ('categoria' in attrs) != ('objeto_id' in attrs):
+        category = attrs.get('categoria', self.instance.categoria if self.instance else None)
+        if category != 'visita' and (('categoria' in attrs) != ('objeto_id' in attrs)):
             raise serializers.ValidationError({'objeto': 'Informe categoria e objeto juntos.'})
+        if category != 'visita' and self.instance is None and 'motivo' not in attrs:
+            raise serializers.ValidationError({'motivo': 'Este campo é obrigatório.'})
         if 'objeto_id' in attrs:
             attrs['objeto'] = attrs.pop('objeto_id')
         return attrs

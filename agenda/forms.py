@@ -8,7 +8,7 @@ from accounts.policies import is_business_admin
 
 from agenda.models import CATEGORIES
 from agenda.services import CATEGORY_MODELS, SERVICE_FIELDS
-from agenda.widgets import EquipmentCheckboxSelectMultiple, EquipmentRadioSelect, SpaceRadioSelect
+from agenda.widgets import EquipmentCheckboxSelectMultiple, EquipmentRadioSelect
 from materiais.models import Material
 
 
@@ -83,14 +83,12 @@ class BookingForm(StrictFormMixin, forms.Form):
                 ~Q(status='indisponivel') | Q(pk=retained_id),
             ).order_by('nome', 'pk')
             self.fields['objeto'].label = CATEGORIES[category]
-            if category == 'espaco':
-                self.fields['objeto'].empty_label = None
-                self.fields['objeto'].widget = SpaceRadioSelect(
-                    choices=self.fields['objeto'].choices, is_admin=self.is_admin,
-                )
-            elif category == 'equipamento':
+            if category == 'equipamento':
                 self.fields['objeto'].empty_label = None
                 self.fields['objeto'].widget = EquipmentRadioSelect(choices=self.fields['objeto'].choices)
+        if category == 'visita':
+            for name in ('objeto', 'motivo', 'observacoes'):
+                del self.fields[name]
         if category == 'servico':
             self.fields['material_gasto'].queryset = Material.objects.filter(
                 ~Q(status='indisponivel') | Q(pk=booking.material_gasto_id if booking else None),
@@ -128,8 +126,6 @@ class BookingForm(StrictFormMixin, forms.Form):
 
     def clean_objeto(self):
         resource = self.cleaned_data['objeto']
-        if self.category == 'espaco' and resource.somente_administradores and not self.is_admin:
-            raise forms.ValidationError('Este espaço só pode ser agendado por administradores do laboratório.')
         return resource.pk
 
     def clean_versao(self):

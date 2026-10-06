@@ -31,38 +31,30 @@ class IntegrationAPITests(TestCase):
     def post(self, **overrides):
         return self.client.post(self.url, {**self.data, **overrides}, format='json')
 
-    def test_restricted_spaces_are_hidden_and_cannot_be_reserved_by_id(self):
-        restricted = Espaco.objects.filter(somente_administradores=True)
+    def test_external_catalog_no_longer_offers_spaces(self):
         response = self.client.get('/api/v1/integracoes/catalogo/', {'categoria': 'espaco'})
-        self.assertEqual(response.status_code, 200)
-        ids = {entry['id'] for entry in response.data['results']}
-        self.assertIn(self.space.pk, ids)
-        for room in restricted:
+        self.assertEqual(response.status_code, 400)
+        for room in Espaco.objects.all():
             with self.subTest(room=room.nome):
-                self.assertNotIn(room.pk, ids)
-                denied = self.post(categoria='espaco', objeto=room.pk)
-                self.assertEqual(denied.status_code, 403, denied.data)
+                self.assertEqual(self.post(categoria='espaco', objeto=room.pk).status_code, 400)
         self.assertFalse(Agendamento.objects.exists())
         self.assertFalse(PedidoIntegracao.objects.exists())
 
-    def test_business_admin_can_book_restricted_spaces_internally(self):
+    def test_business_admin_cannot_book_spaces_internally(self):
         self.client.credentials()
         self.client.force_authenticate(self.admin)
         for room in Espaco.objects.filter(somente_administradores=True):
-            with self.subTest(room=room.nome):
-                data = {key: value for key, value in self.data.items()
-                        if key not in ('id_externo', 'requerente_id', 'requerente')}
-                response = self.client.post('/api/v1/agendamentos/',
-                    {**data, 'categoria': 'espaco', 'objeto': room.pk}, format='json')
-                self.assertEqual(response.status_code, 201, response.data)
+            data = {key: value for key, value in self.data.items()
+                    if key not in ('id_externo', 'requerente_id', 'requerente')}
+            response = self.client.post('/api/v1/agendamentos/',
+                {**data, 'categoria': 'espaco', 'objeto': room.pk}, format='json')
+            self.assertEqual(response.status_code, 400, response.data)
 
-    def test_external_booking_checks_current_restriction_on_custom_space(self):
-        self.space.somente_administradores = True
-        self.space.save()
-        self.assertEqual(self.post(categoria='espaco', objeto=self.space.pk).status_code, 403)
-        self.space.somente_administradores = False
-        self.space.save()
-        self.assertEqual(self.post(categoria='espaco', objeto=self.space.pk).status_code, 201)
+    def test_custom_space_cannot_be_reserved_regardless_of_restriction(self):
+        for restricted in (True, False):
+            self.space.somente_administradores = restricted
+            self.space.save()
+            self.assertEqual(self.post(categoria='espaco', objeto=self.space.pk).status_code, 400)
 
     def test_real_bearer_without_session_or_csrf_creates_and_replays(self):
         response = self.post()
@@ -113,7 +105,7 @@ class IntegrationAPITests(TestCase):
         first = self.post()
         other, token = create_client(actor=self.admin, name='Outro')
         self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + token)
-        second = self.post(categoria='espaco', objeto=self.space.pk)
+        second = self.post(categoria='equipamento', objeto=self.equipment.pk)
         self.assertEqual(second.status_code, 201)
         self.assertNotEqual(first.data['id'], second.data['id'])
         self.assertEqual(PedidoIntegracao.objects.count(), 2)

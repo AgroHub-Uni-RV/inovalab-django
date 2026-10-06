@@ -33,8 +33,8 @@ class BookingServiceTests(TestCase):
             'inicio': self.start, 'fim': self.end, **overrides,
         })
 
-    def test_three_categories_have_one_protected_target_and_actor_event(self):
-        for category, target in (('servico', self.service), ('equipamento', self.equipment), ('espaco', self.space)):
+    def test_resource_categories_have_one_protected_target_and_actor_event(self):
+        for category, target in (('servico', self.service), ('equipamento', self.equipment)):
             booking = self.create_booking(categoria=category, objeto=target.pk)
             self.assertEqual((booking.categoria, booking.objeto_id, booking.versao), (category, target.pk, 1))
             self.assertEqual(sum(value is not None for value in (booking.servico_id, booking.equipamento_id, booking.espaco_id)), 1)
@@ -82,13 +82,13 @@ class BookingServiceTests(TestCase):
         self.assertEqual(Agendamento.objects.count(), 0)
 
     def test_each_category_is_exclusive_and_adjacent_slots_are_allowed(self):
-        for category, target in (('servico', self.service), ('equipamento', self.equipment), ('espaco', self.space)):
+        for category, target in (('servico', self.service), ('equipamento', self.equipment)):
             self.create_booking(categoria=category, objeto=target.pk)
             with self.assertRaises(BookingConflict) as error:
                 self.create_booking(categoria=category, objeto=target.pk, inicio=self.start + timedelta(minutes=30))
             self.assertEqual(error.exception.code, 'horario_ocupado')
             self.create_booking(categoria=category, objeto=target.pk, inicio=self.end, fim=self.end + timedelta(hours=1))
-        self.assertEqual(Agendamento.objects.count(), 6)
+        self.assertEqual(Agendamento.objects.count(), 4)
 
     def test_equal_ids_in_different_categories_do_not_conflict_and_other_objects_are_free(self):
         self.create_booking()
@@ -98,17 +98,17 @@ class BookingServiceTests(TestCase):
         self.assertEqual(Agendamento.objects.count(), 3)
 
     def test_unavailability_blocks_new_period_but_metadata_and_cancellation_preserve_old_reference(self):
-        booking = self.create_booking(categoria='espaco', objeto=self.space.pk)
-        self.space.status = 'indisponivel'
-        self.space.save()
+        booking = self.create_booking(categoria='equipamento', objeto=self.equipment.pk)
+        self.equipment.status = 'indisponivel'
+        self.equipment.save()
         with self.assertRaises(ValidationError):
-            self.create_booking(categoria='espaco', objeto=self.space.pk, inicio=self.end, fim=self.end + timedelta(hours=1))
+            self.create_booking(categoria='equipamento', objeto=self.equipment.pk, inicio=self.end, fim=self.end + timedelta(hours=1))
         booking = save_booking(actor=self.admin, booking_id=booking.pk, expected_version=1, data={'motivo': 'Manter vínculo'})
         with self.assertRaises(ValidationError):
             save_booking(actor=self.admin, booking_id=booking.pk, expected_version=2, data={'fim': self.end + timedelta(hours=1)})
         cancel_booking(actor=self.admin, booking_id=booking.pk, expected_version=2)
-        self.space.refresh_from_db()
-        self.assertEqual(self.space.status, 'indisponivel')
+        self.equipment.refresh_from_db()
+        self.assertEqual(self.equipment.status, 'indisponivel')
 
     def test_occupied_marker_does_not_block_future_reservation_or_change_catalog_status(self):
         self.equipment.status = 'ocupado'

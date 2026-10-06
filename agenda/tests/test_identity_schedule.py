@@ -9,7 +9,7 @@ from rest_framework.test import APIClient
 from agenda.forms import BookingForm
 from agenda.models import Agendamento
 from agenda.services import save_booking
-from catalogo.models import Espaco
+from catalogo.models import Equipamento
 
 
 class BookingIdentityScheduleTests(TestCase):
@@ -17,13 +17,13 @@ class BookingIdentityScheduleTests(TestCase):
     def setUpTestData(cls):
         cls.user = get_user_model().objects.create_user('ana', first_name='Ana', last_name='Silva')
         cls.admin = get_user_model().objects.create_superuser('gestor')
-        cls.space = Espaco.objects.create(nome='Sala de teste')
+        cls.equipment = Equipamento.objects.create(nome='Sala de teste')
 
     def setUp(self):
         self.client.force_login(self.user)
-        self.web = dict(categoria='espaco', objeto=self.space.pk, motivo='Projeto',
+        self.web = dict(categoria='equipamento', objeto=self.equipment.pk, motivo='Projeto',
                         dia='2026-11-01', hora_inicio='14:00:00', hora_termino='15:00:00')
-        self.data = dict(categoria='espaco', objeto=self.space.pk, motivo='Projeto',
+        self.data = dict(categoria='equipamento', objeto=self.equipment.pk, motivo='Projeto',
                          inicio=datetime.fromisoformat('2026-11-01T14:00:00-03:00'),
                          fim=datetime.fromisoformat('2026-11-01T15:00:00-03:00'))
 
@@ -37,7 +37,7 @@ class BookingIdentityScheduleTests(TestCase):
         self.assertContains(self.client.get(response.url), 'Ana Silva')
 
     def test_new_form_uses_one_date_and_two_time_inputs(self):
-        response = self.client.get('/agenda/novo/?categoria=espaco')
+        response = self.client.get('/agenda/novo/?categoria=equipamento')
         self.assertContains(response, 'type="date" name="dia"')
         self.assertContains(response, 'type="time" name="hora_inicio"')
         self.assertContains(response, 'type="time" name="hora_termino"')
@@ -137,5 +137,5 @@ class BookingIdentityScheduleTests(TestCase):
         self.assertEqual(set(booking.eventos.first().alteracoes), {'motivo'})
 
     def test_unsaved_booking_has_printable_identity_without_history(self):
-        booking = Agendamento(espaco=self.space, motivo='Projeto')
+        booking = Agendamento(equipamento=self.equipment, motivo='Projeto')
         self.assertEqual(str(booking), 'Sala de teste — Não registrado')

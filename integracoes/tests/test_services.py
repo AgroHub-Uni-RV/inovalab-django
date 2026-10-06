@@ -94,7 +94,7 @@ class IntegrationServiceTests(TestCase):
         self.assertEqual((self.client.nome, self.client.ativo, self.client.versao), ('Nome corrigido', True, 2))
 
     def test_three_targets_create_one_linked_booking_with_external_actor(self):
-        for index, (category, target) in enumerate((('servico', self.service), ('equipamento', self.equipment), ('espaco', self.space))):
+        for index, (category, target) in enumerate((('servico', self.service), ('equipamento', self.equipment))):
             booking, receipt, repeated = self.receive(id_externo=str(index), categoria=category, objeto=target.pk)
             self.assertFalse(repeated)
             self.assertEqual((receipt.agendamento_id, receipt.cliente_id, receipt.requerente_id), (booking.pk, self.client.pk, 'pessoa-45'))
@@ -118,7 +118,7 @@ class IntegrationServiceTests(TestCase):
                 self.receive(**fields)
             self.assertEqual(error.exception.code, 'idempotencia_conflitante')
         other, token = create_client(actor=self.admin, name='Outro')
-        receive_booking(principal=authenticate_token(token), data={**self.data, 'categoria': 'espaco', 'objeto': self.space.pk})
+        receive_booking(principal=authenticate_token(token), data={**self.data, 'categoria': 'equipamento', 'objeto': self.equipment.pk})
         self.assertEqual(PedidoIntegracao.objects.count(), 2)
 
     def test_replay_after_admin_edit_deactivation_or_cancellation_never_recreates(self):
@@ -152,9 +152,9 @@ class IntegrationServiceTests(TestCase):
         with self.assertRaises(BookingConflict) as error:
             self.receive(id_externo='outro')
         self.assertEqual(error.exception.code, 'horario_ocupado')
-        self.space.status = 'indisponivel'
-        self.space.save()
-        for fields in ({'categoria': 'espaco', 'objeto': self.space.pk}, {'objeto': 999999}):
+        self.equipment.status = 'indisponivel'
+        self.equipment.save()
+        for fields in ({'categoria': 'equipamento', 'objeto': self.equipment.pk}, {'objeto': 999999}):
             with self.assertRaises(ValidationError):
                 self.receive(id_externo='outro', **fields)
         self.assertEqual(PedidoIntegracao.objects.count(), 1)

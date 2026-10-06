@@ -100,7 +100,7 @@ class BookingServiceDetailsTests(TestCase):
     def test_category_change_clears_service_fields_and_history_keeps_previous_values(self):
         booking = self.create(equipamentos=[self.machine.pk], material_proprio=False, material_gasto_gramas=12)
         saved = save_booking(actor=self.admin, booking_id=booking.pk, expected_version=1,
-                             data={'categoria': 'espaco', 'objeto': self.room.pk})
+                             data={'categoria': 'equipamento', 'objeto': self.machine.pk})
         self.assertFalse(saved.equipamentos.exists())
         self.assertIsNone(saved.material_proprio)
         self.assertIsNone(saved.material_gasto_gramas)
@@ -137,7 +137,7 @@ class BookingServiceDetailsTests(TestCase):
         service_form = self.client.get('/agenda/novo/?categoria=servico').context['form']
         self.assertIn('equipamentos', service_form.fields)
         self.assertFalse(service_form.fields['equipamentos'].required)
-        for category in ('espaco', 'equipamento'):
+        for category in ('equipamento',):
             form = self.client.get('/agenda/novo/', {'categoria': category}).context['form']
             self.assertFalse({'equipamentos', 'material_proprio', 'material_gasto_gramas'} & set(form.fields))
         data = self.web_data()

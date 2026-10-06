@@ -11,8 +11,7 @@ from rest_framework.test import APIClient
 from agenda.forms import BookingForm
 from agenda.models import Agendamento
 from agenda.services import BookingConflict, cancel_booking, save_booking
-from catalogo.initial_resources import INITIAL_SPACES
-from catalogo.models import Espaco, Servico
+from catalogo.models import Equipamento, Espaco, Servico
 from materiais.models import Material
 
 
@@ -101,7 +100,7 @@ class SpacesAndMaterialTests(TestCase):
         self.assertEqual(booking.material_gasto_id, self.material.pk)
         other = self.create(inicio=self.data['inicio']+timedelta(days=1), fim=self.data['fim']+timedelta(days=1))
         updated = save_booking(actor=self.admin, booking_id=other.pk, expected_version=1,
-                              data={'categoria': 'espaco', 'objeto': Espaco.objects.first().pk})
+                              data={'categoria': 'visita'})
         self.assertIsNone(updated.material_gasto_id)
 
     def test_api_material_id_roundtrip_and_legacy_spending_without_type(self):
@@ -124,30 +123,20 @@ class SpacesAndMaterialTests(TestCase):
                 Agendamento.objects.create(servico=self.service, material_gasto=self.material,
                                            **{**base, 'material_proprio': flag, 'material_gasto_gramas': None})
 
-    def test_space_cards_use_real_capacity_restrictions_and_reference_order(self):
-        response = self.client.get('/agenda/novo/?categoria=espaco')
-        html = response.content.decode()
-        self.assertIn('space-picker', html)
-        self.assertNotIn('<select name="objeto"', html)
-        positions = [html.index(f'value="{Espaco.objects.get(codigo_inicial=code).pk}"')
-                     for code, *_ in INITIAL_SPACES]
-        self.assertEqual(positions, sorted(positions))
-        self.assertNotContains(response, 'Só administradores')
-        room = Espaco.objects.get(codigo_inicial='sala-01')
-        room.capacidade_maxima_de_pessoas = 8
-        room.nome = 'Sala alterada'
-        room.save()
-        self.assertContains(self.client.get('/agenda/novo/?categoria=espaco'), 'Sala alterada')
-        self.assertIn('capacity', BookingForm(initial={'categoria': 'espaco'}).fields['objeto'].widget.optgroups('objeto', [])[0][1][0])
+    def test_spaces_are_not_offered_in_new_booking_form(self):
+        response = self.client.get('/agenda/novo/')
+        self.assertNotContains(response, '<option value="espaco"')
+        self.assertContains(response, '<option value="visita"')
+        self.assertTrue(Espaco.objects.exists())
 
-    def test_space_card_selection_persists_and_invalid_submission_keeps_checked_choice(self):
-        room = Espaco.objects.get(codigo_inicial='sala-01')
+    def test_equipment_card_invalid_submission_preserves_selected_choice(self):
+        equipment = Equipamento.objects.create(nome='Máquina de teste')
         data = {key: value for key, value in self.web_data().items() if not key.startswith('material_')}
-        data.update(categoria='espaco', objeto=room.pk)
+        data.update(categoria='equipamento', objeto=equipment.pk)
         invalid = self.client.post('/agenda/novo/', {**data, 'motivo': ''})
-        self.assertContains(invalid, f'value="{room.pk}" required id=')
+        self.assertContains(invalid, f'value="{equipment.pk}" required id=')
         self.assertContains(invalid, 'checked')
         response = self.client.post('/agenda/novo/', data)
         booking = Agendamento.objects.get()
         self.assertRedirects(response, f'/agenda/{booking.pk}/')
-        self.assertEqual(booking.espaco_id, room.pk)
+        self.assertEqual(booking.equipamento_id, equipment.pk)

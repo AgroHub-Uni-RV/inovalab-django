@@ -14,10 +14,8 @@
         {% for field in form.visible_fields %}{% if field.name != 'categoria' %}
         {% if field.name == 'objeto' and form.category == 'equipamento' %}
         <fieldset class="form-field full-width equipment-picker-field" data-booking-field="objeto" data-refresh-field><legend>Selecione o equipamento</legend>{{ field }}{{ field.errors }}<small class="field-help">Selecione um cartão; use as setas do teclado para navegar.</small></fieldset>
-        {% elif field.name == 'objeto' and form.category == 'espaco' %}
-        <fieldset class="form-field full-width space-picker-field" data-booking-field="objeto" data-refresh-field><legend>Selecione o espaço</legend>{{ field }}{{ field.errors }}<small class="field-help">{% if not is_business_admin %}Cadeados indicam espaços exclusivos de administradores. {% endif %}Selecione um cartão; use as setas do teclado para navegar.</small></fieldset>
         {% else %}
-        <div data-booking-field="{{ field.name }}"{% if field.name == 'objeto' or field.name == 'equipamentos' or field.name == 'material_proprio' or field.name == 'material_gasto' or field.name == 'material_gasto_gramas' %} data-refresh-field{% endif %} class="form-field{% if field.name == 'motivo' or field.name == 'observacoes' or field.name == 'equipamentos' or field.name == 'dia' %} full-width{% endif %}{% if field.name == 'equipamentos' %} booking-equipment-options{% endif %}">
+        <div data-booking-field="{{ field.name }}"{% if field.name == 'motivo' or field.name == 'observacoes' or field.name == 'objeto' or field.name == 'equipamentos' or field.name == 'material_proprio' or field.name == 'material_gasto' or field.name == 'material_gasto_gramas' %} data-refresh-field{% endif %} class="form-field{% if field.name == 'motivo' or field.name == 'observacoes' or field.name == 'equipamentos' or field.name == 'dia' %} full-width{% endif %}{% if field.name == 'equipamentos' %} booking-equipment-options{% endif %}">
           {{ field.label_tag }}{{ field }}{{ field.errors }}{% if field.help_text %}<small class="field-help">{{ field.help_text }}</small>{% endif %}
         </div>
         {% endif %}{% endif %}{% endfor %}

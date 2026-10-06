@@ -7,7 +7,7 @@ from django.db import models
 from django.utils import timezone
 
 
-CATEGORIES = {'servico': 'Serviço', 'equipamento': 'Equipamento', 'espaco': 'Espaço'}
+CATEGORIES = {'servico': 'Serviço', 'equipamento': 'Equipamento', 'visita': 'Visita'}
 BOOKING_STATUSES = {'pendente': 'Pendente', 'confirmado': 'Confirmado', 'rejeitado': 'Rejeitado'}
 
 
@@ -15,6 +15,7 @@ class Agendamento(models.Model):
     servico = models.ForeignKey('catalogo.Servico', on_delete=models.PROTECT, null=True, blank=True)
     equipamento = models.ForeignKey('catalogo.Equipamento', on_delete=models.PROTECT, null=True, blank=True)
     espaco = models.ForeignKey('catalogo.Espaco', on_delete=models.PROTECT, null=True, blank=True)
+    visita = models.BooleanField(default=False)
     equipamentos = models.ManyToManyField('catalogo.Equipamento', blank=True, related_name='agendamentos_de_servico')
     material_proprio = models.BooleanField('tem material próprio', null=True, blank=True)
     material_gasto = models.ForeignKey('materiais.Material', on_delete=models.PROTECT, null=True, blank=True,
@@ -23,7 +24,7 @@ class Agendamento(models.Model):
         'material gasto (g)', max_digits=12, decimal_places=3, null=True, blank=True,
         validators=[MinValueValidator(Decimal('0.001'))],
     )
-    motivo = models.TextField()
+    motivo = models.TextField(blank=True, default='')
     observacoes = models.TextField('observações', blank=True, default='')
     inicio = models.DateTimeField()
     fim = models.DateTimeField()
@@ -40,10 +41,14 @@ class Agendamento(models.Model):
         ordering = ['inicio', 'pk']
         constraints = [
             models.CheckConstraint(condition=(
-                models.Q(servico__isnull=False, equipamento__isnull=True, espaco__isnull=True)
-                | models.Q(servico__isnull=True, equipamento__isnull=False, espaco__isnull=True)
-                | models.Q(servico__isnull=True, equipamento__isnull=True, espaco__isnull=False)
+                models.Q(visita=False) & (
+                    models.Q(servico__isnull=False, equipamento__isnull=True, espaco__isnull=True)
+                    | models.Q(servico__isnull=True, equipamento__isnull=False, espaco__isnull=True)
+                    | models.Q(servico__isnull=True, equipamento__isnull=True, espaco__isnull=False)
+                ) | models.Q(visita=True, servico__isnull=True, equipamento__isnull=True, espaco__isnull=True)
             ), name='agenda_exatamente_um_alvo'),
+            models.CheckConstraint(condition=(models.Q(visita=False) | models.Q(motivo='', observacoes='')),
+                                   name='agenda_visita_sem_textos'),
             models.CheckConstraint(condition=models.Q(fim__gt=models.F('inicio')), name='agenda_intervalo_positivo'),
             models.CheckConstraint(condition=models.Q(versao__gte=1), name='agenda_versao_positiva'),
             models.CheckConstraint(condition=models.Q(situacao__in=list(BOOKING_STATUSES)), name='agenda_situacao_valida'),
@@ -64,19 +69,23 @@ class Agendamento(models.Model):
 
     @property
     def categoria(self):
-        return next((name for name in CATEGORIES if getattr(self, name + '_id') is not None), None)
+        if self.visita:
+            return 'visita'
+        return next((name for name in ('servico', 'equipamento', 'espaco')
+                     if getattr(self, name + '_id') is not None), None)
 
     @property
     def objeto_id(self):
-        return getattr(self, self.categoria + '_id') if self.categoria else None
+        return getattr(self, self.categoria + '_id') if self.categoria and not self.visita else None
 
     @property
     def objeto_nome(self):
-        return getattr(self, self.categoria).nome if self.categoria else ''
+        return 'Visita' if self.visita else getattr(self, self.categoria).nome if self.categoria else ''
 
     @property
     def categoria_display(self):
-        return {'servico': 'Serviços', 'equipamento': 'Equipamentos', 'espaco': 'Espaço'}.get(self.categoria, '')
+        return {'servico': 'Serviços', 'equipamento': 'Equipamentos', 'visita': 'Visitas',
+                'espaco': 'Espaço (legado)'}.get(self.categoria, '')
 
     @property
     def criador_nome(self):
@@ -105,19 +114,32 @@ class Agendamento(models.Model):
             value = getattr(self, name)
             if isinstance(value, str):
                 setattr(self, name, value.strip())
-            if not getattr(self, name):
+            if not self.visita and not getattr(self, name):
                 errors[name] = 'Este campo é obrigatório.'
+        if self.visita:
+            for name in ('motivo', 'observacoes'):
+                if getattr(self, name):
+                    errors[name] = 'Visitas possuem somente dia e horários.'
         for name in ('inicio', 'fim'):
             value = getattr(self, name)
             if value is not None and timezone.is_naive(value):
                 errors[name] = 'Informe data e hora com fuso horário.'
         if not errors and self.inicio and self.fim and self.fim <= self.inicio:
             errors['fim'] = 'O término deve ser posterior ao início.'
+        if not errors and self.visita and self.inicio and self.fim:
+            zone = timezone.get_default_timezone()
+            if timezone.localtime(self.inicio, zone).date() != timezone.localtime(self.fim, zone).date():
+                errors['fim'] = 'A visita deve começar e terminar no mesmo dia.'
         if errors:
             raise ValidationError(errors)
 
     def __str__(self):
         return f'{self.objeto_nome} — {self.criador_nome}'
+
+
+class ControleAgendaVisitas(models.Model):
+    """Linha única usada para serializar alterações na agenda de visitas."""
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
 
 
 class EventoAgendamento(models.Model):
