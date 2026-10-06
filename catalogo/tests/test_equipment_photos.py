@@ -23,10 +23,11 @@ class EquipmentPhotoTests(TestCase):
         self.assertContains(response, 'equipment-picker')
         for machine in Equipamento.objects.filter(codigo_inicial__isnull=False):
             self.assertTrue(machine.foto)
+            self.assertTrue(machine.foto.name.endswith('.webp'))
             self.assertContains(response, machine.foto.url)
             photo = self.client.get(machine.foto.url)
             self.assertEqual(photo.status_code, 200)
-            self.assertTrue(photo['Content-Type'].startswith('image/'))
+            self.assertEqual(photo['Content-Type'], 'image/webp')
             self.assertTrue(b''.join(photo.streaming_content))
             photo.close()
 

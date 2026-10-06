@@ -27,3 +27,11 @@ Navegador verificado com contas temporárias em cópia isolada do banco: card pe
 Os testes automatizados cobrem upload, substituição, limpeza, imagem inválida, acesso comum versus administrador, API, imagem inicial, espaço reservado, seleção mantida após erro e foto no detalhe do agendamento.
 
 Para a depuração do responsável: validar fotos próprias de outros tamanhos, navegação por teclado em seus navegadores habituais e o fluxo real de solicitação/aprovação com equipamentos. Outros ambientes devem executar `manage.py migrate` e o procedimento habitual de publicação dos arquivos estáticos.
+
+## Ajuste das imagens e dos cards
+
+As seis imagens distribuídas foram convertidas para WebP, com lado máximo de 960 px e qualidade 82: de 108.190.842 para 329.524 bytes no total. As referências originais foram preservadas. A migração `catalogo.0006_fotos_iniciais_webp` atualiza somente os caminhos das imagens iniciais; fotos enviadas e campos limpos permanecem intactos.
+
+Os cards têm largura máxima de 160 px, fotos na proporção 4:3 e espaçamentos reduzidos, tanto para equipamento quanto para serviço. A grade mantém quatro colunas no desktop e duas em áreas menores.
+
+Os mesmos comandos de verificação foram repetidos: 394 testes aprovados, `check` sem problemas, `makemigrations --check --dry-run` sem alterações e `git diff --check` sem erros. Migração aplicada localmente. No navegador, as seis imagens WebP carregaram; cards de 160 px em 1264 px e de 152 px em 390 px, sem rolagem horizontal nem erros JavaScript. Conferência visual realizada nas duas larguras. Resta a avaliação visual do responsável em seus dispositivos habituais.

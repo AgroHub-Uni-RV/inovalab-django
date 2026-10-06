@@ -8,14 +8,20 @@ from django.utils.deconstruct import deconstructible
 
 
 INITIAL_EQUIPMENT_PHOTOS = {
-    'plotter-impressao': 'plotter-impressao.png',
-    'impressora-3d': 'impressora-3d.png',
-    'corte-laser': 'corte-laser.png',
-    'plotter-corte': 'plotter-corte.png',
-    'realidade-virtual': 'realidade-virtual.jpg',
-    'scanner-3d': 'scanner-3d.jpg',
+    'plotter-impressao': 'plotter-impressao.webp',
+    'impressora-3d': 'impressora-3d.webp',
+    'corte-laser': 'corte-laser.webp',
+    'plotter-corte': 'plotter-corte.webp',
+    'realidade-virtual': 'realidade-virtual.webp',
+    'scanner-3d': 'scanner-3d.webp',
 }
 INITIAL_PHOTO_NAMES = {'iniciais/' + filename: filename for filename in INITIAL_EQUIPMENT_PHOTOS.values()}
+# Historical migration names remain readable when migrating backwards.
+INITIAL_PHOTO_NAMES.update({
+    'iniciais/' + Path(filename).with_suffix(extension).name: filename
+    for filename in INITIAL_EQUIPMENT_PHOTOS.values()
+    for extension in ('.png', '.jpg')
+})
 
 
 @deconstructible
