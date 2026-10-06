@@ -4,7 +4,7 @@ Entrega de correções solicitadas após a padronização visual. Mantém a esca
 
 ## Comportamento
 
-- Dashboard: legenda Recesso verde (`#76b82a`), Feriado azul (`#00a3d8`) e Evento vermelho (`#eb1b23`) para todos os usuários internos. O MVP ainda não cadastra essas datas. Domingos, hoje e reservas não recebem cores dessas categorias: hoje usa contorno neutro; reservas autorizadas mantêm contagem acessível e sublinhado neutro. Não foram inventadas datas de recessos, feriados ou eventos.
+- Dashboard: legenda Recesso verde (`#76b82a`), Feriado azul (`#00a3d8`) e Evento vermelho (`#eb1b23`) para todos os usuários internos. A atualização de 06/10/2026 passa a [aplicar os eventos reais do AgroHub](14-eventos-agrohub-no-calendario.md). Domingos, hoje e reservas não recebem cores dessas categorias por si: hoje usa contorno neutro; reservas autorizadas mantêm contagem acessível e sublinhado neutro. Recessos e feriados continuam sem cadastro.
 - Páginas (`/publico/` e `/publico/sobre/`): usuários autenticados veem sidebar, cabeçalho, rodapé e abas Início/Sobre; visitantes mantêm a base pública. A consulta continua mostrando apenas banners publicados para o local/período, inclusive para administradores; prévias privadas continuam na gestão de Banners.
 - Sidebar: `localStorage['inovalab.sidebar.expanded']` guarda apenas a preferência visual, com valores `true`/`false`, no navegador atual. Navegação, atualização, Escape e fechamento móvel preservam a escolha. Sem preferência, inicia recolhida. Se o navegador bloquear o armazenamento, o menu continua funcionando, mas a preferência não persiste.
 - Ícones recolhidos: centralizados na largura de 79 px. Antes da correção, a posição medida ficava 3,5 px à esquerda do centro.
