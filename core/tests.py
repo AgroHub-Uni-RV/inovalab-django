@@ -73,6 +73,19 @@ class DashboardTests(TestCase):
         self.assertContains(response, '/agenda/novo/')
         self.assertNotContains(response, '/admin/accounts/user/')
 
+    def test_normal_index_has_booking_card_with_only_own_confirmed_bookings(self):
+        foreign = self.booking()
+        own = Agendamento.objects.create(servico=self.service, requerente='Reserva própria', motivo='Meu projeto',
+                                         inicio=NOW, fim=NOW+timedelta(hours=1), criado_por=self.user)
+        Agendamento.objects.create(servico=self.service, requerente='Pedido pendente', motivo='Pedido',
+            inicio=NOW, fim=NOW+timedelta(hours=1), criado_por=self.user, situacao='pendente')
+        response = self.panel(user=self.user)
+        self.assertEqual([booking.pk for booking in response.context['bookings']], [own.pk])
+        self.assertContains(response, 'id="bookings-title"')
+        self.assertContains(response, 'Reserva própria')
+        self.assertNotContains(response, foreign.requerente)
+        self.assertNotContains(response, 'Pedido pendente')
+
     def test_task_tabs_are_real_status_filters(self):
         tasks = {state: self.task(status=state) for state in ('demanda', 'criacao', 'avaliacao', 'concluido')}
         self.task(excluida_em=NOW)

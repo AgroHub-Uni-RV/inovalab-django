@@ -61,7 +61,7 @@ def dashboard_context(actor, *, now=None, task_tab='pendentes', booking_tab='sem
     else:
         bookings = all_bookings.filter(inicio__lt=end, fim__gt=max(start, now))
     return {
-        'is_business_admin': admin, 'tasks': tasks, 'bookings': list(bookings[:10]) if admin else [],
+        'is_business_admin': admin, 'tasks': tasks, 'bookings': list(bookings[:10]),
         'task_tab': task_tab, 'booking_tab': booking_tab, 'months': _months(all_bookings, today),
         'weekday_labels': ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'],
         'task_tabs': [{'key': key, 'label': value[0], 'query': urlencode({'tarefas': key, 'agenda': booking_tab})}

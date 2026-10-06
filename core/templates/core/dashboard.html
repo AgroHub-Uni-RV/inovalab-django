@@ -1,6 +1,6 @@
 {% extends 'core/base.html' %}
 {% block content %}
-<div class="dashboard{% if not is_business_admin %} dashboard-personal{% endif %}">
+<div class="dashboard">
   <section class="dashboard-card tasks-panel" aria-labelledby="tasks-title">
     <div class="card-heading"><h2 id="tasks-title">Tarefas</h2><a class="view-all" href="{% url 'tarefas:board' %}">Ver todos</a></div>
     <nav class="tabs" aria-label="Filtrar tarefas">{% for tab in task_tabs %}<a href="?{{ tab.query }}"{% if tab.key == task_tab %} class="selected" aria-current="page"{% endif %}>{{ tab.label }}</a>{% endfor %}</nav>
@@ -15,7 +15,6 @@
     </div>
     <div class="card-action">{% if is_business_admin %}<a class="outline-button" href="{% url 'tarefas:create' %}">+Nova tarefa</a>{% else %}<a class="outline-button" href="{% url 'tarefas:board' %}">Ver minhas tarefas</a>{% endif %}</div>
   </section>
-  {% if is_business_admin %}
   <section class="dashboard-card bookings-panel" aria-labelledby="bookings-title">
     <div class="card-heading"><h2 id="bookings-title">Agendamentos</h2><a class="view-all" href="{% url 'agenda:list' %}">Ver todos</a></div>
     <nav class="tabs" aria-label="Filtrar agendamentos">{% for tab in booking_tabs %}<a href="?{{ tab.query }}"{% if tab.key == booking_tab %} class="selected" aria-current="page"{% endif %}>{{ tab.label }}</a>{% endfor %}</nav>
@@ -27,11 +26,10 @@
       </a>
       {% empty %}<p class="empty-state">Nenhum agendamento neste período.</p>{% endfor %}
     </div>
-    <div class="card-action"><a class="outline-button" href="{% url 'agenda:create' %}">+Novo agendamento</a></div>
+    <div class="card-action"><a class="outline-button" href="{% url 'agenda:create' %}">{% if is_business_admin %}+Novo agendamento{% else %}+Solicitar agendamento{% endif %}</a></div>
   </section>
-  {% endif %}
   <section class="calendar-panel" aria-label="Calendário dos próximos seis meses">
-    <div class="calendar-top"><ul class="calendar-legend"><li><span class="swatch recess" aria-hidden="true"></span>Recesso</li><li><span class="swatch holiday" aria-hidden="true"></span>Feriado</li><li><span class="swatch event" aria-hidden="true"></span>Evento</li></ul>{% if is_business_admin %}<a class="calendar-more" href="{% url 'agenda:list' %}">Ver mais</a>{% endif %}</div>
+    <div class="calendar-top"><ul class="calendar-legend"><li><span class="swatch recess" aria-hidden="true"></span>Recesso</li><li><span class="swatch holiday" aria-hidden="true"></span>Feriado</li><li><span class="swatch event" aria-hidden="true"></span>Evento</li></ul><a class="calendar-more" href="{% url 'agenda:list' %}">Ver mais</a></div>
     <div class="calendar-scroll" tabindex="0" aria-label="Meses do calendário">
       {% for month in months %}<section class="month-card" aria-label="{{ month.name }} de {{ month.year }}">
         <h2>{{ month.name|capfirst }}<span class="sr-only"> {{ month.year }}</span></h2>
