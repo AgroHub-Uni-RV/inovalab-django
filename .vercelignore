@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+venv/
+.venv/
+media/
+*.sqlite3
+Referencias/
+.superpowers/
+docs/
+__pycache__/

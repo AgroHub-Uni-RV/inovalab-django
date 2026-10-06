@@ -2,6 +2,11 @@
 
 Sistema Django para demandas do laboratório, tarefas, agenda, materiais e banners, com frontend básico e API para futuras integrações.
 
+O deploy no projeto **inovalab-test** usa o preset Django da Vercel e executa
+as migrações do Neon no build de cada push. A ativação depende de conectar o
+banco e configurar as variáveis da Vercel. Consulte o [guia de deploy,
+segurança, ambientes e limitações de uploads](docs/deploy/vercel-neon.md).
+
 Os sete módulos planejados estão implementados localmente: **Identidade e acesso**, **Catálogo**, **Tarefas**, **Agenda interna**, **Recebimento de reservas externas**, **Materiais** e **Conteúdo/Banners**. Banners oferece gestão administrativa, upload WebP, publicação por local/período e consulta pública por páginas/API. A conexão a um AgroHub real ainda depende do consumidor e ambiente. Aguardar depuração desta entrega antes de novas etapas.
 
 ## Documentação
@@ -38,7 +43,7 @@ Leia as classificações **C** (confirmado pela fonte), **D** (derivado) e **P**
 - Materiais: cadastro simples mantido pelos administradores, consulta interna ativa, quantidade não negativa até 3 casas/unidade informada, categoria/fonte livres, status disponível/indisponível; sem movimentações.
 - Em 05/10/2026, iniciar frontend pelas imagens de referência, em entregas fracionadas, com funcionalidades atuais e áreas das logos vazias para inclusão futura pelo responsável. Login e página de identidade preservados. Testes automatizados e básicos no navegador executados; testes profundos pelo responsável.
 
-O sistema usa Django, templates e Django REST Framework, com política de papéis compartilhada entre interface e API. SQLite atende à execução local, com escrita/bloqueio do alvo antes de consultar conflitos da agenda. Banco e hospedagem de produção continuam pendentes.
+O sistema usa Django, templates e Django REST Framework, com política de papéis compartilhada entre interface e API. SQLite atende à execução local, com escrita/bloqueio do alvo antes de consultar conflitos da agenda. `DATABASE_URL` seleciona PostgreSQL; a Vercel exige banco Neon configurado e não utiliza SQLite.
 
 ## Estado do ambiente local
 
@@ -64,7 +69,7 @@ Verificação automatizada:
 & .\venv\Scripts\python.exe -m pip check
 ```
 
-309 testes passaram (27 acrescentados nesta entrega do frontend, além dos 282 anteriores); checks, migrações e dependências sem pendências. Chrome: 45 rotas renderizadas, 155 combinações de layout/papel/menu, cadastro de material, execução/envio de tarefa, restrições de acesso e teclado. A revisão final teve duas correções, verificadas por testes de regressão: retorno circular ao login e intervalo de reservas de vários dias. Consulte os guias dos módulos para contratos, limitações e roteiros, inclusive os ajustes menores conhecidos de banners e horário de verão histórico da agenda. `.env` não é carregado automaticamente. Esta entrega é local; hospedagem e produção permanecem por definir.
+309 testes passaram na entrega do frontend de 05/10/2026 (27 acrescentados, além dos 282 anteriores); checks, migrações e dependências sem pendências. Chrome: 45 rotas renderizadas, 155 combinações de layout/papel/menu, cadastro de material, execução/envio de tarefa, restrições de acesso e teclado. A revisão final teve duas correções, verificadas por testes de regressão: retorno circular ao login e intervalo de reservas de vários dias. Consulte os guias dos módulos para contratos, limitações e roteiros, inclusive os ajustes menores conhecidos de banners e horário de verão histórico da agenda. A configuração de deploy de 06/10/2026 passa a carregar `.env.local` e `.env` automaticamente apenas em execução local. As variáveis do processo prevalecem.
 
 O login fica em `/` e redireciona por padrão para `/index/`. `/painel/` e `/entrar/` permanecem como aliases; o perfil fica em `/perfil/`. **Administrar contas** abre a página **Usuários**, protegida para superusuários ativos. Todas as telas dos módulos usam a apresentação baseada nos PNGs locais; o Figma recusou acesso ao arquivo na conta conectada e o responsável autorizou esse fallback. Logos vazias conforme solicitado. [Guia, capturas, limitações e depuração do frontend](docs/frontend/02-paginas-e-usuarios.md).
 

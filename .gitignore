@@ -82,6 +82,10 @@ celerybeat-schedule
 
 # dotenv
 .env
+.env.*
+!.env.example
+.vercel/
+staticfiles/
 
 # virtualenv
 .venv

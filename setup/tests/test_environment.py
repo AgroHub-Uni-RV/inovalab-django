@@ -42,3 +42,35 @@ class EnvironmentTests(TestCase):
         })
         self.assertEqual(result.secret_key, 'private-key')
         self.assertEqual(result.allowed_hosts, ('exemplo.local', 'localhost'))
+
+    def test_vercel_defaults_to_production_and_requires_secret(self):
+        with self.assertRaisesRegex(ImproperlyConfigured, 'DJANGO_SECRET_KEY'):
+            read_environment({'VERCEL': '1'})
+
+    def test_vercel_uses_exact_deployment_hosts(self):
+        result = read_environment({
+            'VERCEL': '1', 'DJANGO_SECRET_KEY': 'private-key',
+            'DJANGO_ALLOWED_HOSTS': 'inovalab-test.vercel.app',
+            'VERCEL_URL': 'inovalab-test-abc.vercel.app',
+            'VERCEL_BRANCH_URL': 'inovalab-test-git-feature.vercel.app',
+            'VERCEL_PROJECT_PRODUCTION_URL': 'inovalab-test.vercel.app',
+        })
+        self.assertFalse(result.debug)
+        self.assertEqual(result.allowed_hosts, (
+            'inovalab-test.vercel.app', 'inovalab-test-abc.vercel.app',
+            'inovalab-test-git-feature.vercel.app',
+        ))
+
+    def test_vercel_rejects_debug_and_missing_hosts(self):
+        for values in ({'DJANGO_DEBUG': 'true'}, {}):
+            with self.subTest(values=values), self.assertRaises(ImproperlyConfigured):
+                read_environment({
+                    'VERCEL': '1', 'DJANGO_SECRET_KEY': 'private-key', **values,
+                })
+
+    def test_production_rejects_wildcard_hosts(self):
+        with self.assertRaisesRegex(ImproperlyConfigured, 'DJANGO_ALLOWED_HOSTS'):
+            read_environment({
+                'DJANGO_DEBUG': 'false', 'DJANGO_SECRET_KEY': 'private-key',
+                'DJANGO_ALLOWED_HOSTS': '*',
+            })

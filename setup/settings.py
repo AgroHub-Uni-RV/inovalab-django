@@ -13,10 +13,18 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 import os
 from pathlib import Path
 
-from setup.environment import read_environment
+from dotenv import load_dotenv
+
+from setup.environment import read_database, read_environment
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Variáveis do processo prevalecem; arquivos locais nunca entram no deploy.
+ON_VERCEL = os.environ.get('VERCEL') == '1'
+if not ON_VERCEL:
+    load_dotenv(BASE_DIR / '.env.local', override=False)
+    load_dotenv(BASE_DIR / '.env', override=False)
 
 
 # Quick-start development settings - unsuitable for production
@@ -30,6 +38,22 @@ SECRET_KEY = RUNTIME.secret_key
 DEBUG = RUNTIME.debug
 
 ALLOWED_HOSTS = list(RUNTIME.allowed_hosts)
+
+CSRF_TRUSTED_ORIGINS = [
+    value.strip() for value in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',')
+    if value.strip()
+]
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_SSL_REDIRECT = not DEBUG
+SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+if ON_VERCEL:
+    # A Vercel encerra TLS e define este cabeçalho no proxy.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # Application definition
@@ -91,12 +115,7 @@ WSGI_APPLICATION = 'setup.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+DATABASES = {'default': read_database(os.environ, BASE_DIR)}
 
 
 # Password validation
@@ -133,7 +152,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = '/media/'
 
@@ -143,6 +163,16 @@ MEDIA_URL = '/media/'
 
 MAILERS = {
     'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+        'BACKEND': 'django.core.mail.backends.console.EmailBackend' if DEBUG else 'django.core.mail.backends.smtp.EmailBackend',
     },
 }
+if not DEBUG:
+    MAILERS['default']['OPTIONS'] = {
+        'host': os.environ.get('DJANGO_EMAIL_HOST') or 'localhost',
+        'port': int(os.environ.get('DJANGO_EMAIL_PORT') or '587'),
+        'username': os.environ.get('DJANGO_EMAIL_USER', ''),
+        'password': os.environ.get('DJANGO_EMAIL_PASSWORD', ''),
+        'use_tls': True,
+        'timeout': 15,
+    }
+DEFAULT_FROM_EMAIL = os.environ.get('DJANGO_DEFAULT_FROM_EMAIL', 'webmaster@localhost')
