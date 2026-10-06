@@ -40,7 +40,25 @@ Comandos da entrega em PowerShell:
 git diff --check
 ```
 
-Os resultados finais, capturas e revisão serão registrados ao encerrar a verificação. O navegador utiliza banco SQLite e mídia temporários próprios; nenhum registro do banco de trabalho é necessário para essas verificações.
+309 testes passaram, incluindo 27 novos nesta entrega: rotas/login, autorização e busca de usuários, filtros/contadores/paginação/escape, calendário e páginas de erro. `check`, verificação de migrações, `pip check` e `git diff --check` passaram. Sem novos modelos, migrações, dependências ou contratos de API.
+
+Chrome: 45 páginas administrativas/públicas renderizaram com sucesso; 122 combinações de página/largura/menu como administrador e 33 como usuário comum passaram, com nomes longos e sem transbordamento externo ou imagens quebradas. Larguras: 1920/1366/820/768/360 px; tabelas e calendário permitem rolagem dentro de sua região acessível. Também foram verificados: entrada padrão no index, bloqueios administrativos, cadastro de material com `1,125` armazenado como `1.125`, início/envio de tarefa e histórico, logout, gaveta móvel/Escape/retorno de foco. Não houve erros JavaScript da aplicação. Os dados nas capturas são fixtures de banco e mídia temporários próprios; seus registros reais não foram alterados.
+
+Uma revisão final independente identificou dois problemas importantes, corrigidos numa única passada com casos RED→GREEN e suíte309/309: retorno `next` destinado à própria entrada agora segue ao index sem erro/loop, preservando destinos internos válidos e a validação do Django para destinos externos; reservas de vários dias exibem o intervalo completo em cada dia ocupado, preservando o término à meia-noite. Ambos também foram conferidos no Chrome após a correção. Não houve segunda revisão.
+
+Ajuste menor adiado: rótulos longos dos contadores podem quebrar dentro da palavra quando o cartão tem pouca largura. O ajuste das proporções dos cartões fica para a próxima depuração visual.
+
+Capturas: [Usuários](screenshots/usuarios-1920.png), [Materiais](screenshots/materiais-1920.png), [Banners](screenshots/banners-1920.png), [Agenda](screenshots/agenda-1920.png), [Detalhe da tarefa](screenshots/tarefa-detalhe-1920.png) e [Formulário em 360 px](screenshots/material-form-360.png).
+
+## Decisões da execução
+
+- Reunir as telas restantes nesta entrega visual atende à solicitação de todas as páginas, sem abrir novos módulos de domínio. Custo: um conjunto maior de telas para depurar de uma vez.
+- Usar o checkout local da IDE e registro manual em PowerShell preservou a execução existente, sem alterar framework ou dependências. Custo: registros manuais e fonte original ainda não confirmada; Montserrat e logos vazias continuam como decidido.
+- A verificação exata do Figma e da exclusão por `Group 17` não foi declarada: o responsável autorizou os PNGs após a recusa de acesso. Custo: diferenças visuais e composição das telas excluídas continuam sem conferência no arquivo original.
+- A manutenção técnica de contas fica no Django Admin, explicitamente fora das telas visuais do produto. Custo: a edição técnica mantém uma apresentação diferente.
+- README, rotas e resultados ainda estavam pendentes durante a revisão; foram concluídos nesta tarefa documental. Custo: alterações posteriores exigem manter esses guias sincronizados.
+
+Entrega local na branch `feat/frontend-completo`, aguardando depuração. A orientação de entregar por etapas permanece para trabalhos futuros.
 
 Para aprofundar depois da entrega:
 

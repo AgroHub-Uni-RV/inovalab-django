@@ -16,7 +16,7 @@ python -m venv venv
 
 O cadastro inicial solicita usuário, e-mail opcional e senha. Não há conta ou senha padrão. As migrações criam o grupo `Administradores` sem duplicá-lo; o banco SQLite local não é versionado.
 
-Abra [a página de login](http://127.0.0.1:8000/entrar/) e entre com a conta criada. O botão **Administrar contas** abre o Django Admin. Em **Contas e acesso → Usuários → Adicionar**, cadastre contas com autenticação por senha habilitada. Após salvar, edite nome, e-mail, ativação e grupos conforme necessário.
+Abra [a página de login](http://127.0.0.1:8000/) e entre com a conta criada. O login padrão abre `/index/`; o perfil fica em `/perfil/`. **Administrar contas** abre a nova tela `/usuarios/`, exclusiva de superusuários ativos. Use **Configurar usuários** para a manutenção técnica no Django Admin. Em **Contas e acesso → Usuários → Adicionar**, cadastre contas com autenticação por senha habilitada. Após salvar, edite nome, e-mail, ativação e grupos conforme necessário.
 
 ## Papéis
 
@@ -34,8 +34,10 @@ O grupo classifica o papel do laboratório. As permissões operacionais de catá
 
 | Rota | Comportamento |
 | --- | --- |
-| `/entrar/` | GET exibe formulário; POST com CSRF autentica conta ativa |
-| `/` | Página privada com nome, usuário, papel e botão Sair |
+| `/` e `/entrar/` | GET exibe login; POST com CSRF autentica conta ativa e segue por padrão ao index |
+| `/index/` e `/painel/` | Dashboard privado; `/painel/` é alias |
+| `/perfil/` | Página privada com nome, usuário, papel e botão Sair |
+| `/usuarios/` | Cartões, busca e filtros; somente superusuários ativos |
 | `/sair/` | POST com CSRF encerra sessão; GET retorna 405 |
 | `/admin/` | Administração nativa do Django; gestão de identidade exclusiva do superusuário |
 | `/api/v1/me/` | GET autenticado por sessão retorna a identidade atual em JSON |
@@ -75,7 +77,7 @@ $env:DJANGO_SECRET_KEY = 'substitua-por-uma-chave-privada'
 
 ## Roteiro para depuração
 
-1. Sem login, abra `/`: deve ir para `/entrar/?next=/`.
+1. Sem login, abra `/`: deve exibir o login. `/index/` e `/perfil/` devem redirecionar ao login com `next` local.
 2. Entre como superusuário, abra o admin e crie uma conta comum com senha. Edite seu nome e e-mail.
 3. Em outro navegador ou janela privada, tente uma senha errada: deve aparecer mensagem genérica. Entre com a senha correta e confira nome, usuário e papel **Usuário interno**, sem link para gerenciar contas.
 4. Abra `/api/v1/me/`: confira as cinco chaves e somente a identidade dessa conta. Repita com `?id=<id-de-outra-conta>`.

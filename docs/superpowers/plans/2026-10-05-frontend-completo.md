@@ -12,33 +12,37 @@ Dados/políticas reais; logs e imagens das referências não entram no produto. 
 
 ## 1. Rotas, navegação e base
 
-- [ ] RED: login raiz200, index privado, entrada padrão/index/alias e `next` seguro, perfil, menus compartilhados, público sem dados privados.
-- [ ] `accounts/urls.py`, settings/core urls, `core/navigation.py` context processor; menu extraído do Dashboard, `core/base` com blocks de layout/extra_head/mensagens, catalogo/base interno e core/public-base; CSS compartilhado em módulos.css; atualizar testes antigos de rotas.
-- [ ] GREEN suite/check/drift; commit português.
+- [x] RED: login raiz200, index privado, entrada padrão/index/alias e `next` seguro, perfil, menus compartilhados, público sem dados privados.
+- [x] `accounts/urls.py`, settings/core urls, `core/navigation.py` context processor; menu extraído do Dashboard, `core/base` com blocks de layout/extra_head/mensagens, catalogo/base interno e core/public-base; CSS compartilhado em módulos.css; atualizar testes antigos de rotas.
+- [x] GREEN suite/check/drift; commit português.
 
 ## 2. Usuários
 
-- [ ] RED autorização vigente (super ativo), staff/perms comuns negados, contagens/filtros/paginação/escape, Administrar contas/menu apontam `/usuarios/`.
-- [ ] `accounts/user_views.py`, templates de usuários com cartões/contadores/abas/busca15 por página; configurações técnicas somente via acesso autorizado existente. Incorporar resposta sobre papel administrativo antes de concluir.
-- [ ] GREEN suite/check; commit português.
+- [x] RED autorização vigente (super ativo), staff/perms comuns negados, contagens/filtros/paginação/escape, Administrar contas/menu apontam `/usuarios/`.
+- [x] `accounts/user_views.py`, templates de usuários com cartões/contadores/abas/busca15 por página; configurações técnicas somente via acesso autorizado existente. Pergunta opcional sem resposta: preservar a autoridade técnica vigente.
+- [x] GREEN suite/check; commit português.
 
 ## 3. Tarefas e agenda
 
-- [ ] RED filtros/contagens sem tarefas alheias, querystring preservado; calendário domingo primeiro, busca/categoria, reserva na virada/meia-noite/cancelados/paginação.
-- [ ] Views/seletores aplicam filtros reais; contadores e tabs. Templates Kanban/calendário, formulário/detalhe com barra e histórico, erros e confirmações na base; preservar transições/versão/CSRF.
-- [ ] GREEN suite e Chrome básico; commit português.
+- [x] RED filtros/contagens sem tarefas alheias, querystring preservado; calendário domingo primeiro, busca/categoria, reserva na virada/meia-noite/cancelados/paginação.
+- [x] Views/seletores aplicam filtros reais; contadores e tabs. Templates Kanban/calendário, formulário/detalhe com barra e histórico, erros e confirmações na base; preservar transições/versão/CSRF.
+- [x] GREEN suite e Chrome básico; commit português.
 
 ## 4. Materiais, banners e demais páginas
 
-- [ ] RED status/categoria/busca/tab/counts/escape/paginação/proteção de banners; smoke render das telas restantes.
-- [ ] Tabelas/contadores/thumbnails/abas com dados atuais. Catálogo/integrações/perfil/público/formulários/confirmações/históricos e 403/404/500 coerentes, sem controles cenográficos.
-- [ ] GREEN suite/check/drift/pip; Chrome completo, capturas e comparação; commit português.
+- [x] RED status/categoria/busca/tab/counts/escape/paginação/proteção de banners; smoke render das telas restantes.
+- [x] Tabelas/contadores/thumbnails/abas com dados atuais. Catálogo/integrações/perfil/público/formulários/confirmações/históricos e 403/404/500 coerentes, sem controles cenográficos.
+- [x] GREEN suite/check/drift/pip; Chrome completo, capturas e comparação; commit português.
 
 ## 5. Revisão e entrega
 
-- [ ] Uma revisão independente read-only. Regraduar; Important/Critical em uma passada RED/GREEN; menores registrados.
-- [ ] Guia com cenários/testes/limitações, README/AGENTS/spec/plan e decisões atualizados; commits. Encerrar navegador/servidor; remover somente temporários desta tarefa se a ferramenta permitir, sem contornar rejeições.
-- [ ] Status final limpo; entrega local, aguardar depuração.
+- [x] Uma revisão independente read-only. Regraduar; Important/Critical em uma passada RED/GREEN; menores registrados.
+- [x] Guia com cenários/testes/limitações, README/AGENTS/spec/plan e decisões atualizados; commits. Encerrar navegador/servidor; remover somente temporários desta tarefa se a ferramenta permitir, sem contornar rejeições.
+- [x] Status final limpo; entrega local, aguardar depuração.
+
+## Resultado da execução
+
+309 testes passaram; 45 rotas no Chrome e 155 cenários de layout/papel/menu. Uma revisão independente: retorno circular no login e horário de continuação da reserva corrigidos RED→GREEN, suíte309/309 e confirmação no navegador. Menor adiado: quebra de rótulos longos em contadores. Decisões e custos preservados no [guia da entrega](../../frontend/02-paginas-e-usuarios.md#decisões-da-execução). Figma recusou acesso; PNGs autorizados, Group17 não verificável. Commits locais; aguardar depuração. Nenhuma segunda revisão.
 
 ## Foco da revisão
 

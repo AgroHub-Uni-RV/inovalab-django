@@ -22,6 +22,7 @@ Os sete módulos planejados estão implementados localmente: **Identidade e aces
 | [Módulo 6 — Materiais](docs/modules/06-materiais.md) | Cadastro, quantidade decimal, versão, API e depuração |
 | [Módulo 7 — Conteúdo](docs/modules/07-conteudo.md) | Banners WebP, publicação, imagem protegida, API e depuração |
 | [Frontend — Base e Dashboard](docs/frontend/01-base-e-dashboard.md) | Primeira entrega visual pelas referências, logos pendentes e roteiro de depuração |
+| [Frontend — Páginas e Usuários](docs/frontend/02-paginas-e-usuarios.md) | Telas dos módulos, login raiz/index, contas protegidas, capturas e roteiro de depuração |
 
 Leia as classificações **C** (confirmado pela fonte), **D** (derivado) e **P** (proposta) no arquivo 01. Propostas não são decisões aprovadas. As seis telas e as três páginas de `Referencias/InovaLab - Modelagem.pdf` foram examinadas. A pasta permanece ignorada pelo Git e pode faltar em outro clone.
 
@@ -52,7 +53,7 @@ Execução em PowerShell (crie `venv` com `python -m venv venv` se necessário):
 & .\venv\Scripts\python.exe manage.py runserver
 ```
 
-Abra [o login local](http://127.0.0.1:8000/entrar/), entre com o superusuário e use **Administrar contas** para criar os usuários internos. Não há credenciais padrão. O grupo `Administradores` identifica o papel de negócio e não concede gestão técnica de contas.
+Abra [o login local](http://127.0.0.1:8000/), entre com o superusuário e use **Administrar contas** no perfil para abrir `/usuarios/`. **Configurar usuários** abre a manutenção técnica no Django Admin. Não há credenciais padrão. O grupo `Administradores` identifica o papel de negócio e não concede gestão técnica de contas.
 
 Verificação automatizada:
 
@@ -63,9 +64,9 @@ Verificação automatizada:
 & .\venv\Scripts\python.exe -m pip check
 ```
 
-282 testes passaram (12 do Dashboard e os 270 dos módulos anteriores); checks, migrações e dependências sem pendências. Os fluxos básicos foram verificados no Chrome, incluindo layout a 360 px e teclado. Consulte os guias dos módulos para contratos, limitações e roteiros, inclusive os ajustes menores conhecidos de banners e horário de verão histórico da agenda. `.env` não é carregado automaticamente. Esta entrega é local; hospedagem e produção permanecem por definir.
+309 testes passaram (27 acrescentados nesta entrega do frontend, além dos 282 anteriores); checks, migrações e dependências sem pendências. Chrome: 45 rotas renderizadas, 155 combinações de layout/papel/menu, cadastro de material, execução/envio de tarefa, restrições de acesso e teclado. A revisão final teve duas correções, verificadas por testes de regressão: retorno circular ao login e intervalo de reservas de vários dias. Consulte os guias dos módulos para contratos, limitações e roteiros, inclusive os ajustes menores conhecidos de banners e horário de verão histórico da agenda. `.env` não é carregado automaticamente. Esta entrega é local; hospedagem e produção permanecem por definir.
 
-Use **Dashboard** na página da conta ou abra `/painel/`. A primeira entrega visual inclui a base e o painel; as demais telas conservam o visual anterior. Logos vazias conforme solicitado; inclusão futura registrada no [guia do frontend](docs/frontend/01-base-e-dashboard.md).
+O login fica em `/` e redireciona por padrão para `/index/`. `/painel/` e `/entrar/` permanecem como aliases; o perfil fica em `/perfil/`. **Administrar contas** abre a página **Usuários**, protegida para superusuários ativos. Todas as telas dos módulos usam a apresentação baseada nos PNGs locais; o Figma recusou acesso ao arquivo na conta conectada e o responsável autorizou esse fallback. Logos vazias conforme solicitado. [Guia, capturas, limitações e depuração do frontend](docs/frontend/02-paginas-e-usuarios.md).
 
 Após entrar, use **Catálogo** ou abra `/catalogo/servicos/`. A migração cria os onze serviços do PDF; `manage.py carregar_servicos_iniciais` repete a carga preservando alterações. APIs disponíveis: `/api/v1/servicos/`, `/api/v1/equipamentos/`, `/api/v1/espacos/`, com detalhes por ID. Indisponibilização preserva registros; exclusão física não é oferecida.
 
@@ -83,7 +84,7 @@ Administradores usam **Banners** ou `/banners/`. API interna por sessão/CSRF: `
 
 Revisar requisitos e decisões de cada etapa, validar seu desenho, preparar o plano, implementar o fluxo web/API e verificar cenários relevantes. A coleção de skills [Superpowers](https://github.com/obra/superpowers) foi instalada neste ambiente do Codex; não é dependência da aplicação e não acompanha um clone do projeto.
 
-Por decisão do responsável, entregar um módulo por vez e aguardar sua depuração antes do próximo. Identidade e catálogo seguem suas especificações e planos autorizados. Tarefas, agenda, integrações, materiais e conteúdo seguem execução direta com planos simples ([tarefas](docs/superpowers/plans/2026-10-01-tarefas.md), [agenda](docs/superpowers/plans/2026-10-02-agenda.md), [integrações](docs/superpowers/plans/2026-10-02-integracoes.md), [materiais](docs/superpowers/plans/2026-10-02-materiais.md), [conteúdo](docs/superpowers/plans/2026-10-04-conteudo.md)), mantendo testes e revisão independente. O frontend inicia por [base e Dashboard](docs/superpowers/plans/2026-10-05-frontend-painel.md). Escolhas para lacunas dos requisitos estão identificadas nos guias. Aguardar depuração desta entrega visual antes de migrar as demais telas.
+Por decisão do responsável, entregar um módulo por vez e aguardar sua depuração antes do próximo. Identidade e catálogo seguem suas especificações e planos autorizados. Tarefas, agenda, integrações, materiais e conteúdo seguem execução direta com planos simples ([tarefas](docs/superpowers/plans/2026-10-01-tarefas.md), [agenda](docs/superpowers/plans/2026-10-02-agenda.md), [integrações](docs/superpowers/plans/2026-10-02-integracoes.md), [materiais](docs/superpowers/plans/2026-10-02-materiais.md), [conteúdo](docs/superpowers/plans/2026-10-04-conteudo.md)), mantendo testes e revisão independente. Após [base e Dashboard](docs/superpowers/plans/2026-10-05-frontend-painel.md), a solicitação de todas as páginas reúne as telas restantes no [plano do frontend completo](docs/superpowers/plans/2026-10-05-frontend-completo.md). Escolhas para lacunas dos requisitos estão identificadas nos guias. Aguardar depuração desta entrega visual antes de iniciar outra etapa.
 
 Para as próximas entregas visuais, seguir as referências com as funcionalidades atuais, mantendo as logos em branco até o responsável fornecê-las. Executar os testes automatizados do Django e os testes básicos no navegador; o responsável realizará os testes mais profundos posteriormente. Essas orientações estão em [AGENTS.md](AGENTS.md).
 

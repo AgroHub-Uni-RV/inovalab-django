@@ -1,5 +1,7 @@
 # Frontend — primeira entrega: base e Dashboard
 
+Este guia registra a primeira entrega. As rotas e telas atuais estão no [guia de páginas e Usuários](02-paginas-e-usuarios.md): login em `/`, entrada padrão em `/index/`, perfil em `/perfil/` e demais módulos com a base compartilhada.
+
 Entrega de 05/10/2026. Abra `/painel/` após entrar, ou use **Dashboard** na página inicial da conta. O login e a página de identidade foram preservados. As outras telas continuam com seu visual anterior; sua migração será feita em entregas separadas, após a depuração desta parte.
 
 ## Referências e escopo
