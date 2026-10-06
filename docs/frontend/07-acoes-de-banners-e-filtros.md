@@ -1,5 +1,7 @@
 # Ações de banners e filtros — 06/10/2026
 
+Complemento posterior: os filtros e a troca de categoria passaram a [atualizar o conteúdo sem recarregar a página](10-atualizacoes-sem-recarregar.md).
+
 A coluna Ações da listagem de banners oferece um controle com a aparência da referência: chave verde e texto Desativar para ativos/agendados; chave cinza e texto Ativar para inativos. O controle pode ser acionado por clique ou teclado e identifica o banner no nome acessível. A alteração é enviada por POST, com CSRF e versão obrigatória, e mantém imagem, título, local, ordem e demais dados de conteúdo. Administradores ativos continuam sendo os únicos autorizados.
 
 Desativar interrompe a publicação sem excluir o banner. Para um agendado, também limpa início/fim, seguindo a regra existente que não permite período em banners inativos. Ativar publica imediatamente como ativo; para configurar um novo período, use Editar. A ação retorna à lista preservando busca e aba, mas reinicia a paginação. Uma versão antiga retorna 409 e um link para atualizar a listagem; dados inválidos retornam 400 sem alterações.

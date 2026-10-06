@@ -27,10 +27,11 @@
         </div>
       </div>
     </header>
-    <main id="main" class="{% block main_class %}{% endblock %}" tabindex="-1"><div class="{% block content_class %}{% endblock %}">
+    <main id="main" class="{% block main_class %}{% endblock %}" tabindex="-1"><div data-page-content class="{% block content_class %}{% endblock %}">
       {% if messages %}<div class="flash-messages" role="status">{% for message in messages %}<p>{{ message }}</p>{% endfor %}</div>{% endif %}
       {% block content %}{% endblock %}
     </div></main>
+    <div id="async-update-status" class="async-update-status" role="status" aria-live="polite" hidden></div>
     <footer class="footer"><div class="footer-inner"><p>Razão Social: FESURV - UNIVERSIDADE DE RIO VERDE CNPJ: 01.815.216/0001-78</p><div class="partner-slots" aria-hidden="true"><span></span><span></span></div></div></footer>
   </div>
   <script src="{% static 'core/painel.js' %}"></script>

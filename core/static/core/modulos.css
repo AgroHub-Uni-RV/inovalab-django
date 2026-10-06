@@ -202,6 +202,8 @@
 .space-option:has(input:focus-visible) { outline:3px solid #a340ff; outline-offset:1px; }
 .space-option.unavailable { border-style:dashed; }
 .space-option .visually-hidden { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.async-update-status { position:fixed; bottom:var(--space-4); right:var(--space-4); z-index:100; max-width:calc(100vw - var(--space-8)); padding:var(--space-3) var(--space-4); background:white; color:var(--navy); border:1px solid #b8bce6; border-radius:var(--radius-small); box-shadow:0 2px 12px #0002; font-size:var(--font-small); }
+.async-update-status button { margin-left:var(--space-3); font-size:var(--font-small); padding:var(--space-2) var(--space-3); min-height:0; color:white; background:var(--navy); border:0; border-radius:var(--radius-small); cursor:pointer; }
 .sheet-actions { display:flex; gap:var(--space-4); flex-wrap:wrap; align-items:center; margin-top:var(--space-8); }
 .banners-page .stat-card.green .stat-icon { background:#edffd7; color:#70b626; }
 .banners-page .table-wrapper { min-height:900px; }

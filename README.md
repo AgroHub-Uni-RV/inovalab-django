@@ -84,6 +84,8 @@ Os [padrões visuais compartilhados](docs/frontend/03-padroes-visuais.md) centra
 
 ## Processo
 
+A entrega de [atualizações sem recarregar](docs/frontend/10-atualizacoes-sem-recarregar.md) aplica filtros, abas, paginação e troca de categoria da agenda por requisições assíncronas, preservando foco e rascunhos. Foram aprovados 355 testes Django e verificações no Chrome em desktop e celular, incluindo respostas atrasadas e falha de conexão. Sem migrações nesta entrega.
+
 A entrega de [seleção de espaços e material](docs/frontend/09-selecao-de-espacos-e-material.md) acrescenta cartões de espaços conforme a referência e um select para identificar o material utilizado nos serviços. Foram aprovados 355 testes Django e verificações no Chrome em desktop e celular. A migração local já foi aplicada; execute `python manage.py migrate` ao atualizar outro ambiente.
 
 A entrega de [agendamentos por categoria](docs/frontend/08-agendamento-por-categoria.md) acrescenta seleção opcional de máquinas e material próprio/gasto em gramas ao formulário de serviço, além da foto/nome do criador e do destaque de categoria no detalhe. Foram aprovados 345 testes Django e verificações básicas no Chrome. Execute `python manage.py migrate` ao atualizar; as migrações locais já foram aplicadas.
