@@ -60,6 +60,8 @@ Capturas: [Usuários](screenshots/usuarios-1920.png), [Materiais](screenshots/ma
 
 Entrega local na branch `feat/frontend-completo`, aguardando depuração. A orientação de entregar por etapas permanece para trabalhos futuros.
 
+Navegador e servidor temporário foram encerrados. A aprovação automática da ferramenta rejeitou a remoção de `.superpowers/sdd/2026-10-05-frontend-completo/`, com o motivo `blocked by policy`. A pasta de banco, mídia e registros da verificação permanece ignorada pelo Git.
+
 Para aprofundar depois da entrega:
 
 1. Entrar com superusuário, administrador do laboratório, staff e usuário comum; conferir rotas, menus, busca e contadores de cada papel.

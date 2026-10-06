@@ -46,6 +46,8 @@ Dados/políticas reais; logs e imagens das referências não entram no produto. 
 
 ## Foco da revisão
 
+Encerramento: navegador e servidor temporário fechados. A aprovação automática rejeitou a remoção de `.superpowers/sdd/2026-10-05-frontend-completo/` com `blocked by policy`; os temporários permanecem ignorados pelo Git. A rejeição foi respeitada e registrada no guia.
+
 1. Login raiz, aliases, `next` e conta desativada não causam loop, retorno externo ou acesso indevido.
 2. Usuários e contagens/filtros de módulos nunca ampliam permissões, inclusive staff ou admin de negócio sem autoridade técnica.
 3. Reservas de múltiplos dias/meia-noite e paginação preservam calendário correto sem expor cancelados.
