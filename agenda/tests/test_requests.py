@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import date, time, datetime, timedelta
 from tempfile import TemporaryDirectory
 
 from django.contrib.auth import get_user_model
@@ -242,7 +242,9 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         self.assertRedirects(self.client.post(url, {'versao': 1, 'decisao': 'aprovar'}), '/agenda/solicitacoes/')
         self.assertContains(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/'), 'Confirmado')
         self.assertEqual(self.client.post(url, {'versao': 1, 'decisao': 'rejeitar'}).status_code, 409)
-        self.assertEqual(self.client.get('/agenda/solicitacoes/').context['paginator'].count, 0)
+        confirmed = self.client.get('/agenda/solicitacoes/', {'status': 'confirmada'})
+        self.assertEqual([row.pk for row in confirmed.context['object_list']], [booking.pk])
+        self.assertNotContains(confirmed, 'value="aprovar"')
 
     def test_review_error_preserves_request_and_csrf_and_unknown_fields_are_rejected(self):
         booking = self.create()
@@ -302,14 +304,64 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         selected = [item['label'] for item in response.context['nav_items'] if item['current']]
         self.assertEqual(selected, ['Agendamentos'])
 
-    def test_local_requests_page_excludes_confirmed_bookings(self):
+    def test_local_requests_page_includes_confirmed_bookings_and_counts(self):
         request = self.create()
         self.review(request)
         self.create(actor=self.admin, inicio=self.data['fim'], fim=self.data['fim'] + timedelta(hours=1))
         self.client.force_login(self.admin)
         response = self.client.get('/agenda/solicitacoes/', {'situacao': '', 'mes': ''})
-        self.assertEqual(response.context['object_list'], [])
-        self.assertNotContains(response, f'/agenda/{request.categoria}/{request.pk}/')
+        self.assertEqual(response.context['paginator'].count, 2)
+        self.assertEqual(response.context['stat_counts']['confirmada'], 2)
+        self.assertContains(response, f'/agenda/{request.categoria}/{request.pk}/')
+        self.assertContains(response, '>Confirmadas</a>')
+        self.assertContains(response, 'task-column concluido')
+        self.assertNotContains(response, 'value="aprovar"')
+
+    def test_confirmed_tab_includes_three_categories_and_cancelled_are_separate(self):
+        service = self.create(actor=self.admin)
+        equipment = services.save_booking(actor=self.admin, data={
+            'categoria': 'equipamento', 'objeto': self.machine.pk, 'motivo': 'Uso confirmado',
+            'inicio': self.data['inicio'], 'fim': self.data['fim']})
+        visit = services.save_booking(actor=self.admin, data={
+            'categoria': 'visita', 'quantidade_pessoas': 3, 'data': date(2026, 11, 1),
+            'hora_inicio': time(14), 'hora_termino': time(15)})
+        cancelled = self.create(actor=self.admin, inicio=self.data['fim'],
+                                fim=self.data['fim'] + timedelta(hours=1))
+        services.cancel_booking(actor=self.admin, category='servico', booking_id=cancelled.pk, expected_version=1)
+        self.client.force_login(self.admin)
+        response = self.client.get('/agenda/solicitacoes/', {'status': 'confirmada'})
+        self.assertEqual({(row.categoria, row.pk) for row in response.context['object_list']},
+                         {(row.categoria, row.pk) for row in (service, equipment, visit)})
+        self.assertEqual(response.context['stat_counts'],
+                         {'all': 4, 'pendente': 0, 'confirmada': 3, 'cancelada': 1, 'recusada': 0})
+        self.assertNotContains(response, 'booking-review-actions')
+        self.assertContains(response, 'aria-current="page">Confirmadas</a>')
+        cancelled_page = self.client.get('/agenda/solicitacoes/', {'status': 'cancelada'})
+        self.assertEqual([row.pk for row in cancelled_page.context['object_list']], [cancelled.pk])
+        self.assertContains(cancelled_page, 'task-column canceladas')
+        self.assertContains(cancelled_page, 'stat-card gray')
+
+    def test_confirmed_tab_preserves_search_month_and_pagination(self):
+        bookings = [self.create(actor=self.admin, motivo=f'Confirmação pesquisável {index}',
+                    inicio=self.data['inicio'] + timedelta(hours=index),
+                    fim=self.data['fim'] + timedelta(hours=index)) for index in range(27)]
+        services.cancel_booking(actor=self.admin, category='servico', booking_id=bookings[0].pk, expected_version=1)
+        self.create(actor=self.admin, motivo='Confirmação pesquisável fora do mês',
+                    inicio=self.data['inicio'] + timedelta(days=40), fim=self.data['fim'] + timedelta(days=40))
+        self.create(actor=self.user, motivo='Confirmação pesquisável pendente')
+        self.client.force_login(self.admin)
+        params = {'status': 'confirmada', 'mes': '2026-11', 'q': 'pesquisável', 'page': 2}
+        response = self.client.get('/agenda/solicitacoes/', params)
+        self.assertEqual((response.context['paginator'].count, len(response.context['object_list'])), (26, 1))
+        self.assertEqual(response.context['stat_counts']['confirmada'], 26)
+        self.assertEqual(response.context['stat_counts']['cancelada'], 1)
+        self.assertTrue(all(row.situacao == 'confirmado' for row in response.context['object_list']))
+        self.assertContains(response, 'mes=2026-11')
+        self.assertContains(response, 'q=pesquis%C3%A1vel')
+        self.assertContains(response, 'status=confirmada')
+        self.assertNotContains(response, 'value="aprovar"')
+        empty = self.client.get('/agenda/solicitacoes/', {'status': 'confirmada', 'mes': '2027-01'})
+        self.assertContains(empty, 'Nenhuma reserva confirmada')
 
     def test_decision_pages_remain_readable_after_evaluator_account_is_deleted(self):
         booking = self.create()

@@ -18,7 +18,7 @@ Adicionar Agendamento continua abrindo os três cards em `/agenda/novo/`. Visita
 
 Os administradores confirmam, recusam, editam e cancelam localmente. Confirmação e alteração verificam conflitos com visitas confirmadas não canceladas; horários adjacentes são permitidos. Pendentes não reservam o horário. As ações usam categoria/ID e versão para impedir colisões entre tabelas e alterações concorrentes. SQLite serializa as gravações; PostgreSQL utiliza um bloqueio transacional da agenda de visitas.
 
-Agenda, contadores, calendário, dashboard, Solicitações, detalhes e histórico usam os registros locais. Solicitações reúne pendentes, canceladas e recusadas das três categorias, preservando busca, mês, abas e paginação. Confirmadas aparecem na agenda. Meus agendamentos filtra o titular pela conta autenticada, inclusive para administradores, e mantém canceladas/recusadas.
+Agenda, contadores, calendário, dashboard, Solicitações, detalhes e histórico usam os registros locais. Solicitações reúne pendentes, canceladas e recusadas das três categorias, preservando busca, mês, abas e paginação. A solicitação posterior descrita em [Confirmadas em Solicitações](18-confirmadas-em-solicitacoes.md) inclui também as confirmadas nessa página; elas continuam aparecendo na agenda. Meus agendamentos filtra o titular pela conta autenticada, inclusive para administradores, e mantém canceladas/recusadas.
 
 | Rota | Responsabilidade |
 | --- | --- |

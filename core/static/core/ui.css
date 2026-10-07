@@ -56,6 +56,10 @@ h1, h2, h3 { line-height:var(--line-heading); }
 .booking-type-card span { font-size:var(--font-label); line-height:var(--line-body); }
 .institutional-page .personal-bookings-page { --navy:#27348b; --ink:#535353; --paper:#f6f9fd; --lavender:#f2f3ff; padding:var(--page-top) var(--page-gutter) var(--page-bottom); }
 .booking-status.cancelado { background:#ffd8d9; color:#ae1b23; }
+.requests-page .statistics:not(.three) { grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); }
+.requests-page .task-board:not(.task-board-filtered) { grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); }
+.requests-page .task-column.canceladas > h2, .requests-page .canceladas .kanban-icon, .requests-page .stat-card.gray .stat-icon, .requests-page .booking-status.cancelado { background:#eef0f3; color:#545d6b; }
+.requests-page .stat-card.green .stat-icon { background:#edffd7; color:#70b626; }
 @media(max-width:760px) {
   .booking-type-grid { grid-template-columns:minmax(0,1fr); max-width:320px; }
   :root {

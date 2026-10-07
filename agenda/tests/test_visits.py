@@ -72,7 +72,8 @@ class LocalVisitTests(TestCase):
         booking.refresh_from_db()
         self.assertEqual((booking.situacao, booking.versao, booking.avaliado_por), ('confirmado', 2, self.admin))
         self.assertEqual([row.pk for row in dashboard_context(self.staff, now=booking.inicio)['bookings']], [booking.pk])
-        self.assertEqual(self.client.get('/agenda/solicitacoes/').context['paginator'].count, 0)
+        confirmed = self.client.get('/agenda/solicitacoes/', {'status': 'confirmada'})
+        self.assertEqual([row.pk for row in confirmed.context['object_list']], [booking.pk])
 
     def test_invalid_quantity_period_and_removed_fields_never_save(self):
         for change in ({'quantidade_pessoas': '0'}, {'quantidade_pessoas': '-1'},

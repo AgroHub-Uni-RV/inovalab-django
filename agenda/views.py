@@ -213,12 +213,11 @@ class BookingReviewListView(AdminAgendaAccessMixin, ListView):
         self.query = self.request.GET.get('q', '').strip()[:150]
         self.month = self.request.GET.get('mes', '')
         self.selected_status = self.request.GET.get('status', '')
-        if self.selected_status not in ('', 'pendente', 'cancelada', 'recusada'):
+        if self.selected_status not in ('', 'pendente', 'confirmada', 'cancelada', 'recusada'):
             raise ValidationError('Selecione uma situação válida.')
         bounds = month_bounds(self.month) if self.month else None
         rows = [PersonalBooking(row) for model in BOOKING_MODELS.values()
                 for row in model.objects.select_related('criado_por').all()]
-        rows = [row for row in rows if row.situacao != 'confirmado']
         if bounds:
             start, end = bounds
             rows = [row for row in rows if row.inicio < end and row.fim > start]
@@ -227,7 +226,8 @@ class BookingReviewListView(AdminAgendaAccessMixin, ListView):
                 str(row.pk), row.categoria_display, row.objeto_nome, row.criador_nome,
                 row.motivo, row.observacoes)).casefold()]
         self.reservations = sorted(rows, key=lambda row: (row.inicio, row.categoria, row.pk), reverse=True)
-        status = {'cancelada': 'cancelado', 'recusada': 'rejeitado'}.get(self.selected_status, self.selected_status)
+        status = {'confirmada': 'confirmado', 'cancelada': 'cancelado',
+                  'recusada': 'rejeitado'}.get(self.selected_status, self.selected_status)
         return [row for row in self.reservations if not status or row.situacao == status]
 
     def get_context_data(self, **kwargs):
@@ -237,7 +237,8 @@ class BookingReviewListView(AdminAgendaAccessMixin, ListView):
                     'bookings': [row for row in context['object_list'] if row.situacao == situation]}
                    for status, situation, label, tone in (
                        ('pendente', 'pendente', 'Pendentes', 'criacao'),
-                       ('cancelada', 'cancelado', 'Canceladas', 'avaliacao'),
+                       ('confirmada', 'confirmado', 'Confirmadas', 'concluido'),
+                       ('cancelada', 'cancelado', 'Canceladas', 'canceladas'),
                        ('recusada', 'rejeitado', 'Recusadas', 'avaliacao'))]
         return {**context, 'query': self.query, 'month': self.month, 'selected_status': self.selected_status,
                 'columns': columns, 'stat_counts': {'all': len(self.reservations),
