@@ -71,6 +71,8 @@
 .pagination a[aria-current=page] { background:var(--navy); color:white; }
 .empty-notice { background:white; border:1px solid #ddd; border-radius:var(--radius-card); padding:var(--space-10); text-align:center; }
 .flash-messages { max-width:var(--content-width); margin:0 auto var(--space-6); border-radius:var(--radius-card); padding:var(--space-3) var(--space-6); background:#edffd7; color:#295512; }
+.flash-messages.warning { background:#fff3d8; color:#704600; }
+.flash-messages.error { background:#ffe8e8; color:#ac1520; }
 .errorlist { color:#ac1520; padding-left:var(--space-5); line-height:1.6; }
 .errorlist.nonfield, .module-page [role=alert] { padding:var(--space-4) var(--space-6); background:#ffe8e8; border-radius:var(--radius-card); }
 .legacy-page > form:not(.filter-bar), .legacy-page > dl, .account-card { background:white; border:1px solid #ddd; border-radius:var(--radius-card); padding:var(--space-8); margin:var(--space-6) 0; }

@@ -84,6 +84,19 @@ class VisitAgroHubTests(TestCase):
         self.assertEqual(Agendamento.objects.count(), 1)
         self.assertContains(self.client.get(response.url), 'não foi registrada no AgroHub')
 
+    def test_local_confirmation_is_labelled_and_flash_does_not_claim_external_success(self):
+        self.admin()
+        self.stub.state['create_error'] = 400
+        response = self.create()
+        page = self.client.get(response.url)
+        self.assertContains(page, 'Agendamento salvo no InovaLab.')
+        self.assertContains(page, 'Situação no InovaLab:')
+        self.assertContains(page, 'não foi registrada no AgroHub')
+        self.assertNotContains(page, 'Operação registrada no AgroHub.')
+        self.assertNotContains(page, 'Agendamento salvo no InovaLab. Confira a operação pendente no AgroHub.')
+        self.assertContains(page, 'flash-messages warning')
+        self.assertNotContains(page, 'Há uma operação aguardando confirmação no AgroHub.')
+
     def test_uncertain_create_is_found_without_a_second_post(self):
         self.stub.state['create_uncertain'] = True
         self.create()

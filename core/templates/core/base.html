@@ -28,7 +28,7 @@
       </div>
     </header>
     <main id="main" class="{% block main_class %}{% endblock %}" tabindex="-1"><div data-page-content class="{% block content_class %}{% endblock %}">
-      {% if messages %}<div class="flash-messages" role="status">{% for message in messages %}<p>{{ message }}</p>{% endfor %}</div>{% endif %}
+      {% for message in messages %}<div class="flash-messages {{ message.tags }}" role="status"><p>{{ message }}</p></div>{% endfor %}
       {% block content %}{% endblock %}
     </div></main>
     <div id="async-update-status" class="async-update-status" role="status" aria-live="polite" hidden></div>

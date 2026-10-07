@@ -51,3 +51,11 @@ Os testes HTTP controlados cobrem criação web/API, sala/horários/identidade, 
 Chrome com banco e provedor isolados: login, visita, ID remoto #101, edição mantendo esse ID, cancelamento remoto, criação rejeitada com aviso e nova tentativa resultando em #102. Detalhe/tela de resultado em 1200 px com sidebar expandida e 360 px sem transbordamento horizontal; imagens carregadas e nenhuma exceção JavaScript. Datas/horas nativas preenchidas no DOM e submetidas pelo formulário real. Revisão independente corrigiu os bloqueadores de concorrência e aprovou a entrega.
 
 Conferência real foi somente leitura do schema e da sala. Restam validação com conta autorizada no AgroHub (aprovação, conflito, edição/cancelamento e conciliação reais), concorrência PostgreSQL e conectividade na implantação. Não foram criadas reservas fictícias na sala real. Migração 0009 aplicada somente ao SQLite local; produção não foi migrada nem publicada nesta entrega.
+
+## Correção das mensagens após a depuração
+
+Em 06/10/2026, a imagem enviada pelo responsável mostrou uma visita salva no InovaLab com envio externo rejeitado. A faixa de aviso aparecia verde porque o template compartilhado descartava `message.tags` e aplicava a cor de sucesso a todas as mensagens. O bloco externo também chamava uma falha conhecida de operação aguardando confirmação.
+
+A faixa agora informa somente **Agendamento salvo no InovaLab.**, com cor de aviso quando o envio não foi concluído. A situação local tem o rótulo **Situação no InovaLab**; o resultado externo fica no bloco AgroHub. Falhas conhecidas não mostram o texto genérico de confirmação pendente. O template conserva a categoria da mensagem e distingue avisos em amarelo e erros em vermelho. Essa correção esclarece o resultado; não transforma uma falha de envio em reserva externa.
+
+Validação: regressão reproduzida antes da correção; `venv/Scripts/python.exe manage.py test --noinput` passou com **509 testes** (41,967 s). `check`, drift e diff sem problemas. Chrome com falha HTTP controlada verificou aviso amarelo (`rgb(255, 243, 216)`), rótulo local, ausência de confirmação externa indevida e ausência de transbordamento em desktop/celular. A causa do envio real rejeitado não foi armazenada nos registros anteriores; permanece necessária sua conferência no provedor.

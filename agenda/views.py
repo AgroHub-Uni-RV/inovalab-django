@@ -183,7 +183,7 @@ class BookingWriteView(AgendaAccessMixin, View):
             else:
                 remote = reservation_summary(saved)
                 if remote and remote['estado'] != 'registrada':
-                    messages.warning(request, 'Agendamento salvo no InovaLab. Confira a operação pendente no AgroHub.')
+                    messages.warning(request, 'Agendamento salvo no InovaLab.')
                 else:
                     messages.success(request, 'Solicitação enviada. Aguarde a confirmação de um administrador.'
                                      if saved.situacao == 'pendente' else 'Agendamento salvo.')
