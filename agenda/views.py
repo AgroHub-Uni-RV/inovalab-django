@@ -117,11 +117,17 @@ class BookingWriteView(AgendaAccessMixin, View):
         return booking
 
     def get(self, request, **kwargs):
-        if request.GET.get('categoria') == 'visita':
-            return redirect('agenda:visit-create')
         booking = self.get_booking()
+        if booking is None:
+            category = request.GET.get('categoria', '')
+            if category == 'visita':
+                return redirect('agenda:visit-create')
+            if category not in ('servico', 'equipamento'):
+                return render(request, 'agenda/choose_category.html', {
+                    'category_error': 'Selecione uma das formas de agendamento abaixo.' if category else '',
+                }, status=400 if category else 200)
         form = BookingForm(booking=booking, actor=request.user,
-                           initial={'categoria': request.GET['categoria']} if 'categoria' in request.GET else {})
+                           initial={'categoria': request.GET['categoria']} if booking is None else {})
         return render(request, 'agenda/form.html', {'form': form, 'booking': booking})
 
     def post(self, request, **kwargs):

@@ -1,5 +1,7 @@
 # Orientações do projeto
 
+- A solicitação seguinte de 07/10/2026 refatora a criação em `/agenda/novo/`: escolher Visita, Equipamento ou Serviços em três cards quadrados com ícones, preencher o formulário específico e confirmar. Validar antes da gravação; equipamentos e serviços permanecem nas agendas locais e visitas são enviadas ao AgroHub. Preservar permissões, aprovação e regras de disponibilidade. Ver `docs/modules/15-fluxo-criacao-agendamento.md`.
+
 - A solicitação mais recente de 07/10/2026 separa a persistência da agenda em `AgendaServico` e `AgendaEquipamento`, compartilhando apenas uma base abstrata. Visitas ficam exclusivamente na API do AgroHub para consulta e ações, inclusive confirmadas mostradas na agenda/dashboard, sem importação, espelho ou fila local. Esta decisão substitui as orientações anteriores de visitas locais e conciliação de confirmadas. Preservar históricos/recibos locais e exportar legado antes da remoção das tabelas; usar categoria/ID para identificar ações. O responsável autorizou usar Superpowers, confirmar o plano diretamente e executá-lo. Ver `docs/modules/14-agendas-servicos-equipamentos.md` e `docs/superpowers/plans/2026-10-07-agendas-servicos-equipamentos.md`.
 
 - A solicitação seguinte de 07/10/2026 move Solicitações de agendamento da sidebar para o cabeçalho de `/agenda/`, à esquerda de Adicionar Agendamento, com fundo branco/contorno azul no padrão secondary-button. Preservar acesso exclusivo de administradores e destacar Agendamentos na sidebar também em Solicitações.

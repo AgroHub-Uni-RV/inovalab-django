@@ -80,6 +80,9 @@ class BookingForm(StrictFormMixin, forms.Form):
         self.fields['categoria'].widget.attrs['data-auto-refresh'] = ''
         category = self.data.get('categoria') if self.is_bound else self.initial['categoria']
         self.category = category
+        self.category_label = CATEGORIES.get(category, 'Agendamento')
+        if booking is None:
+            self.fields['categoria'].widget = forms.HiddenInput()
         if category in CATEGORY_MODELS:
             retained_id = booking.objeto_id if booking and category == booking.categoria else None
             self.fields['objeto'].queryset = CATEGORY_MODELS[category].objects.filter(

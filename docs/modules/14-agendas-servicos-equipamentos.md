@@ -18,7 +18,9 @@ A interface continua apresentando agendamentos em uma única lista e calendário
 | Rota local | Uso |
 | --- | --- |
 | `/agenda/` | Lista e calendário unificados |
-| `/agenda/novo/` | Criar serviço ou equipamento |
+| `/agenda/novo/` | Escolher Visita, Equipamento ou Serviços |
+| `/agenda/novo/?categoria=servico` | Criar serviço local |
+| `/agenda/novo/?categoria=equipamento` | Criar equipamento local |
 | `/agenda/<categoria>/<id>/` | Detalhe local |
 | `/agenda/<categoria>/<id>/editar/` | Editar local |
 | `/agenda/<categoria>/<id>/cancelar/` | Cancelar local |
@@ -45,7 +47,7 @@ Os botões de confirmar, recusar e cancelar continuam nas solicitações pendent
 | `/agenda/visitas/<id>/editar/` | Editar pela API |
 | `/agenda/visitas/<id>/cancelar/` | Cancelar pela API |
 
-O formulário local de agendamento oferece o acesso a Agendar visita. A lista de visitas permite reencontrar um pedido ainda pendente sem conceder acesso administrativo a Solicitações. Se uma criação tiver resultado inconclusivo, consultar essa lista antes de reenviar: não há repetição automática nem fila local para POST.
+A entrada de criação oferece três cards com ícones: Visita, Equipamento e Serviços. A escolha abre o formulário específico, com confirmação antes da gravação ou envio; consultar `15-fluxo-criacao-agendamento.md`. A lista de visitas permite reencontrar um pedido ainda pendente sem conceder acesso administrativo a Solicitações. Se uma criação tiver resultado inconclusivo, consultar essa lista antes de reenviar: não há repetição automática nem fila local para POST.
 
 Se a consulta remota falhar, a interface informa que não foi possível carregar as visitas e continua mostrando os agendamentos locais. Não há dados antigos de visitas apresentados como atuais nem conciliação no banco local. Reservas canceladas ou recusadas permanecem consultáveis em Solicitações pela API.
 
