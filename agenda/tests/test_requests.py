@@ -286,15 +286,21 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         self.assertEqual(api.post('/api/v1/agendamentos/', {**self.data, 'categoria': 'espaco',
             'objeto': space_id, 'material_proprio': None}, format='json').status_code, 400)
 
-    def test_navigation_is_role_scoped_and_only_review_entry_is_current(self):
+    def test_requests_link_moves_to_agenda_header_and_remains_role_scoped(self):
         self.client.force_login(self.user)
         response = self.client.get('/agenda/')
         self.assertContains(response, '/agenda/')
         self.assertNotContains(response, '/agenda/solicitacoes/')
         self.client.force_login(self.admin)
+        agenda = self.client.get('/agenda/')
+        self.assertContains(agenda, 'class="secondary-button" href="/agenda/solicitacoes/"')
+        self.assertNotIn('/agenda/solicitacoes/', [item['href'] for item in agenda.context['nav_items']])
+        html = agenda.content.decode()
+        self.assertLess(html.index('class="secondary-button" href="/agenda/solicitacoes/"'),
+                        html.index('class="primary-button" href="/agenda/novo/"'))
         response = self.client.get('/agenda/solicitacoes/')
         selected = [item['label'] for item in response.context['nav_items'] if item['current']]
-        self.assertEqual(selected, ['Solicitações de agendamento'])
+        self.assertEqual(selected, ['Agendamentos'])
 
     def test_remote_requests_page_does_not_include_local_decisions_or_bookings(self):
         request = self.create()

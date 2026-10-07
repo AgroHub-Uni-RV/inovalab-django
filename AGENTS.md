@@ -1,5 +1,7 @@
 # Orientações do projeto
 
+- A solicitação seguinte de 07/10/2026 move Solicitações de agendamento da sidebar para o cabeçalho de `/agenda/`, à esquerda de Adicionar Agendamento, com fundo branco/contorno azul no padrão secondary-button. Preservar acesso exclusivo de administradores e destacar Agendamentos na sidebar também em Solicitações.
+
 - A solicitação seguinte de 07/10/2026 adiciona Recusadas às module-tabs de Solicitações, com filtro `status=recusada`, preservando busca/mês/paginação e a apresentação do Fluxo de tarefas.
 
 - A solicitação mais recente de 07/10/2026 autoriza Recusar nas pendentes via PATCH com status recusada. Confirmadas saem de Solicitações e devem virar agendamentos locais, com vínculo único origem/ID remoto e conciliação das alterações do provedor, reaproveitando vínculos já enviados pelo sistema. Essa autorização substitui a restrição anterior de não criar cópias para as confirmadas. Reservas recebidas são representadas como visitas, com título/sala/solicitante remotos preservados; alterações permanecem no sistema de origem para evitar reenvio/duplicação. Não modificar o repositório do monólito. Ver `docs/modules/13-recusa-e-confirmacoes-na-agenda.md`.

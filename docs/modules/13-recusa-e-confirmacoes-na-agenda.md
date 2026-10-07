@@ -22,6 +22,10 @@ Só há sucesso após validar ID/sala/status e os campos completos da resposta. 
 
 Solicitações mantém abas Todas/Pendentes/Canceladas/Recusadas e colunas Pendentes/Canceladas/Recusadas. A solicitação posterior acrescenta a aba Recusadas com `status=recusada`, preservando busca/mês/paginação e mensagem própria de resultado vazio. Todas e seus contadores excluem confirmadas. Há um link para Agendamentos explicando onde consultar as confirmadas.
 
+A solicitação posterior move o acesso a Solicitações da sidebar para o cabeçalho de `/agenda/`, antes de Adicionar Agendamento. O link usa `secondary-button`, fundo branco e contorno azul, visível para administradores. O grupo de ações fica lado a lado no desktop e se organiza verticalmente no celular. A sidebar destaca Agendamentos também nas solicitações.
+
+Validação dessa mudança: **606 testes passaram**, Django check/diff sem problemas e HTTP real **200** em `/agenda/`, com link ausente da sidebar e botão secundário antes de Adicionar Agendamento. Conferência visual no navegador permanece pendente.
+
 A leitura autenticada por administrador em `/agenda/solicitacoes/` ou `/agenda/` consulta todas as reservas das salas InovaLab e concilia o resultado completo antes de aplicar os filtros de tela. Assim, uma confirmação anterior não depende de estar no mês, busca, aba ou página selecionados para entrar na agenda. Depois do PATCH de confirmação, a resposta validada é conciliada imediatamente, antes da mensagem de sucesso.
 
 `reconcile_reservations` utiliza uma transação local e o controle de concorrência da agenda de visitas. `ReservaAgroHub` mantém o vínculo único `(origem, reserva_id)` já existente, e ganha `recebida`, booleano inicialmente falso para preservar as integrações de saída anteriores.
