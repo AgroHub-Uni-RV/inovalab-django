@@ -87,7 +87,7 @@ class WebAccessTests(AccountsProviderMixin, TestCase):
         self.client.force_login(self.ana)
         self.assertContains(self.client.get('/perfil/'), 'Administrador do laboratório')
         self.assertNotContains(self.client.get('/perfil/'), 'Administrar contas')
-        self.assertEqual(self.client.get('/admin/accounts/user/').status_code, 302)
+        self.assertEqual(self.client.get('/admin/accounts/user/').status_code, 403)
 
     def test_superuser_uses_sidebar_for_account_management(self):
         self.client.force_login(self.admin)

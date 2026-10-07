@@ -21,7 +21,7 @@ class DashboardTests(TestCase):
     def setUpTestData(cls):
         User = get_user_model()
         cls.admin = User.objects.create_superuser('painel-admin')
-        cls.user = User.objects.create_user('painel-interno', first_name='Ana', last_name='Silva')
+        cls.user = User.objects.create_user('painel-interno', first_name='Ana', last_name='Silva', is_staff=True)
         cls.staff = User.objects.create_user('painel-staff', is_staff=True)
         cls.service = Servico.objects.create(nome='Serviço real')
 

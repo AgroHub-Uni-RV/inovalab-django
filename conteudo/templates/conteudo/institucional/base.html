@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="{% static 'core/ui.css' %}">
   <link rel="stylesheet" href="{% static 'conteudo/institucional/site.css' %}">
   <script src="{% static 'conteudo/institucional/site.js' %}" defer></script>
+  {% block extra_head %}{% endblock %}
 </head>
 <body class="institutional-page">
   <a class="skip-link" href="#main-content">Ir para o conteúdo</a>
@@ -40,7 +41,7 @@
         </div>
         <div class="institutional-account">
           {% if user.is_authenticated %}
-          <details class="institutional-user"><summary>{{ user.get_full_name|default:user.username }}</summary><div><a href="{% url 'core:dashboard' %}">Área interna</a><a href="{% url 'accounts:home' %}">Meu perfil</a><form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit">Sair</button></form></div></details>
+          <details class="institutional-user"><summary>{{ user.get_full_name|default:user.username }}</summary><div>{% if can_access_panel %}<a href="{% url 'core:dashboard' %}">Área interna</a>{% endif %}<a href="{% url 'accounts:home' %}">Meu perfil</a><form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit">Sair</button></form></div></details>
           {% else %}<a class="institutional-login" href="{% url 'accounts:login' %}">Entrar</a>{% endif %}
           <nav class="institutional-social" aria-label="Redes sociais da UniRV">
             <a href="https://www.instagram.com/unirvoficial/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="18" cy="6" r="1" fill="currentColor" stroke="none"/></svg></a>
@@ -65,7 +66,7 @@
     <div class="institutional-header-inner">
       <div><a href="{% url 'conteudo:inicio' %}"><img src="{% static 'core/assets/logo_texto_branco.png' %}" alt="InovaLab" width="350" height="130"></a><p>Ideias que viram soluções.</p></div>
       <div><h2>Contato</h2><address><a href="tel:+556436112200">(64) 3611 2200</a><a href="mailto:inova.lab@unirv.edu.br">inova.lab@unirv.edu.br</a><span>UniRV, Rio Verde/GO</span></address></div>
-      <nav aria-label="Links rápidos"><h2>Links rápidos</h2><a href="{% url 'conteudo:sobre' %}">Sobre</a><a href="{% url 'conteudo:servicos' %}">Serviços</a><a href="{% url 'conteudo:contato' %}">Contato</a><a href="{% url 'core:dashboard' %}">Área interna</a><a href="https://agrohub.unirv.edu.br/privacidade/?v=inovalab" target="_blank" rel="noopener noreferrer">Política de privacidade</a></nav>
+      <nav aria-label="Links rápidos"><h2>Links rápidos</h2><a href="{% url 'conteudo:sobre' %}">Sobre</a><a href="{% url 'conteudo:servicos' %}">Serviços</a><a href="{% url 'conteudo:contato' %}">Contato</a><a href="{% url 'conteudo:regimento' %}">Regimento</a><a href="{% url 'conteudo:calendario-funcionamento' %}">Calendário de funcionamento</a>{% if can_access_panel %}<a href="{% url 'core:dashboard' %}">Área interna</a>{% endif %}<a href="https://agrohub.unirv.edu.br/privacidade/?v=inovalab" target="_blank" rel="noopener noreferrer">Política de privacidade</a></nav>
     </div>
     <p class="institutional-legal">FESURV - UNIVERSIDADE DE RIO VERDE | CNPJ: 01.815.216/0001-78</p>
   </footer>

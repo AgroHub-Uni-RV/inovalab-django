@@ -15,7 +15,7 @@ from catalogo.models import Equipamento
 class BookingIdentityScheduleTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_user('ana', first_name='Ana', last_name='Silva')
+        cls.user = get_user_model().objects.create_user('ana', first_name='Ana', last_name='Silva', is_staff=True)
         cls.admin = get_user_model().objects.create_superuser('gestor')
         cls.equipment = Equipamento.objects.create(nome='Sala de teste')
 

@@ -10,7 +10,7 @@ from django.views.decorators.http import require_http_methods
 
 from accounts.agrohub.client import AgroHubClient, AgroHubError
 from accounts.agrohub.services import authenticated_request, begin_session, sync_profile
-from accounts.policies import is_business_admin
+from accounts.policies import can_access_panel, is_business_admin
 from accounts.remote_forms import (AgroHubPhotoForm, AgroHubProfileForm, PasswordResetConfirmForm,
                                    PasswordResetForm, RegisterForm)
 from accounts.remote_forms import RedactedHiddenInput
@@ -46,7 +46,9 @@ def remote_profile(request, *, photo_form=None):
             messages.success(request, 'Perfil atualizado com sucesso no AgroHub.')
             return redirect('accounts:home')
     return render(request, 'accounts/home.html', {'form': form, 'photo_form': photo_form or AgroHubPhotoForm(),
-                                                'agrohub_account': True, 'is_business_admin': is_business_admin(user)})
+                                                'agrohub_account': True, 'is_business_admin': is_business_admin(user),
+                                                'profile_base_template': 'catalogo/base.html' if can_access_panel(user)
+                                                                         else 'accounts/public_profile_base.html'})
 
 
 @never_cache
@@ -74,7 +76,7 @@ def update_photo(request):
 @require_http_methods(['GET', 'POST'])
 def register(request):
     if request.user.is_authenticated:
-        return redirect('core:dashboard')
+        return redirect('core:dashboard' if can_access_panel(request.user) else 'conteudo:inicio')
     form = RegisterForm(request.POST if request.method == 'POST' else None)
     if request.method == 'POST' and form.is_valid():
         try:
@@ -84,7 +86,7 @@ def register(request):
             add_api_errors(form, error)
         else:
             login(request, user, backend='accounts.backends.AgroHubBackend')
-            return redirect('/index/')
+            return redirect('core:dashboard' if can_access_panel(user) else 'conteudo:inicio')
     return render(request, 'accounts/remote_form.html', {'form': form, 'title': 'Criar conta',
                   'intro': 'Cadastre sua conta no AgroHub para acessar o InovaLab.', 'button': 'Criar conta'})
 

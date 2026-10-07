@@ -3,13 +3,14 @@ from django.contrib.auth.admin import GroupAdmin, UserAdmin
 from django.contrib.auth.models import Group
 
 from accounts.models import User
+from accounts.policies import is_technical_admin
 
 
 class TechnicalAdminPermissions:
     """Account and privilege management is reserved to technical administrators."""
 
     def has_module_permission(self, request):
-        return request.user.is_active and request.user.is_superuser
+        return is_technical_admin(request.user)
 
     def has_view_permission(self, request, obj=None):
         return self.has_module_permission(request)

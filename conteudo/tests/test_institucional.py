@@ -36,7 +36,7 @@ class InstitutionalPagesTests(TestCase):
                 self.assertNotContains(response, '>Home<')
 
     def test_authenticated_root_stays_public_with_internal_area_access(self):
-        self.client.force_login(get_user_model().objects.create_user('visitante'))
+        self.client.force_login(get_user_model().objects.create_user('visitante', is_staff=True))
         response = self.client.get('/')
         self.assertContains(response, 'Ideias que')
         self.assertContains(response, '/index/')

@@ -17,6 +17,11 @@ def photo_upload(format='PNG'):
 
 
 class ProfileTests(TestCase):
+    def test_user_without_internal_access_has_a_public_profile_without_sidebar(self):
+        response = self.client.get('/perfil/')
+        self.assertContains(response, 'institutional-header')
+        self.assertNotContains(response, 'id="sidebar"')
+
     def setUp(self):
         self.enterContext(patch('core.views.load_events', return_value=([], False)))
         self.media = TemporaryDirectory()
@@ -66,6 +71,8 @@ class ProfileTests(TestCase):
         self.assertRedirects(self.client.post('/perfil/', {'username':'ana', 'first_name':'Ana'}), '/perfil/')
         self.user.refresh_from_db()
         self.assertEqual(self.user.foto.name, filename)
+        self.user.is_staff = True
+        self.user.save(update_fields=['is_staff'])
         self.assertContains(self.client.get('/index/'), f'/usuarios/{self.user.pk}/foto/')
 
     def test_invalid_large_or_unsupported_photo_does_not_save(self):

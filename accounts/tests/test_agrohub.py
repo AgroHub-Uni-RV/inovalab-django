@@ -29,7 +29,7 @@ class AgroHubAccountsTests(TestCase):
     def login(self, client=None, **extra):
         return (client or self.client).post('/entrar/', {'username': 'agro-ana', 'password': PASSWORD, **extra})
 
-    def test_login_uses_authoritative_me_identity_and_never_remote_privileges(self):
+    def test_login_uses_authoritative_me_identity_with_staff_as_regular_internal_user(self):
         response = self.login()
         self.assertRedirects(response, '/index/')
         user = get_user_model().objects.get(agrohub_id=42)
@@ -177,7 +177,7 @@ class AgroHubAccountsTests(TestCase):
         self.login()
         admin = get_user_model().objects.create_superuser('technical', agrohub_id=77, password=PASSWORD)
         old_profile = dict(self.stub.state['profile'])
-        self.stub.state['profile'].update(id=77, username='technical')
+        self.stub.state['profile'].update(id=77, username='technical', roles=['admin'])
         self.stub.state['login_tokens'] = ('access-77', 'refresh-77')
         self.stub.state['profiles_by_access'] = {'access-1': old_profile, 'access-77': dict(self.stub.state['profile'])}
         response = self.client.post('/admin/login/?next=/admin/', {'username': 'technical', 'password': PASSWORD})

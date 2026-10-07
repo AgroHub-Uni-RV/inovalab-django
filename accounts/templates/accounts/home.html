@@ -1,7 +1,7 @@
-{% extends 'catalogo/base.html' %}
+{% extends profile_base_template|default:'catalogo/base.html' %}
 {% block title %}Minha conta · InovaLab{% endblock %}
 {% block content %}
-<section class="card account-card" aria-labelledby="account-title">
+<section class="card account-card{% if not can_access_panel %} module-page{% endif %}" aria-labelledby="account-title">
     <span class="eyebrow">Minha conta</span>
     <h2 id="account-title">Olá, {{ user.first_name|default:user.username }}.</h2>
     <p class="subtitle">Bem-vindo ao InovaLab.</p>
@@ -14,7 +14,7 @@
     </div>
     <dl class="account-details">
         <dt>Perfil de acesso</dt>
-        <dd>{% if is_business_admin %}Administrador do laboratório{% else %}Usuário interno{% endif %}</dd>
+        <dd>{% if is_business_admin %}Administrador do laboratório{% elif can_access_panel %}Usuário interno{% else %}Usuário do AgroHub{% endif %}</dd>
         <dt>Conta</dt><dd><span class="status-dot" aria-hidden="true"></span> Ativa</dd>
     </dl>
     {% if agrohub_account %}<dl class="account-details"><dt>Usuário</dt><dd>{{ user.agrohub_username }}</dd><dt>E-mail</dt><dd>{{ user.email }}</dd></dl><p>Usuário e e-mail são definidos pelo AgroHub.</p>{% endif %}

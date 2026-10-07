@@ -130,7 +130,7 @@ class VisitAgroHubTests(TestCase):
     def test_admin_edit_people_keeps_original_creator_in_observations(self):
         self.create(quantidade_pessoas=3)
         booking = Agendamento.objects.get()
-        other = get_user_model().objects.create_user(username='outro-gestor', agrohub_id=43, is_superuser=True,
+        other = get_user_model().objects.create_user(username='outro-gestor', agrohub_id=43, agrohub_roles=['admin'],
                                                      first_name='Outro', last_name='Gestor')
         request = self.request(other)
         request.session = {'agrohub_credentials': {'user_id': 43, 'access': 'access-2', 'refresh': 'refresh-2'}}
@@ -335,6 +335,9 @@ class VisitAgroHubTests(TestCase):
 
     def admin(self):
         self.user.groups.add(Group.objects.get_or_create(name='Administradores')[0])
+        self.stub.state['profile']['roles'] = ['admin']
+        self.user.agrohub_roles = ['admin']
+        self.user.save(update_fields=['agrohub_roles'])
 
     def test_accepted_create_with_temporarily_inaccessible_detail_is_not_repeated(self):
         self.stub.state['responses'][('GET', '/api/v1/agendamentos/reservas/101/')] = (404, {})
@@ -530,7 +533,7 @@ class VisitAgroHubTests(TestCase):
     def test_other_admin_can_approve_known_failed_creation_without_post_as_admin(self):
         self.stub.state['create_error'] = 400
         self.create()
-        admin = get_user_model().objects.create_user(username='admin43', agrohub_id=43, is_superuser=True)
+        admin = get_user_model().objects.create_user(username='admin43', agrohub_id=43, agrohub_roles=['admin'])
         from agenda.services import review_booking
         saved = review_booking(actor=admin, booking_id=Agendamento.objects.get().pk, expected_version=1,
             decision='aprovar', agrohub_request=self.request(admin))
@@ -633,7 +636,7 @@ class VisitAgroHubConcurrencyTests(TransactionTestCase):
             with override_settings(AGROHUB_API_BASE_URL=stub.url, DEBUG=True), \
                     patch('agenda.agrohub.current_time', return_value=timezone.make_aware(datetime(2026, 10, 6, 12))), \
                     patch('agenda.tests.agrohub_stub.current_time', return_value=timezone.make_aware(datetime(2026, 10, 6, 12))):
-                user = get_user_model().objects.create_user(username='agro-ana', agrohub_id=42, is_superuser=True)
+                user = get_user_model().objects.create_user(username='agro-ana', agrohub_id=42, agrohub_roles=['admin'])
                 request = RequestFactory().post('/')
                 request.user = user
                 request.session = {'agrohub_credentials': {'user_id': 42, 'access': 'access-1', 'refresh': 'refresh-1'}}

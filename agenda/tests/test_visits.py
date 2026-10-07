@@ -18,7 +18,7 @@ class VisitTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.admin = get_user_model().objects.create_superuser('gestor')
-        cls.user = get_user_model().objects.create_user('visitante')
+        cls.user = get_user_model().objects.create_user('visitante', is_staff=True)
         cls.space = Espaco.objects.create(nome='Sala antiga')
         cls.equipment = Equipamento.objects.create(nome='Impressora')
         cls.start = datetime.fromisoformat('2026-11-01T14:00:00-03:00')
@@ -114,7 +114,7 @@ class VisitTests(TestCase):
         with self.assertRaises(ValidationError):
             save_booking(actor=self.admin, data=self.data(categoria='espaco', objeto=self.space.pk, motivo='Sala'))
         api = APIClient()
-        api.force_authenticate(self.admin)
+        api.force_login(self.admin)
         response = api.post('/api/v1/agendamentos/', self.data(categoria='espaco', objeto=self.space.pk, motivo='Sala'), format='json')
         self.assertEqual(response.status_code, 400)
         self.assertFalse(Agendamento.objects.exists())
@@ -137,7 +137,7 @@ class VisitTests(TestCase):
 
     def test_api_visit_create_patch_filter_and_no_extra_fields(self):
         api = APIClient()
-        api.force_authenticate(self.admin)
+        api.force_login(self.admin)
         response = api.post('/api/v1/agendamentos/', self.data(), format='json')
         self.assertEqual(response.status_code, 201, response.data)
         self.assertIsNone(response.data['objeto'])

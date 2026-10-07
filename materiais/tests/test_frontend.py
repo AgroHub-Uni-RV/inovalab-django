@@ -8,7 +8,7 @@ from materiais.tests.test_services import DATA
 class MaterialFrontendTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_user('leitor')
+        cls.user = get_user_model().objects.create_user('leitor', is_staff=True)
         Material.objects.bulk_create([Material(**{**DATA, 'nome': f'Filamento {i:02}', 'categoria': 'Insumos',
                                                 'status': 'disponivel' if i else 'indisponivel'}) for i in range(26)])
         Material.objects.create(**{**DATA, 'nome': '<script>Outro</script>', 'categoria': 'Papelaria'})

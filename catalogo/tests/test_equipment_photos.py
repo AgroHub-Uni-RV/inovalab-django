@@ -15,7 +15,7 @@ class EquipmentPhotoTests(TestCase):
     def setUpTestData(cls):
         cls.admin = get_user_model().objects.create_user('gestor_fotos')
         cls.admin.groups.add(Group.objects.get(name='Administradores'))
-        cls.user = get_user_model().objects.create_user('leitor_fotos')
+        cls.user = get_user_model().objects.create_user('leitor_fotos', is_staff=True)
 
     def test_seeded_equipment_cards_have_working_photos_and_single_selection(self):
         self.client.force_login(self.user)

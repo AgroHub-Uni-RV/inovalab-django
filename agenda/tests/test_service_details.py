@@ -24,7 +24,7 @@ class BookingServiceDetailsTests(TestCase):
         cls.admin.groups.add(Group.objects.get(name='Administradores'))
         cls.editor = get_user_model().objects.create_user('editor')
         cls.editor.groups.add(Group.objects.get(name='Administradores'))
-        cls.reader = get_user_model().objects.create_user('leitor')
+        cls.reader = get_user_model().objects.create_user('leitor', is_staff=True)
         cls.service = Servico.objects.first()
         cls.machine = Equipamento.objects.create(nome='Máquina A')
         cls.other_machine = Equipamento.objects.create(nome='Máquina B')

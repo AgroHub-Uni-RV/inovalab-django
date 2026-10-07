@@ -22,7 +22,7 @@ class BookingRequestFixtures:
         cls.admin = get_user_model().objects.create_user('avaliador')
         cls.admin.groups.add(Group.objects.get(name='Administradores'))
         cls.user = get_user_model().objects.create_user('solicitante', is_staff=True)
-        cls.other = get_user_model().objects.create_user('outro')
+        cls.other = get_user_model().objects.create_user('outro', is_staff=True)
         cls.service = Servico.objects.first()
         cls.machine = Equipamento.objects.create(nome='Máquina para pedido')
         cls.material = Material.objects.create(nome='PLA pedido', categoria='Filamento', quantidade=500,

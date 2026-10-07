@@ -19,6 +19,19 @@ class UserPageTests(TestCase):
         cls.business.groups.add(Group.objects.get(name='Administradores'))
         cls.inactive = User.objects.create_user('inativo', is_active=False)
 
+    def test_agrohub_roles_override_local_flags_in_admin_counts_filter_and_labels(self):
+        User = get_user_model()
+        remote_admin = User.objects.create_user('admin-remoto', agrohub_id=42, agrohub_roles=['staff', 'admin'])
+        remote_staff = User.objects.create_user('equipe-remota', agrohub_id=43, agrohub_roles=['staff'], is_superuser=True)
+        remote_staff.groups.add(Group.objects.get(name='Administradores'))
+        self.client.force_login(self.admin)
+        response = self.client.get('/usuarios/?tab=administradores')
+        self.assertEqual(response.context['user_counts']['administradores'], 3)
+        self.assertContains(response, remote_admin.username)
+        self.assertNotContains(response, remote_staff.username)
+        response = self.client.get('/usuarios/?q=admin-remoto')
+        self.assertContains(response, 'Administrador')
+
     def test_users_are_exclusive_to_active_technical_admin(self):
         self.assertRedirects(self.client.get('/usuarios/'), '/entrar/?next=/usuarios/', fetch_redirect_response=False)
         self.staff.user_permissions.add(Permission.objects.get(codename='view_user'))

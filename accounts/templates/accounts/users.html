@@ -18,7 +18,7 @@
 <div class="user-grid">{% for account in object_list %}<article class="user-card">
 <div class="user-photo" aria-hidden="true">{% if account.tem_foto %}<img src="{% url 'accounts:photo' account.pk %}" alt="">{% else %}{% include 'core/icon.html' with name='profile' %}{% endif %}</div>
 <h2><a href="{% url 'admin:accounts_user_change' account.pk %}">{{ account.get_full_name|default:account.username }}</a></h2>
-<p>{% if account.is_superuser %}Administrador técnico{% elif account.lab_admin %}Administrador do laboratório{% else %}Usuário interno{% endif %}</p>
+<p>{% if account.lab_admin %}{% if account.is_superuser %}Administrador técnico{% else %}Administrador do laboratório{% endif %}{% elif account.agrohub_id %}{% if 'staff' in account.agrohub_roles %}Usuário interno{% else %}Usuário do AgroHub{% endif %}{% elif account.is_staff %}Usuário interno{% else %}Usuário{% endif %}</p>
 <p>{{ account.is_active|yesno:'Ativo,Inativo' }}</p>
 </article>{% empty %}<p class="empty-notice">Nenhum usuário encontrado.</p>{% endfor %}</div>
 {% include 'core/pagination.html' %}

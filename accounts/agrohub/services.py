@@ -22,6 +22,10 @@ def validate_profile(profile):
         raise AgroHubError()
     if profile.get('is_active') is not True:
         raise AgroHubError(401)
+    roles = profile.get('roles', [])
+    if (not isinstance(roles, list) or len(roles) > 20
+            or any(not isinstance(role, str) or len(role) > 32 for role in roles)):
+        raise AgroHubError()
     limits = {'username': 150, 'email': 254, 'first_name': 150, 'last_name': 150, 'cpf': 14, 'telefone': 20}
     for name, maximum in limits.items():
         value = profile.get(name, '')
@@ -36,13 +40,14 @@ def sync_profile(user, profile):
         raise AgroHubError(401)
     values = {name: profile.get(name, '') for name in ('email', 'first_name', 'last_name', 'cpf', 'telefone')}
     values['agrohub_username'] = profile['username']
+    values['agrohub_roles'] = list(dict.fromkeys(profile.get('roles', [])))
     nested = profile.get('profile')
     values['agrohub_foto_url'] = safe_picture_url(nested.get('profile_picture')) if isinstance(nested, dict) else ''
     changed = [name for name, value in values.items() if getattr(user, name) != value]
     for name in changed:
         setattr(user, name, values[name])
     if changed:
-        # Não atualizar flags/grupos/senha por dados remotos ou cópia obsoleta do usuário.
+        # Papéis vêm de /me/; flags técnicas, grupos e senha locais não são promovidos.
         user.save(update_fields=changed)
     return user
 

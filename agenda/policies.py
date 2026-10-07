@@ -1,2 +1,5 @@
+from accounts.policies import can_access_panel
+
+
 def can_access_agenda(actor):
-    return bool(actor and actor.is_authenticated and actor.is_active)
+    return bool(actor and can_access_panel(actor))

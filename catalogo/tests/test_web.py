@@ -19,7 +19,7 @@ class CatalogWebTests(TestCase):
     def setUpTestData(cls):
         cls.admin = get_user_model().objects.create_user('gestor', password=PASSWORD)
         cls.admin.groups.add(Group.objects.get(name='Administradores'))
-        cls.user = get_user_model().objects.create_user('leitor', password=PASSWORD)
+        cls.user = get_user_model().objects.create_user('leitor', password=PASSWORD, is_staff=True)
         cls.entries = {slug: model.objects.create(**data) for slug, model, data in CASES}
 
     def test_anonymous_redirects_to_login_for_all_categories(self):

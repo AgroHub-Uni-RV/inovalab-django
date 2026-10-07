@@ -6,7 +6,8 @@ from django.views.decorators.http import require_http_methods, require_safe
 
 from accounts.agrohub.client import AgroHubClient, AgroHubError
 from conteudo.contact_forms import ContactForm
-from conteudo.institutional_content import ABOUT_TIMELINE, EQUIPMENT, INOVALAB_STATS, SERVICES, TEAM_MEMBERS
+from conteudo.institutional_content import ABOUT_TIMELINE, EQUIPMENT, INOVALAB_STATS, REGULATION_SECTIONS, SERVICES, TEAM_MEMBERS
+from conteudo.functioning_calendar import functioning_calendar_months
 from conteudo.selectors import published_banners
 from conteudo.public_events import public_events_context
 
@@ -39,6 +40,18 @@ def sobre(request):
 @require_safe
 def servicos(request):
     return _page(request, 'programs', 'servicos')
+
+
+@never_cache
+@require_safe
+def regimento(request):
+    return _page(request, 'regulation', 'regimento', regulation_sections=REGULATION_SECTIONS)
+
+
+@never_cache
+@require_safe
+def calendario_funcionamento(request):
+    return _page(request, 'functioning_calendar', 'calendario', calendar_months=functioning_calendar_months())
 
 
 @never_cache

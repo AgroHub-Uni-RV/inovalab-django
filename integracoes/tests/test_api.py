@@ -42,12 +42,14 @@ class IntegrationAPITests(TestCase):
 
     def test_business_admin_cannot_book_spaces_internally(self):
         self.client.credentials()
-        self.client.force_authenticate(self.admin)
+        self.client.force_login(self.admin)
+        self.client.get('/agenda/novo/')
         for room in Espaco.objects.filter(somente_administradores=True):
             data = {key: value for key, value in self.data.items()
                     if key not in ('id_externo', 'requerente_id', 'requerente')}
             response = self.client.post('/api/v1/agendamentos/',
-                {**data, 'categoria': 'espaco', 'objeto': room.pk}, format='json')
+                {**data, 'categoria': 'espaco', 'objeto': room.pk}, format='json',
+                HTTP_X_CSRFTOKEN=self.client.cookies['csrftoken'].value)
             self.assertEqual(response.status_code, 400, response.data)
 
     def test_custom_space_cannot_be_reserved_regardless_of_restriction(self):

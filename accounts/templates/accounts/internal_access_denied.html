@@ -1,0 +1,9 @@
+{% extends 'conteudo/institucional/base.html' %}
+{% block title %}Acesso restrito · InovaLab{% endblock %}
+{% block content %}
+<section class="institutional-access-notice">
+  <h1>Acesso restrito</h1>
+  <p>A área interna e os agendamentos estão disponíveis somente para membros da equipe e administradores do AgroHub.</p>
+  <a class="inova-btn inova-btn--grad" href="{% url 'conteudo:inicio' %}">Voltar ao início</a>
+</section>
+{% endblock %}

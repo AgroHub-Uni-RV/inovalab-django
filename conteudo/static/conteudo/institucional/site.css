@@ -56,6 +56,7 @@
 .institutional-page .inova-hero__inner { padding-left:max(2rem,calc(50vw - 32.125rem)); }
 .institutional-page .inova-about-hero, .institutional-page .inova-contact-hero, .institutional-page .inova-services-hero { min-height:clamp(13rem,20.3vw,24rem); }
 .institutional-page .inova-page-title { font-size:var(--font-stat-compact); }
+.institutional-page .inova-regulation-hero, .institutional-page .inova-calendar-hero { min-height:clamp(13rem,20.3vw,24rem); }
 .institutional-page .inova-about-intro h2, .institutional-page .inova-services-offer__intro h2 { font-size:var(--font-display); }
 .institutional-page .inova-contact-heading { font-size:var(--font-display); }
 .institutional-page.high-contrast { background:#000; color:#fff; }
@@ -63,6 +64,14 @@
 .high-contrast .institutional-header *, .high-contrast .institutional-footer *, .high-contrast .inova-surface section, .high-contrast .inova-surface article { background-color:#000 !important; color:#fff !important; }
 .high-contrast a, .high-contrast button { outline:1px solid #fff; }
 .institutional-visually-hidden { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.institutional-access-notice { max-width:1120px; margin:var(--space-12) auto; padding:var(--space-8); }
+.institutional-access-notice h1 { font-size:var(--font-display); font-weight:700; margin-bottom:var(--space-4); }
+.institutional-access-notice .inova-btn { margin-top:var(--space-6); }
+.institutional-page .account-card { --navy:#27348b; --ink:#535353; max-width:800px; margin:var(--space-12) auto; padding:var(--space-8); }
+.institutional-page .account-card h2 { font-weight:700; margin-block:var(--space-2); }
+.institutional-page .account-card .eyebrow { font-size:var(--font-small); text-transform:uppercase; }
+.institutional-page .account-card .avatar { border-radius:var(--radius-round); overflow:hidden; flex-shrink:0; }
+.institutional-page .account-card .avatar img { width:100%; height:100%; object-fit:cover; }
 .inova-events-section [hidden] { display:none !important; }
 .inova-events-nav span, .inova-events-calendar__month-btn span { font-size:1.75rem; line-height:1; }
 .inova-event-card__placeholder { display:grid; place-items:center; height:9rem; background:#dfe8f6; color:#5a6788; }

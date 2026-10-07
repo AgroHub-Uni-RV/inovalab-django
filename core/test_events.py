@@ -35,7 +35,7 @@ class EcosystemCalendarTests(TestCase):
     def setUp(self):
         cache.clear()
         self.stub.reset()
-        self.user = get_user_model().objects.create_user('calendario')
+        self.user = get_user_model().objects.create_user('calendario', is_staff=True)
         self.client.force_login(self.user)
         self.enterContext(patch('core.views.dashboard_context', side_effect=lambda actor, **filters:
                               dashboard_context(actor, now=NOW, **filters)))

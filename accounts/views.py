@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods, require_safe
 
-from accounts.policies import is_business_admin
+from accounts.policies import can_access_panel, is_business_admin, is_technical_admin
 from accounts.forms import ProfileForm
 from accounts.models import User
 from accounts.remote_forms import AgroHubLoginForm
@@ -25,6 +25,8 @@ class AccountLoginView(LoginView):
     authentication_form = AgroHubLoginForm
 
     def get_success_url(self):
+        if not can_access_panel(self.request.user):
+            return reverse('conteudo:inicio')
         destination = super().get_success_url()
         # Keep Django's host/scheme validation, then prevent returns to either entry.
         path = urlsplit(urljoin(self.request.build_absolute_uri(), destination)).path
@@ -52,6 +54,8 @@ def home(request: HttpRequest) -> HttpResponse:
             return redirect('accounts:home')
     return render(request, 'accounts/home.html', {
         'is_business_admin': is_business_admin(request.user),
+        'profile_base_template': 'catalogo/base.html' if can_access_panel(request.user)
+                                else 'accounts/public_profile_base.html',
         'form': form,
     })
 
@@ -60,7 +64,7 @@ def home(request: HttpRequest) -> HttpResponse:
 @login_required
 @require_safe
 def profile_photo(request, pk):
-    if request.user.pk != pk and not request.user.is_superuser:
+    if request.user.pk != pk and not is_technical_admin(request.user):
         raise PermissionDenied
     user = get_object_or_404(User, pk=pk)
     return profile_photo_response(user)

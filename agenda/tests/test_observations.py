@@ -12,7 +12,7 @@ from catalogo.models import Equipamento, Servico
 class BookingObservationsTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_user('autor-observacoes')
+        cls.user = get_user_model().objects.create_user('autor-observacoes', is_staff=True)
         cls.admin = get_user_model().objects.create_superuser('editor-observacoes')
         cls.equipment = Equipamento.objects.create(nome='Sala de observações')
 

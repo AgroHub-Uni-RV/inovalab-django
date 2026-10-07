@@ -10,7 +10,7 @@ class TaskFixtures:
     def setUpTestData(cls):
         cls.admin = get_user_model().objects.create_user('gestor')
         cls.admin.groups.add(Group.objects.get(name='Administradores'))
-        cls.owner = get_user_model().objects.create_user('ana')
+        cls.owner = get_user_model().objects.create_user('ana', is_staff=True)
         cls.other = get_user_model().objects.create_user('bruno', is_staff=True)
         cls.service = Servico.objects.first()
         cls.mine = save_task(actor=cls.admin, data={

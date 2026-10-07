@@ -11,7 +11,7 @@ from PIL import Image
 
 PROFILE = {'id': 42, 'username': 'agro-ana', 'email': 'ana@example.test', 'first_name': 'Ana',
            'last_name': 'Silva', 'cpf': '', 'telefone': '', 'is_active': True,
-           'roles': ['admin'], 'is_staff': True, 'is_superuser': True, 'profile': None}
+           'roles': ['staff'], 'is_staff': True, 'is_superuser': True, 'profile': None}
 PASSWORD = 'AgroHub-Teste-2026!'
 
 
@@ -154,6 +154,8 @@ class AccountsProviderMixin:
         def force_remote_session(user, backend=None):
             original_force_login(user, backend=backend)
             if user.agrohub_id == 42:
+                self.provider.state['profile']['roles'] = ['admin'] if (
+                    user.is_superuser or user.groups.filter(name='Administradores').exists()) else ['staff']
                 session = self.client.session
                 session['agrohub_credentials'] = {
                     'access': 'access-1', 'refresh': 'refresh-1', 'user_id': 42,
