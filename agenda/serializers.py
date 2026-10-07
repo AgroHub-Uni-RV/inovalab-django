@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from rest_framework import serializers
 
-from agenda.models import CATEGORIES, EventoAgendamento
+from agenda.models import BOOKING_MODELS, EventoAgendamento
 from agenda.services import save_booking
 from catalogo.models import Equipamento
 from materiais.models import Material
@@ -42,14 +42,12 @@ class AwareDateTimeField(serializers.DateTimeField):
 
 
 class BookingSerializer(StrictPayloadMixin, serializers.Serializer):
-    reserva_agrohub = serializers.SerializerMethodField()
     id = serializers.IntegerField(read_only=True)
-    categoria = serializers.ChoiceField(choices=CATEGORIES)
+    categoria = serializers.ChoiceField(choices=BOOKING_MODELS)
     objeto = VersionField(source='objeto_id', min_value=1, required=False, allow_null=True)
     objeto_nome = serializers.CharField(read_only=True)
     motivo = serializers.CharField(required=False)
     observacoes = serializers.CharField(required=False, allow_blank=True)
-    quantidade_pessoas = VersionField(min_value=1, max_value=2147483647, required=False, allow_null=True)
     inicio = AwareDateTimeField()
     fim = AwareDateTimeField()
     equipamentos = serializers.PrimaryKeyRelatedField(queryset=Equipamento.objects.all(), many=True, required=False,
@@ -86,16 +84,13 @@ class BookingSerializer(StrictPayloadMixin, serializers.Serializer):
         return attrs
 
     def create(self, validated_data):
-        return save_booking(actor=self.context['request'].user, data=validated_data, agrohub_request=self.context['request'])
+        return save_booking(actor=self.context['request'].user, data=validated_data)
 
     def update(self, instance, validated_data):
         version = validated_data.pop('versao')
-        return save_booking(actor=self.context['request'].user, booking_id=instance.pk,
-                            expected_version=version, data=validated_data, agrohub_request=self.context['request'])
+        return save_booking(actor=self.context['request'].user, category=instance.categoria, booking_id=instance.pk,
+                            expected_version=version, data=validated_data)
 
-    def get_reserva_agrohub(self, booking):
-        from agenda.agrohub import reservation_summary
-        return reservation_summary(booking)
 
 
 class CancelSerializer(StrictPayloadMixin, serializers.Serializer):

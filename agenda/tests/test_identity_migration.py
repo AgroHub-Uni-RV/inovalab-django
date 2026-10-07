@@ -4,13 +4,15 @@ from django.contrib.auth import get_user_model
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase
+from agenda.tests.migration_helpers import PrivateArchiveMixin
 
 
-class BookingIdentityMigrationTests(TransactionTestCase):
+class BookingIdentityMigrationTests(PrivateArchiveMixin, TransactionTestCase):
     def test_removing_requester_preserves_bookings_creators_periods_and_history(self):
         previous = [('agenda', '0005_agendamento_avaliado_em_agendamento_avaliado_por_and_more')]
         executor = MigrationExecutor(connection)
         latest = executor.loader.graph.leaf_nodes()
+        current = [('agenda', '0012_identifica_reservas_recebidas_agrohub'), ('catalogo', '0007_remove_espaco'), ('integracoes', '0001_initial')]
         executor.migrate(previous)
         try:
             apps = executor.loader.project_state(previous).apps
@@ -25,8 +27,8 @@ class BookingIdentityMigrationTests(TransactionTestCase):
                 agendamento=booking, ator_id=actor.pk, ator_nome='criador-legado', acao='criar',
                 alteracoes={'requerente': {'anterior': None, 'novo': 'Outra pessoa'}})
             executor = MigrationExecutor(connection)
-            executor.migrate(latest)
-            apps = executor.loader.project_state(latest).apps
+            executor.migrate(current)
+            apps = executor.loader.project_state(current).apps
             migrated = apps.get_model('agenda', 'Agendamento').objects.get(pk=booking.pk)
             self.assertEqual(migrated.observacoes, '')
             self.assertEqual((migrated.criado_por_id, migrated.inicio, migrated.fim, migrated.versao,

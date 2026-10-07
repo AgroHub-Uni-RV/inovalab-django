@@ -112,7 +112,7 @@ def normalize_request(data):
         else:
             normalized[name] = value.strip()
     # Espaço é reconhecido somente para reenvios idempotentes anteriores.
-    if not isinstance(data['categoria'], str) or data['categoria'] not in (*CATEGORY_MODELS, 'visita', 'espaco'):
+    if not isinstance(data['categoria'], str) or data['categoria'] not in CATEGORY_MODELS:
         errors['categoria'] = 'Selecione uma categoria válida.'
     if 'objeto' in data and (type(data['objeto']) is not int or data['objeto'] < 1):
         errors['objeto'] = 'Informe um ID inteiro positivo.'
@@ -143,7 +143,7 @@ def receive_booking(*, principal, data):
             raise CredentialRejected('Credencial revogada.') from error
         if not client.ativo or not client.token_digest or not secrets.compare_digest(client.token_digest, principal.token_digest):
             raise CredentialRejected('Credencial revogada.')
-        receipt = PedidoIntegracao.objects.select_related('agendamento').filter(
+        receipt = PedidoIntegracao.objects.select_related('agenda_servico', 'agenda_equipamento').filter(
             cliente=client, id_externo=normalized['id_externo'],
         ).first()
         if receipt:
@@ -153,5 +153,5 @@ def receive_booking(*, principal, data):
         booking = _save_booking(actor=None, actor_name=f'Integração: {client.nome}',
                                 data={name: normalized[name] for name in BASE_FIELDS if name in normalized})
         receipt = PedidoIntegracao.objects.create(cliente=client, id_externo=normalized['id_externo'],
-            requerente_id=normalized['requerente_id'], conteudo_digest=digest, agendamento=booking)
+            requerente_id=normalized['requerente_id'], conteudo_digest=digest, **{'agenda_' + booking.categoria: booking})
     return booking, receipt, False

@@ -21,7 +21,7 @@ class StrictFormMixin:
 
 
 class BookingForm(StrictFormMixin, forms.Form):
-    categoria = forms.ChoiceField(label='Categoria', choices=CATEGORIES.items())
+    categoria = forms.ChoiceField(label='Categoria', choices=[(key, CATEGORIES[key]) for key in CATEGORY_MODELS])
     objeto = forms.ModelChoiceField(label='Objeto', queryset=CATEGORY_MODELS['servico'].objects.none())
     motivo = forms.CharField(label='Motivo', widget=forms.Textarea(attrs={'rows': 3}))
     observacoes = forms.CharField(label='Observações', required=False, help_text='Opcional.',
@@ -65,14 +65,14 @@ class BookingForm(StrictFormMixin, forms.Form):
             self.legacy_multiday = start.date() != end.date()
             initial.update(categoria=booking.categoria, objeto=booking.objeto_id, motivo=booking.motivo,
                            observacoes=booking.observacoes,
-                           quantidade_pessoas=booking.quantidade_pessoas if booking.visita else 1,
                            dia=start.date(), hora_inicio=start.time().replace(microsecond=0),
                            hora_termino=end.time().replace(microsecond=0), versao=booking.versao)
-            initial.update(equipamentos=list(booking.equipamentos.values_list('pk', flat=True)),
-                           material_proprio='sim' if booking.material_proprio is True else
-                           'nao' if booking.material_proprio is False else '',
-                           material_gasto_gramas=booking.material_gasto_gramas)
-            initial['material_gasto'] = booking.material_gasto_id
+            if booking.categoria == 'servico':
+                initial.update(equipamentos=list(booking.equipamentos.values_list('pk', flat=True)),
+                               material_proprio='sim' if booking.material_proprio is True else
+                               'nao' if booking.material_proprio is False else '',
+                               material_gasto_gramas=booking.material_gasto_gramas)
+                initial['material_gasto'] = booking.material_gasto_id
         initial.update(kwargs.get('initial', {}))
         initial.setdefault('categoria', 'servico')
         kwargs['initial'] = initial
@@ -89,23 +89,7 @@ class BookingForm(StrictFormMixin, forms.Form):
             if category == 'equipamento':
                 self.fields['objeto'].empty_label = None
                 self.fields['objeto'].widget = EquipmentRadioSelect(choices=self.fields['objeto'].choices)
-        if category == 'visita':
-            for name in ('objeto', 'motivo', 'observacoes'):
-                del self.fields[name]
-            for name in ('hora_inicio', 'hora_termino'):
-                field = self.fields[name]
-                field.widget.attrs['step'] = '60'
-                field.help_text = 'Horário de Brasília. Informe horas e minutos, sem segundos.'
-                try:
-                    original = field.to_python(self.initial.get(name))
-                except forms.ValidationError:
-                    original = None
-                if original is not None:
-                    self.initial[name] = original
-                if not original or not original.second:
-                    field.widget.format = '%H:%M'
-        else:
-            del self.fields['quantidade_pessoas']
+        del self.fields['quantidade_pessoas']
         if category == 'servico':
             self.fields['material_gasto'].queryset = Material.objects.filter(
                 ~Q(status='indisponivel') | Q(pk=booking.material_gasto_id if booking else None),
@@ -158,9 +142,6 @@ class BookingForm(StrictFormMixin, forms.Form):
     def _clean_period(self, cleaned):
         day, start, end = (cleaned.get(name) for name in ('dia', 'hora_inicio', 'hora_termino'))
         if day is None or start is None or end is None:
-            return
-        if self.category == 'visita' and (start.second or end.second or start.microsecond or end.microsecond):
-            self.add_error('hora_inicio', 'Informe horas e minutos, sem segundos.')
             return
         if self.booking:
             original_start, original_end = timezone.localtime(self.booking.inicio), timezone.localtime(self.booking.fim)

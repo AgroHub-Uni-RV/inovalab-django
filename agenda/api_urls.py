@@ -1,7 +1,8 @@
-from rest_framework.routers import DefaultRouter
-
+from django.urls import path
 from agenda.api import BookingViewSet
 
-router = DefaultRouter()
-router.register('agendamentos', BookingViewSet, basename='agendamentos')
-urlpatterns = router.urls
+urlpatterns = [
+    path('agendamentos/', BookingViewSet.as_view({'get': 'list', 'post': 'create'}), name='agendamentos-list'),
+    path('agendamentos/<str:category>/<int:pk>/', BookingViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='agendamentos-detail'),
+    path('agendamentos/<str:category>/<int:pk>/historico/', BookingViewSet.as_view({'get': 'historico'}), name='agendamentos-historico'),
+]

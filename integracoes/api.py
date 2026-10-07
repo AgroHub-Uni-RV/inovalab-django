@@ -39,7 +39,7 @@ class ExternalBookingView(IntegrationAPIView):
         payload = ExternalBookingSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
         booking, receipt, repeated = receive_booking(principal=request.auth, data=payload.validated_data)
-        return Response({'id': booking.pk, 'id_externo': receipt.id_externo, 'repetido': repeated,
+        return Response({'id': booking.pk, 'categoria': booking.categoria, 'id_externo': receipt.id_externo, 'repetido': repeated,
                          'cancelado': booking.cancelado_em is not None, 'versao': booking.versao}, status=200 if repeated else 201)
 
 

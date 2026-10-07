@@ -115,10 +115,10 @@ class EcosystemCalendarTests(TestCase):
         self.assertEqual(self.days(response)['2026-10-08'].get('events', []), [])
 
     def test_events_keep_authorized_reservation_count_and_neutral_today(self):
-        from agenda.models import Agendamento
+        from agenda.models import AgendaEquipamento, BOOKING_MODELS, AgendaServico
         from catalogo.models import Servico
         service = Servico.objects.create(nome='Serviço')
-        Agendamento.objects.create(servico=service, motivo='Projeto', criado_por=self.user,
+        AgendaServico.objects.create(servico=service, motivo='Projeto', criado_por=self.user,
             inicio=datetime(2026, 10, 8, 12, tzinfo=timezone.utc),
             fim=datetime(2026, 10, 8, 13, tzinfo=timezone.utc))
         self.page([event()])

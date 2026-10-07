@@ -7,7 +7,7 @@ from django.db import IntegrityError, connection
 from django.db.models.deletion import ProtectedError
 from django.test import TestCase
 
-from agenda.models import Agendamento, EventoAgendamento
+from agenda.models import AgendaEquipamento, BOOKING_MODELS, AgendaServico, EventoAgendamento
 from agenda.services import BookingConflict, cancel_booking, save_booking
 from catalogo.models import Equipamento, Servico
 from integracoes.credentials import CredentialRejected, authenticate_token
@@ -96,7 +96,7 @@ class IntegrationServiceTests(TestCase):
         for index, (category, target) in enumerate((('servico', self.service), ('equipamento', self.equipment))):
             booking, receipt, repeated = self.receive(id_externo=str(index), categoria=category, objeto=target.pk)
             self.assertFalse(repeated)
-            self.assertEqual((receipt.agendamento_id, receipt.cliente_id, receipt.requerente_id), (booking.pk, self.client.pk, 'pessoa-45'))
+            self.assertEqual((receipt.agendamento.pk, receipt.cliente_id, receipt.requerente_id), (booking.pk, self.client.pk, 'pessoa-45'))
             self.assertIsNone(booking.criado_por_id)
             event = booking.eventos.get()
             self.assertIsNone(event.ator_id)
@@ -108,7 +108,7 @@ class IntegrationServiceTests(TestCase):
             inicio=self.data['inicio'].astimezone(dt_timezone.utc), fim=self.data['fim'].astimezone(dt_timezone.utc))
         self.assertTrue(repeated)
         self.assertEqual((replay.pk, same_receipt.pk), (booking.pk, receipt.pk))
-        self.assertEqual((Agendamento.objects.count(), PedidoIntegracao.objects.count(), EventoAgendamento.objects.count()), (1, 1, 1))
+        self.assertEqual(((AgendaServico.objects.count() + AgendaEquipamento.objects.count()), PedidoIntegracao.objects.count(), EventoAgendamento.objects.count()), (1, 1, 1))
 
     def test_same_key_different_content_is_conflict_and_client_namespaces_are_independent(self):
         self.receive()
@@ -122,17 +122,17 @@ class IntegrationServiceTests(TestCase):
 
     def test_replay_after_admin_edit_deactivation_or_cancellation_never_recreates(self):
         booking, receipt, _ = self.receive()
-        save_booking(actor=self.admin, booking_id=booking.pk, expected_version=1, data={'motivo': 'Editado localmente'})
+        save_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=1, data={'motivo': 'Editado localmente'})
         self.service.status = 'indisponivel'
         self.service.save()
         replay, _, repeated = self.receive()
         self.assertTrue(repeated)
         self.assertEqual((replay.motivo, replay.versao), ('Editado localmente', 2))
-        cancel_booking(actor=self.admin, booking_id=booking.pk, expected_version=2)
+        cancel_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=2)
         replay, _, repeated = self.receive()
         self.assertEqual((replay.pk, replay.versao, repeated), (booking.pk, 3, True))
         self.assertIsNotNone(replay.cancelado_em)
-        self.assertEqual(Agendamento.objects.count(), 1)
+        self.assertEqual((AgendaServico.objects.count() + AgendaEquipamento.objects.count()), 1)
 
     def test_invalid_and_protected_payload_never_creates_booking_or_receipt(self):
         for fields in ({'id_externo': ''}, {'id_externo': 1}, {'requerente_id': ' '}, {'requerente': 'A' * 151},
@@ -144,7 +144,7 @@ class IntegrationServiceTests(TestCase):
             receive_booking(principal=self.principal, data={})
         with self.assertRaises(CredentialRejected):
             receive_booking(principal=self.admin, data=self.data)
-        self.assertEqual((Agendamento.objects.count(), PedidoIntegracao.objects.count()), (0, 0))
+        self.assertEqual(((AgendaServico.objects.count() + AgendaEquipamento.objects.count()), PedidoIntegracao.objects.count()), (0, 0))
 
     def test_overlap_unavailable_and_nonexistent_targets_do_not_record_request(self):
         self.receive()
@@ -165,7 +165,7 @@ class IntegrationServiceTests(TestCase):
             return execute(sql, params, many, context)
         with connection.execute_wrapper(fail_receipt), self.assertRaises(IntegrityError):
             self.receive()
-        self.assertEqual((Agendamento.objects.count(), PedidoIntegracao.objects.count(), EventoAgendamento.objects.count()), (0, 0, 0))
+        self.assertEqual(((AgendaServico.objects.count() + AgendaEquipamento.objects.count()), PedidoIntegracao.objects.count(), EventoAgendamento.objects.count()), (0, 0, 0))
 
     def test_external_booking_and_client_remain_protected(self):
         booking, receipt, _ = self.receive()

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from agenda.models import Agendamento
+from agenda.models import AgendaEquipamento, BOOKING_MODELS, AgendaServico
 from catalogo.models import Equipamento, Servico
 
 
@@ -16,7 +16,7 @@ class AgendaFrontendTests(TestCase):
 
     def booking(self, reason='Nome buscável', **kwargs):
         start = datetime.fromisoformat('2026-12-30T10:00:00-03:00')
-        return Agendamento.objects.create(servico=self.service, inicio=start, fim=start+timedelta(hours=1),
+        return AgendaServico.objects.create(servico=self.service, inicio=start, fim=start+timedelta(hours=1),
             motivo=reason, criado_por=self.admin, **kwargs)
 
     def test_calendar_sunday_first_and_real_booking_content(self):
@@ -30,7 +30,7 @@ class AgendaFrontendTests(TestCase):
     def test_search_category_counts_and_cancelled_are_filtered(self):
         booking = self.booking()
         self.booking('Cancelado', cancelado_em=booking.inicio)
-        Agendamento.objects.create(equipamento=self.equipment, motivo='Motivo',
+        AgendaEquipamento.objects.create(equipamento=self.equipment, motivo='Motivo',
             inicio=booking.inicio, fim=booking.fim, criado_por=self.admin)
         self.client.force_login(self.admin)
         response = self.client.get('/agenda/', {'mes': '2026-12', 'q': 'buscável'})
@@ -42,8 +42,8 @@ class AgendaFrontendTests(TestCase):
         self.client.force_login(self.admin)
         for end, occurrences in [('2026-10-07T08:00:00-03:00', 3), ('2026-10-06T00:00:00-03:00', 1)]:
             with self.subTest(end=end):
-                Agendamento.objects.all().delete()
-                Agendamento.objects.create(servico=self.service, motivo='Motivo',
+                AgendaServico.objects.all().delete()
+                AgendaServico.objects.create(servico=self.service, motivo='Motivo',
                     criado_por=self.admin, inicio=datetime.fromisoformat('2026-10-05T22:00:00-03:00'),
                     fim=datetime.fromisoformat(end))
                 response = self.client.get('/agenda/?mes=2026-10')
@@ -53,7 +53,7 @@ class AgendaFrontendTests(TestCase):
     def test_midnight_and_pagination_keep_all_calendar_bookings(self):
         start = datetime.fromisoformat('2026-12-31T22:00:00-03:00')
         end = datetime.fromisoformat('2027-01-01T00:00:00-03:00')
-        Agendamento.objects.bulk_create([Agendamento(servico=self.service, inicio=start, fim=end,
+        AgendaServico.objects.bulk_create([AgendaServico(servico=self.service, inicio=start, fim=end,
             motivo='Virada', criado_por=self.admin) for _ in range(26)])
         self.client.force_login(self.admin)
         response = self.client.get('/agenda/?mes=2026-12&q=Virada')

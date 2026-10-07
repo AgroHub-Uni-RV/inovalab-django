@@ -9,7 +9,7 @@ from django.test import Client
 from rest_framework.test import APIClient
 
 from agenda import services
-from agenda.models import Agendamento
+from agenda.models import AgendaEquipamento, BOOKING_MODELS, AgendaServico
 from agenda.selectors import calendar_weeks, visible_bookings
 from catalogo.models import Equipamento, Servico
 from materiais.models import Material
@@ -36,7 +36,7 @@ class BookingRequestFixtures:
         return services.save_booking(actor=actor or self.user, data={**self.data, **overrides})
 
     def review(self, booking, decision='aprovar', actor=None, version=1):
-        return services.review_booking(actor=actor or self.admin, booking_id=booking.pk,
+        return services.review_booking(actor=actor or self.admin, category=booking.categoria, booking_id=booking.pk,
                                        expected_version=version, decision=decision)
 
 
@@ -114,7 +114,7 @@ class BookingRequestTests(BookingRequestFixtures, TestCase):
         for version in (None, True, '1', 0):
             with self.assertRaises(ValidationError):
                 self.review(booking, version=version)
-        services.save_booking(actor=self.admin, booking_id=booking.pk, expected_version=1,
+        services.save_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=1,
                               data={'motivo': 'Pedido corrigido pelo administrador'})
         with self.assertRaises(services.BookingConflict):
             self.review(booking)
@@ -124,9 +124,9 @@ class BookingRequestTests(BookingRequestFixtures, TestCase):
     def test_normal_user_cannot_edit_cancel_or_assign_protected_fields(self):
         booking = self.create()
         with self.assertRaises(PermissionDenied):
-            services.save_booking(actor=self.user, booking_id=booking.pk, expected_version=1, data={'motivo': 'Editar'})
+            services.save_booking(actor=self.user, category=booking.categoria, booking_id=booking.pk, expected_version=1, data={'motivo': 'Editar'})
         with self.assertRaises(PermissionDenied):
-            services.cancel_booking(actor=self.user, booking_id=booking.pk, expected_version=1)
+            services.cancel_booking(actor=self.user, category=booking.categoria, booking_id=booking.pk, expected_version=1)
         for field in ('situacao', 'criado_por', 'avaliado_por', 'avaliado_em'):
             with self.assertRaises(ValidationError):
                 self.create(**{field: 'confirmado'})
@@ -135,7 +135,7 @@ class BookingRequestTests(BookingRequestFixtures, TestCase):
         self.create()
         self.user.is_active = False
         for actor in (self.user, AnonymousUser()):
-            self.assertFalse(visible_bookings(actor).exists())
+            self.assertFalse(bool(visible_bookings(actor)))
             with self.assertRaises(PermissionDenied):
                 self.create(actor=actor)
 
@@ -168,7 +168,7 @@ class BookingRequestTests(BookingRequestFixtures, TestCase):
         booking = self.create(actor=self.admin)
         self.assertEqual(booking.situacao, 'confirmado')
         self.assertIsNone(booking.avaliado_por_id)
-        legacy = Agendamento.objects.create(servico=self.service, motivo='Importado',
+        legacy = AgendaServico.objects.create(servico=self.service, motivo='Importado',
                                             inicio=self.data['inicio'], fim=self.data['fim'])
         self.assertEqual(legacy.situacao, 'confirmado')
 
@@ -183,14 +183,14 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         self.client.force_login(self.user)
         response = self.client.post('/agenda/novo/', self.web_data())
         self.assertEqual(response.status_code, 302)
-        booking = Agendamento.objects.get()
+        booking = AgendaServico.objects.get()
         self.assertEqual((booking.situacao, booking.criado_por_id), ('pendente', self.user.pk))
         response = self.client.get(response.url)
         self.assertContains(response, 'Pendente')
         self.assertNotContains(response, 'Editar agendamento')
         self.assertNotContains(response, 'Cancelar agendamento')
         self.assertNotContains(response, '/avaliar/')
-        self.assertEqual(self.client.get(f'/agenda/{booking.pk}/historico/').status_code, 200)
+        self.assertEqual(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/historico/').status_code, 200)
         self.assertContains(self.client.get('/agenda/'), '/agenda/novo/')
 
     def test_owner_isolation_covers_pages_api_history_photo_and_filters(self):
@@ -202,13 +202,13 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         self.assertNotContains(response, 'SEGREDO')
         self.assertEqual(self.client.get('/agenda/', {'q': 'SEGREDO'}).context['paginator'].count, 0)
         for suffix in ('', 'historico/', 'criador/foto/'):
-            self.assertEqual(self.client.get(f'/agenda/{foreign.pk}/{suffix}').status_code, 404)
+            self.assertEqual(self.client.get(f'/agenda/{foreign.categoria}/{foreign.pk}/{suffix}').status_code, 404)
         api = APIClient()
         api.force_login(self.user)
         self.assertEqual(api.get('/api/v1/agendamentos/').data['count'], 1)
-        self.assertEqual(api.get(f'/api/v1/agendamentos/{own.pk}/').status_code, 200)
+        self.assertEqual(api.get(f'/api/v1/agendamentos/{own.categoria}/{own.pk}/').status_code, 200)
         for suffix in ('', 'historico/'):
-            self.assertEqual(api.get(f'/api/v1/agendamentos/{foreign.pk}/{suffix}').status_code, 404)
+            self.assertEqual(api.get(f'/api/v1/agendamentos/{foreign.categoria}/{foreign.pk}/{suffix}').status_code, 404)
 
     def test_pending_and_rejected_outside_current_month_are_visible_and_filterable(self):
         pending = self.create()
@@ -229,10 +229,10 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         booking = self.create()
         self.client.force_login(self.user)
         self.assertEqual(self.client.get('/agenda/solicitacoes/').status_code, 403)
-        url = f'/agenda/{booking.pk}/avaliar/'
+        url = f'/agenda/{booking.categoria}/{booking.pk}/avaliar/'
         self.assertEqual(self.client.post(url, {'versao': 1, 'decisao': 'aprovar'}).status_code, 403)
         for suffix in ('editar/', 'cancelar/'):
-            self.assertEqual(self.client.get(f'/agenda/{booking.pk}/{suffix}').status_code, 403)
+            self.assertEqual(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/{suffix}').status_code, 403)
         self.client.force_login(self.admin)
         response = self.client.get('/agenda/solicitacoes/')
         self.assertEqual(response.context['object_list'], [])
@@ -240,14 +240,14 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         self.assertContains(response, 'conta administrativa vinculada ao AgroHub')
         self.assertEqual(self.client.get(url).status_code, 405)
         self.assertRedirects(self.client.post(url, {'versao': 1, 'decisao': 'aprovar'}), '/agenda/solicitacoes/')
-        self.assertContains(self.client.get(f'/agenda/{booking.pk}/'), 'Confirmado')
+        self.assertContains(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/'), 'Confirmado')
         self.assertEqual(self.client.post(url, {'versao': 1, 'decisao': 'rejeitar'}).status_code, 409)
         self.assertEqual(self.client.get('/agenda/solicitacoes/').context['paginator'].count, 0)
 
     def test_review_error_preserves_request_and_csrf_and_unknown_fields_are_rejected(self):
         booking = self.create()
         self.create(actor=self.admin)
-        url = f'/agenda/{booking.pk}/avaliar/'
+        url = f'/agenda/{booking.categoria}/{booking.pk}/avaliar/'
         self.client.force_login(self.admin)
         self.assertEqual(self.client.post(url, {'versao': 1, 'decisao': 'aprovar'}).status_code, 409)
         self.assertEqual(self.client.post(url, {'versao': 1, 'decisao': 'rejeitar', 'criado_por': self.admin.pk}).status_code, 400)
@@ -269,7 +269,7 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
             response = self.client.post('/agenda/novo/', data)
             self.assertEqual(response.status_code, 200)
             self.assertIn('categoria', response.context['form'].errors)
-        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(AgendaServico.objects.exists())
 
     def test_api_normal_creation_cannot_spoof_state_owner_or_manage_booking(self):
         api = APIClient()
@@ -277,7 +277,7 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         response = api.post('/api/v1/agendamentos/', self.data, format='json')
         self.assertEqual(response.status_code, 201)
         self.assertEqual((response.data['situacao'], response.data['criado_por']), ('pendente', self.user.pk))
-        url = f'/api/v1/agendamentos/{response.data["id"]}/'
+        url = f'/api/v1/agendamentos/{response.data["categoria"]}/{response.data["id"]}/'
         for method in (api.patch, api.put, api.delete):
             self.assertEqual(method(url, {'versao': 1}, format='json').status_code, 403)
         for field in ('situacao', 'avaliado_por', 'avaliado_em', 'criado_por'):
@@ -309,14 +309,14 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         self.client.force_login(self.admin)
         response = self.client.get('/agenda/solicitacoes/', {'situacao': '', 'mes': ''})
         self.assertEqual(response.context['object_list'], [])
-        self.assertNotContains(response, f'/agenda/{request.pk}/')
+        self.assertNotContains(response, f'/agenda/{request.categoria}/{request.pk}/')
 
     def test_decision_pages_remain_readable_after_evaluator_account_is_deleted(self):
         booking = self.create()
         self.review(booking)
         self.admin.delete()
         self.client.force_login(self.user)
-        self.assertContains(self.client.get(f'/agenda/{booking.pk}/'), 'Conta removida')
+        self.assertContains(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/'), 'Conta removida')
 
     def test_dashboard_counts_only_own_confirmed_bookings(self):
         from core.dashboard import dashboard_context
@@ -346,7 +346,7 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         with TemporaryDirectory() as media, override_settings(MEDIA_ROOT=media):
             self.user.foto.save('solicitante.webp', image_upload(), save=True)
             booking = self.create()
-            url = f'/agenda/{booking.pk}/criador/foto/'
+            url = f'/agenda/{booking.categoria}/{booking.pk}/criador/foto/'
             self.client.force_login(self.user)
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200)
@@ -360,4 +360,4 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         self.user.delete()
         self.client.force_login(self.admin)
         self.assertContains(self.client.get('/agenda/solicitacoes/'), 'conta administrativa vinculada ao AgroHub')
-        self.assertEqual(self.client.get(f'/agenda/{booking.pk}/').status_code, 200)
+        self.assertEqual(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/').status_code, 200)

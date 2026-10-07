@@ -3,7 +3,7 @@ from django.contrib.auth.models import Group
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from agenda.models import Agendamento
+from agenda.models import AgendaEquipamento, BOOKING_MODELS, AgendaServico
 from agenda.services import cancel_booking, save_booking
 from catalogo.models import Equipamento, Servico
 from integracoes.models import PedidoIntegracao
@@ -36,7 +36,7 @@ class IntegrationAPITests(TestCase):
         for room_id in (1, 42):
             with self.subTest(room=room_id):
                 self.assertEqual(self.post(categoria='espaco', objeto=room_id).status_code, 400)
-        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(AgendaServico.objects.exists())
         self.assertFalse(PedidoIntegracao.objects.exists())
 
     def test_business_admin_cannot_book_spaces_internally(self):
@@ -54,10 +54,10 @@ class IntegrationAPITests(TestCase):
     def test_real_bearer_without_session_or_csrf_creates_and_replays(self):
         response = self.post()
         self.assertEqual(response.status_code, 201, response.data)
-        self.assertEqual(set(response.data), {'id', 'id_externo', 'repetido', 'cancelado', 'versao'})
+        self.assertEqual(set(response.data), {'id', 'categoria', 'id_externo', 'repetido', 'cancelado', 'versao'})
         repeated = self.post()
         self.assertEqual((repeated.status_code, repeated.data['id'], repeated.data['repetido']), (200, response.data['id'], True))
-        self.assertEqual((Agendamento.objects.count(), PedidoIntegracao.objects.count()), (1, 1))
+        self.assertEqual(((AgendaServico.objects.count() + AgendaEquipamento.objects.count()), PedidoIntegracao.objects.count()), (1, 1))
 
     def test_missing_wrong_malformed_or_revoked_token_are_401_with_challenge(self):
         for header in ('', 'Bearer errado', 'Basic errado', 'Bearer ' + self.token + 'a', 'Bearer ' + self.token + ' extra'):
@@ -68,7 +68,7 @@ class IntegrationAPITests(TestCase):
         update_client(actor=self.admin, client_id=self.integration.pk, expected_version=1, data={'ativo': False})
         self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.token)
         self.assertEqual(self.post().status_code, 401)
-        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(AgendaServico.objects.exists())
 
     def test_internal_session_does_not_authenticate_external_api_and_external_token_does_not_authenticate_internal_api(self):
         internal = APIClient()
@@ -90,11 +90,11 @@ class IntegrationAPITests(TestCase):
         replay = self.post(inicio='2026-11-01T17:00:00Z', fim='2026-11-01T18:00:00Z', motivo='  Protótipo  ')
         self.assertEqual(replay.status_code, 200)
         booking_id = response.data['id']
-        save_booking(actor=self.admin, booking_id=booking_id, expected_version=1, data={'motivo': 'Local'})
-        cancel_booking(actor=self.admin, booking_id=booking_id, expected_version=2)
+        save_booking(actor=self.admin, category='servico', booking_id=booking_id, expected_version=1, data={'motivo': 'Local'})
+        cancel_booking(actor=self.admin, category='servico', booking_id=booking_id, expected_version=2)
         replay = self.post()
         self.assertEqual((replay.status_code, replay.data['id'], replay.data['cancelado'], replay.data['versao']), (200, booking_id, True, 3))
-        self.assertEqual(Agendamento.objects.count(), 1)
+        self.assertEqual((AgendaServico.objects.count() + AgendaEquipamento.objects.count()), 1)
 
     def test_clients_have_separate_external_id_namespaces(self):
         first = self.post()
@@ -102,7 +102,7 @@ class IntegrationAPITests(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + token)
         second = self.post(categoria='equipamento', objeto=self.equipment.pk)
         self.assertEqual(second.status_code, 201)
-        self.assertNotEqual(first.data['id'], second.data['id'])
+        self.assertNotEqual((first.data['categoria'], first.data['id']), (second.data['categoria'], second.data['id']))
         self.assertEqual(PedidoIntegracao.objects.count(), 2)
 
     def test_strict_required_json_text_ids_dates_and_protected_fields(self):
@@ -117,7 +117,7 @@ class IntegrationAPITests(TestCase):
             self.assertEqual(self.post(**{field: 1}).status_code, 400)
         self.assertEqual(self.client.post(self.url, [], format='json').status_code, 400)
         self.assertEqual(self.client.post(self.url, self.data).status_code, 415)
-        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(AgendaServico.objects.exists())
 
     def test_external_reservations_are_post_only_without_private_list_detail_or_history(self):
         created = self.post()

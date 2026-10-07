@@ -1,4 +1,4 @@
-<form method="post" action="{% url 'agenda:review' booking.pk %}" class="booking-review-actions">
+<form method="post" action="{% url 'agenda:review' booking.categoria booking.pk %}" class="booking-review-actions">
   {% csrf_token %}<input type="hidden" name="versao" value="{{ booking.versao }}">
   <button type="submit" name="decisao" value="aprovar" aria-label="Aceitar solicitação {{ booking.pk }}">Aceitar</button>
   <button type="submit" name="decisao" value="rejeitar" class="secondary-button" aria-label="Rejeitar solicitação {{ booking.pk }}">Rejeitar</button>

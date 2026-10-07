@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.test import Client, TestCase, override_settings
 
 from accounts.tests.agrohub_stub import PASSWORD
-from agenda.models import Agendamento, EventoAgendamento, ReservaAgroHub
+from agenda.models import AgendaServico, AgendaEquipamento, EventoAgendamento
 from agenda.tests.agrohub_stub import ReservationsStub
 from catalogo.models import Servico
 
@@ -89,12 +89,12 @@ class RemotePendingRequestsTests(TestCase):
     def listing_requests(self):
         return [row for row in self.stub.state['requests'] if '/agendamentos/' in row[1]]
 
-    def test_pending_rows_stay_remote_and_confirmed_rows_become_local_bookings(self):
+    def test_pending_and_confirmed_rows_stay_remote_without_local_writes(self):
         self.stub.state['reservas'] = [self.reservation(), self.reservation(102, status='confirmada')]
         user = get_user_model().objects.get(agrohub_id=42)
-        Agendamento.objects.create(servico=Servico.objects.first(), motivo='Pedido somente local',
+        AgendaServico.objects.create(servico=Servico.objects.first(), motivo='Pedido somente local',
             inicio='2026-11-10T12:00:00Z', fim='2026-11-10T13:00:00Z', criado_por=user, situacao='pendente')
-        before = (Agendamento.objects.count(), EventoAgendamento.objects.count(), ReservaAgroHub.objects.count())
+        before = (AgendaServico.objects.count(), EventoAgendamento.objects.count(), AgendaEquipamento.objects.count())
         response = self.client.get('/agenda/solicitacoes/', {'status': 'pendente'})
         self.assertContains(response, '#101')
         self.assertContains(response, 'Pedido do monólito')
@@ -107,9 +107,8 @@ class RemotePendingRequestsTests(TestCase):
         self.assertContains(response, 'value="confirmar"')
         self.assertContains(response, 'value="cancelar"')
         self.assertContains(response, 'value="recusar"')
-        self.assertEqual(tuple(value+1 for value in before),
-                         (Agendamento.objects.count(), EventoAgendamento.objects.count(), ReservaAgroHub.objects.count()))
-        self.assertEqual(ReservaAgroHub.objects.get(recebida=True).reserva_id, 102)
+        self.assertEqual(before,
+                         (AgendaServico.objects.count(), EventoAgendamento.objects.count(), AgendaEquipamento.objects.count()))
         self.assertIn('no-store', response['Cache-Control'])
         self.assertTrue(all(row[0] == 'GET' and row[3] == 'Bearer access-1' for row in self.listing_requests()))
         self.assertFalse(user.is_staff)
@@ -207,7 +206,7 @@ class RemotePendingRequestsTests(TestCase):
         self.assertContains(response, 'Nenhuma reserva no AgroHub')
         self.assertEqual(self.client.head('/agenda/solicitacoes/').status_code, 200)
         self.assertEqual(self.client.post('/agenda/solicitacoes/', {}).status_code, 405)
-        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(AgendaServico.objects.exists())
 
     def writes(self):
         return [row for row in self.listing_requests() if row[0] != 'GET']
@@ -284,9 +283,10 @@ class RemotePendingRequestsTests(TestCase):
         self.assertNotContains(response, 'value="confirmar"')
         self.assertNotContains(response, 'value="cancelar"')
         self.assertEqual(response.context['paginator'].count, 1)
-        self.assertEqual(ReservaAgroHub.objects.get(recebida=True).reserva_id, 101)
+        self.assertFalse(AgendaServico.objects.exists())
+        self.assertFalse(AgendaEquipamento.objects.exists())
 
-    def test_confirm_uses_remote_id_and_registers_local_booking(self):
+    def test_confirm_uses_remote_id_without_creating_local_booking(self):
         room = {**self.stub.state['sala'], 'id': 2, 'slug': 'segunda-sala'}
         self.stub.state.update(rooms=[room], reservas=[self.reservation(room=room)])
         response = self.client.post('/agenda/solicitacoes/101/decidir/',
@@ -296,8 +296,8 @@ class RemotePendingRequestsTests(TestCase):
                                          {'status': 'confirmada'}, 'Bearer access-1')])
         self.assertContains(self.client.get('/agenda/solicitacoes/'), 'Reserva #101 confirmada no AgroHub.')
         self.assertEqual(self.stub.state['reservas'][0]['status'], 'confirmada')
-        self.assertEqual((Agendamento.objects.count(), EventoAgendamento.objects.count(), ReservaAgroHub.objects.count()),
-                         (1, 1, 1))
+        self.assertEqual((AgendaServico.objects.count(), EventoAgendamento.objects.count(), AgendaEquipamento.objects.count()),
+                         (0, 0, 0))
 
     def test_cancel_posts_to_provider_and_reservation_disappears(self):
         self.stub.state['reservas'] = [self.reservation()]
@@ -372,7 +372,7 @@ class RemotePendingRequestsTests(TestCase):
                       self.reservation(status='pendente'), self.reservation(status='confirmada', sala={'id': 3})):
             self.stub.state.update(reservas=[self.reservation()], detail_reply=None, action_reply=reply)
             self.assertEqual(self.client.post(url, {'decisao': 'confirmar'}).status_code, 503)
-        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(AgendaServico.objects.exists())
 
     def test_action_refreshes_credentials_and_uses_renewed_bearer(self):
         self.stub.state.update(reservas=[self.reservation()], expired=True)
@@ -395,90 +395,73 @@ class RemotePendingRequestsTests(TestCase):
         self.assertContains(refused, 'name="status" value="recusada"')
         self.assertContains(self.client.get('/agenda/solicitacoes/', {'status': 'recusada', 'q': 'Sem resultado'}),
                             'Nenhuma reserva recusada no AgroHub')
-        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(AgendaServico.objects.exists())
 
-    def test_confirmed_import_is_idempotent_visible_in_calendar_and_preserves_identity(self):
+    def test_confirmed_visits_appear_in_calendar_and_remote_details_without_persistence(self):
         self.stub.state['reservas'] = [self.reservation(status='confirmada')]
         for _ in range(2):
             self.client.get('/agenda/solicitacoes/', {'q': 'Filtro sem resultado'})
-        self.assertEqual(Agendamento.objects.count(), 1)
-        self.assertEqual(EventoAgendamento.objects.count(), 1)
-        booking = Agendamento.objects.get()
-        self.assertIsNone(booking.criado_por)
-        self.assertEqual(booking.criador_nome, 'Pessoa externa')
-        self.assertEqual(booking.objeto_nome, 'Pedido do monólito')
-        self.assertTrue(booking.recebido_agrohub)
         response = self.client.get('/agenda/', {'mes': '2026-11', 'q': 'Pessoa externa'})
         self.assertEqual(response.context['paginator'].count, 1)
         days = [day for week in response.context['weeks'] for day in week if day['date'].isoformat() == '2026-11-10']
         self.assertEqual(days[0]['count'], 1)
         self.assertContains(response, 'Pedido do monólito')
-        self.assertNotContains(response, f'/agenda/{booking.pk}/editar/')
-        detail = self.client.get(f'/agenda/{booking.pk}/')
-        self.assertContains(detail, 'Reserva recebida do AgroHub')
-        self.assertNotContains(detail, 'Editar agendamento')
-        self.assertNotContains(detail, 'Cancelar agendamento')
-        self.assertEqual(self.client.get(f'/agenda/{booking.pk}/editar/').status_code, 403)
-        self.assertEqual(self.client.post(f'/agenda/{booking.pk}/cancelar/', {'versao': 1}).status_code, 409)
+        self.assertContains(response, '/agenda/visitas/101/')
+        detail = self.client.get('/agenda/visitas/101/')
+        self.assertContains(detail, 'Pessoa externa')
+        self.assertContains(detail, 'Pedido do monólito')
+        self.assertEqual((AgendaServico.objects.count(), AgendaEquipamento.objects.count(), EventoAgendamento.objects.count()), (0, 0, 0))
         self.assertFalse(self.writes())
 
-    def test_agenda_imports_preexisting_confirmation_and_tracks_remote_changes(self):
+    def test_agenda_reads_current_provider_changes_and_never_displays_stale_visits(self):
         self.stub.state['reservas'] = [self.reservation(status='confirmada')]
         self.assertContains(self.client.get('/agenda/', {'mes': '2026-11'}), 'Pedido do monólito')
-        booking = Agendamento.objects.get()
         self.stub.state['reservas'][0].update(inicio='2026-11-10T11:00:00-03:00', fim='2026-11-10T12:00:00-03:00',
                                              titulo='Título atualizado', quantidade_pessoas=7)
-        self.client.get('/agenda/solicitacoes/')
-        booking.refresh_from_db()
-        self.assertEqual(booking.quantidade_pessoas, 7)
-        self.assertEqual(booking.objeto_nome, 'Título atualizado')
-        self.assertEqual(booking.versao, 2)
-        self.stub.state['reservas'][0]['status'] = 'cancelada'
         response = self.client.get('/agenda/', {'mes': '2026-11'})
-        self.assertEqual(response.context['paginator'].count, 0)
-        booking.refresh_from_db()
-        self.assertIsNotNone(booking.cancelado_em)
+        self.assertContains(response, 'Título atualizado')
+        self.assertEqual(response.context['object_list'][0].quantidade_pessoas, 7)
+        self.stub.state['reservas'][0]['status'] = 'cancelada'
+        self.assertEqual(self.client.get('/agenda/', {'mes': '2026-11'}).context['paginator'].count, 0)
         self.stub.state['listing_error'] = 503
-        self.assertContains(self.client.get('/agenda/', {'mes': '2026-11'}), 'últimos dados recebidos')
-        self.assertEqual(Agendamento.objects.count(), 1)
+        self.assertContains(self.client.get('/agenda/', {'mes': '2026-11'}), 'Visitas indisponíveis')
+        self.assertEqual((AgendaServico.objects.count(), AgendaEquipamento.objects.count(), EventoAgendamento.objects.count()), (0, 0, 0))
         self.assertFalse(self.writes())
 
-    def test_existing_outbound_link_is_reused_and_pending_local_operations_are_preserved(self):
-        from accounts.agrohub.client import base_url
-        booking = Agendamento.objects.create(visita=True, quantidade_pessoas=5, criado_por=get_user_model().objects.get(agrohub_id=42),
-            inicio='2026-11-10T12:00:00Z', fim='2026-11-10T13:00:00Z', situacao='pendente')
-        link = ReservaAgroHub.objects.create(agendamento=booking, origem=base_url(), reserva_id=101, estado='registrada',
-                                            status_remoto='pendente', payload={'observacoes': 'Marcador local'})
-        self.stub.state['reservas'] = [self.reservation(status='confirmada')]
-        self.client.get('/agenda/solicitacoes/')
-        booking.refresh_from_db(); link.refresh_from_db()
-        self.assertEqual(booking.situacao, 'confirmado')
-        self.assertEqual(Agendamento.objects.count(), 1)
-        self.assertFalse(link.recebida)
-        self.assertEqual(link.payload, {'observacoes': 'Marcador local'})
-        link.estado = 'pendente'; link.save()
-        self.stub.state['reservas'][0]['status'] = 'cancelada'
-        self.client.get('/agenda/solicitacoes/')
-        booking.refresh_from_db()
-        self.assertIsNone(booking.cancelado_em)
+    def test_provider_failure_keeps_local_bookings_accessible_without_claiming_zero_visits(self):
+        user = get_user_model().objects.get(agrohub_id=42)
+        local = AgendaServico.objects.create(servico=Servico.objects.first(), motivo='Pedido local',
+            inicio='2026-11-10T12:00:00Z', fim='2026-11-10T13:00:00Z', criado_por=user)
+        self.stub.state['listing_error'] = 503
+        response = self.client.get('/agenda/', {'mes': '2026-11'})
+        self.assertContains(response, 'Visitas indisponíveis')
+        self.assertContains(response, local.get_absolute_url())
+        self.assertEqual(response.context['paginator'].count, 1)
+        self.assertEqual((AgendaServico.objects.count(), AgendaEquipamento.objects.count(), EventoAgendamento.objects.count()), (1, 0, 0))
 
-    def test_invalid_or_incomplete_snapshot_does_not_partially_import_confirmations(self):
+    def test_invalid_or_incomplete_remote_snapshot_does_not_write_local_records(self):
         self.stub.state.update(ignore_filters=True, reservas=[self.reservation(status='confirmada'), self.reservation(102, status=[])])
         self.assertEqual(self.client.get('/agenda/solicitacoes/').status_code, 503)
-        self.assertFalse(Agendamento.objects.exists())
         self.stub.state.update(reservas=[self.reservation(status='confirmada')], listing_error=503)
         self.assertEqual(self.client.get('/agenda/solicitacoes/').status_code, 503)
-        self.assertFalse(Agendamento.objects.exists())
+        self.assertEqual((AgendaServico.objects.count(), AgendaEquipamento.objects.count(), EventoAgendamento.objects.count()), (0, 0, 0))
 
-    def test_other_rooms_are_visible_but_do_not_block_visits_to_room_one(self):
-        from agenda.services import BookingConflict, _check_overlap
+    def test_other_inovalab_rooms_are_displayed_without_local_conflict_or_writes(self):
         room = {**self.stub.state['sala'], 'id': 2, 'slug': 'segunda-sala'}
         self.stub.state.update(rooms=[room], reservas=[self.reservation(room=room, status='confirmada')])
-        self.client.get('/agenda/solicitacoes/')
-        imported = Agendamento.objects.get()
-        proposed = Agendamento(visita=True, quantidade_pessoas=1, inicio=imported.inicio, fim=imported.fim)
-        _check_overlap(proposed)
-        self.stub.state.update(rooms=[self.stub.state['sala']], reservas=[self.reservation(102, status='confirmada')])
-        self.client.get('/agenda/solicitacoes/')
-        with self.assertRaises(BookingConflict):
-            _check_overlap(proposed)
+        response = self.client.get('/agenda/', {'mes': '2026-11'})
+        self.assertEqual(response.context['paginator'].count, 1)
+        self.assertEqual(response.context['object_list'][0].sala_id, 2)
+        self.assertFalse(self.writes())
+        self.assertEqual((AgendaServico.objects.count(), AgendaEquipamento.objects.count()), (0, 0))
+
+    def test_dashboard_combines_confirmed_remote_visits_and_local_bookings(self):
+        from unittest.mock import patch
+        from datetime import datetime
+        self.stub.state['reservas'] = [self.reservation(status='confirmada')]
+        from core.dashboard import dashboard_context
+        with patch('core.views.dashboard_context', side_effect=lambda actor, **kwargs: dashboard_context(actor, now=datetime.fromisoformat('2026-11-10T08:00:00-03:00'), **kwargs)):
+            response = self.client.get('/index/')
+        self.assertContains(response, '/agenda/visitas/101/')
+        self.assertContains(response, 'Pedido do monólito')
+        self.assertEqual((AgendaServico.objects.count(), AgendaEquipamento.objects.count(), EventoAgendamento.objects.count()), (0, 0, 0))

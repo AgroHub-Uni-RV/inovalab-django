@@ -7,7 +7,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from agenda.forms import BookingForm
-from agenda.models import Agendamento
+from agenda.models import AgendaEquipamento, BOOKING_MODELS, AgendaServico
 from agenda.services import save_booking
 from catalogo.models import Equipamento
 
@@ -30,7 +30,7 @@ class BookingIdentityScheduleTests(TestCase):
     def test_web_creates_booking_for_authenticated_user_with_local_day_and_hours(self):
         response = self.client.post('/agenda/novo/', self.web)
         self.assertEqual(response.status_code, 302)
-        booking = Agendamento.objects.get()
+        booking = AgendaEquipamento.objects.get()
         self.assertEqual((booking.criado_por_id, booking.situacao), (self.user.pk, 'pendente'))
         self.assertEqual(booking.inicio, self.data['inicio'])
         self.assertEqual(booking.fim, self.data['fim'])
@@ -49,7 +49,7 @@ class BookingIdentityScheduleTests(TestCase):
             response = self.client.post('/agenda/novo/', {**self.web, 'hora_termino': end})
             self.assertEqual(response.status_code, 200)
             self.assertIn('hora_termino', response.context['form'].errors)
-        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(AgendaServico.objects.exists())
 
     def test_refresh_keeps_day_and_hours_without_writing(self):
         response = self.client.post('/agenda/novo/', {**self.web, 'atualizar': '1'})
@@ -57,12 +57,12 @@ class BookingIdentityScheduleTests(TestCase):
         self.assertEqual(form['dia'].value(), '2026-11-01')
         self.assertEqual(form['hora_inicio'].value(), '14:00:00')
         self.assertEqual(form['hora_termino'].value(), '15:00:00')
-        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(AgendaServico.objects.exists())
 
     def test_admin_edit_does_not_replace_creator(self):
         booking = save_booking(actor=self.user, data=self.data)
         self.client.force_login(self.admin)
-        response = self.client.post(f'/agenda/{booking.pk}/editar/',
+        response = self.client.post(f'/agenda/{booking.categoria}/{booking.pk}/editar/',
                                     {**self.web, 'versao': 1, 'motivo': 'Correção'})
         self.assertEqual(response.status_code, 302)
         booking.refresh_from_db()
@@ -79,18 +79,18 @@ class BookingIdentityScheduleTests(TestCase):
         for field, value in [('requerente', 'Outra pessoa'), ('criado_por', self.admin.pk)]:
             response = api.post('/api/v1/agendamentos/', {**self.data, field: value}, format='json')
             self.assertEqual(response.status_code, 400)
-        self.assertEqual(Agendamento.objects.count(), 1)
+        self.assertEqual((AgendaServico.objects.count() + AgendaEquipamento.objects.count()), 1)
 
     def test_service_rejects_free_requester(self):
         with self.assertRaises(ValidationError):
             save_booking(actor=self.user, data={**self.data, 'requerente': 'Outra pessoa'})
-        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(AgendaServico.objects.exists())
 
     def test_unchanged_legacy_multiday_period_is_not_silently_shortened(self):
         booking = save_booking(actor=self.user, data={**self.data,
                                'fim': datetime.fromisoformat('2026-11-03T15:00:00-03:00')})
         self.client.force_login(self.admin)
-        response = self.client.post(f'/agenda/{booking.pk}/editar/',
+        response = self.client.post(f'/agenda/{booking.categoria}/{booking.pk}/editar/',
                                     {**self.web, 'versao': 1, 'motivo': 'Correção'})
         self.assertEqual(response.status_code, 302)
         booking.refresh_from_db()
@@ -117,7 +117,7 @@ class BookingIdentityScheduleTests(TestCase):
         booking = save_booking(actor=self.user, data={**self.data,
                                'fim': datetime.fromisoformat('2026-11-03T15:00:00-03:00')})
         self.client.force_login(self.admin)
-        response = self.client.post(f'/agenda/{booking.pk}/editar/',
+        response = self.client.post(f'/agenda/{booking.categoria}/{booking.pk}/editar/',
                                     {**self.web, 'dia': '2026-11-05', 'versao': 1})
         self.assertEqual(response.status_code, 302)
         booking.refresh_from_db()
@@ -129,7 +129,7 @@ class BookingIdentityScheduleTests(TestCase):
             'inicio': datetime.fromisoformat('2026-11-01T14:00:00.100000-03:00'),
             'fim': datetime.fromisoformat('2026-11-01T14:00:00.900000-03:00')})
         self.client.force_login(self.admin)
-        response = self.client.post(f'/agenda/{booking.pk}/editar/',
+        response = self.client.post(f'/agenda/{booking.categoria}/{booking.pk}/editar/',
             {**self.web, 'hora_termino': '14:00:00', 'versao': 1, 'motivo': 'Correção'})
         self.assertEqual(response.status_code, 302)
         booking.refresh_from_db()
@@ -137,5 +137,5 @@ class BookingIdentityScheduleTests(TestCase):
         self.assertEqual(set(booking.eventos.first().alteracoes), {'motivo'})
 
     def test_unsaved_booking_has_printable_identity_without_history(self):
-        booking = Agendamento(equipamento=self.equipment, motivo='Projeto')
+        booking = AgendaEquipamento(equipamento=self.equipment, motivo='Projeto')
         self.assertEqual(str(booking), 'Sala de teste — Não registrado')

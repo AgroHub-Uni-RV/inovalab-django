@@ -93,7 +93,7 @@ class IntegrationWebTests(TestCase):
             'categoria': 'servico', 'objeto': self.service.pk, 'requerente': 'Ana', 'requerente_id': 'pessoa-45',
             'id_externo': 'pedido-001', 'motivo': 'Protótipo', 'inicio': datetime.fromisoformat('2026-11-01T14:00:00-03:00'),
             'fim': datetime.fromisoformat('2026-11-01T15:00:00-03:00')})
-        for url in (f'/agenda/{booking.pk}/', f'/integracoes/{self.integration.pk}/pedidos/'):
+        for url in (f'/agenda/{booking.categoria}/{booking.pk}/', f'/integracoes/{self.integration.pk}/pedidos/'):
             response = self.client.get(url)
             for text in ('AgroHub', 'pedido-001', 'pessoa-45'):
                 self.assertContains(response, text)

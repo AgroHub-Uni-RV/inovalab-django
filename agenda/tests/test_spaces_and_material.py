@@ -9,7 +9,7 @@ from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
 from agenda.forms import BookingForm
-from agenda.models import Agendamento
+from agenda.models import AgendaEquipamento, BOOKING_MODELS, AgendaServico
 from agenda.services import BookingConflict, cancel_booking, save_booking
 from catalogo.models import Equipamento, Servico
 from materiais.models import Material
@@ -44,10 +44,10 @@ class SpacesAndMaterialTests(TestCase):
     def test_web_requires_material_when_lab_supplies_it_and_shows_it_in_detail(self):
         response = self.client.post('/agenda/novo/', self.web_data(material_gasto=''))
         self.assertIn('material_gasto', response.context['form'].errors)
-        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(AgendaServico.objects.exists())
         response = self.client.post('/agenda/novo/', self.web_data())
-        booking = Agendamento.objects.get()
-        self.assertRedirects(response, f'/agenda/{booking.pk}/')
+        booking = AgendaServico.objects.get()
+        self.assertRedirects(response, f'/agenda/{booking.categoria}/{booking.pk}/')
         self.assertEqual(booking.material_gasto_id, self.material.pk)
         self.assertContains(self.client.get(response.url), 'PLA azul')
         self.assertContains(self.client.get(response.url), '12,125 g')
@@ -57,7 +57,7 @@ class SpacesAndMaterialTests(TestCase):
     def test_web_material_selection_is_preserved_on_refresh_and_edit(self):
         response = self.client.post('/agenda/novo/', {**self.web_data(), 'atualizar': '1'})
         self.assertEqual(str(response.context['form']['material_gasto'].value()), str(self.material.pk))
-        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(AgendaServico.objects.exists())
         booking = self.create()
         self.assertEqual(BookingForm(booking=booking).initial['material_gasto'], self.material.pk)
 
@@ -68,7 +68,7 @@ class SpacesAndMaterialTests(TestCase):
                         {'categoria': 'espaco', 'objeto': 42}):
             with self.subTest(changes=changes), self.assertRaises(ValidationError):
                 self.create(**changes)
-        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(AgendaServico.objects.exists())
 
     def test_unavailable_retained_material_allows_metadata_edit_but_not_new_period(self):
         booking = self.create()
@@ -76,32 +76,33 @@ class SpacesAndMaterialTests(TestCase):
         form = BookingForm(booking=booking)
         self.assertIn(self.material, form.fields['material_gasto'].queryset)
         self.assertNotIn(self.other, form.fields['material_gasto'].queryset)
-        save_booking(actor=self.admin, booking_id=booking.pk, expected_version=1, data={'motivo': 'Corrigido'})
+        save_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=1, data={'motivo': 'Corrigido'})
         with self.assertRaises(ValidationError):
-            save_booking(actor=self.admin, booking_id=booking.pk, expected_version=2,
+            save_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=2,
                          data={'fim': self.data['fim']+timedelta(hours=1)})
 
     def test_history_and_own_material_change_clear_material_with_version_protection(self):
         booking = self.create()
         self.assertEqual(booking.eventos.get().alteracoes['material_gasto']['novo'], self.material.pk)
-        saved = save_booking(actor=self.admin, booking_id=booking.pk, expected_version=1,
+        saved = save_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=1,
                              data={'material_proprio': True})
         self.assertIsNone(saved.material_gasto_id)
         self.assertIsNone(saved.material_gasto_gramas)
         self.assertEqual(saved.eventos.first().alteracoes['material_gasto'],
                          {'anterior': self.material.pk, 'novo': None})
         with self.assertRaises(BookingConflict):
-            save_booking(actor=self.admin, booking_id=booking.pk, expected_version=1, data=self.data)
+            save_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=1, data=self.data)
 
-    def test_category_change_clears_material_and_cancel_retains_it(self):
+    def test_category_change_rejected_and_cancel_retains_material(self):
         booking = self.create()
-        cancel_booking(actor=self.admin, booking_id=booking.pk, expected_version=1)
+        cancel_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=1)
         booking.refresh_from_db()
         self.assertEqual(booking.material_gasto_id, self.material.pk)
         other = self.create(inicio=self.data['inicio']+timedelta(days=1), fim=self.data['fim']+timedelta(days=1))
-        updated = save_booking(actor=self.admin, booking_id=other.pk, expected_version=1,
-                              data={'categoria': 'visita'})
-        self.assertIsNone(updated.material_gasto_id)
+        with self.assertRaises(ValidationError):
+            save_booking(actor=self.admin, category=other.categoria, booking_id=other.pk, expected_version=1, data={'categoria': 'visita'})
+        other.refresh_from_db()
+        self.assertEqual(other.material_gasto_id, self.material.pk)
 
     def test_api_material_id_roundtrip_and_legacy_spending_without_type(self):
         api = APIClient()
@@ -109,7 +110,7 @@ class SpacesAndMaterialTests(TestCase):
         response = api.post('/api/v1/agendamentos/', self.data, format='json')
         self.assertEqual(response.status_code, 201, response.data)
         self.assertEqual(response.data['material_gasto'], self.material.pk)
-        url = f'/api/v1/agendamentos/{response.data["id"]}/'
+        url = f'/api/v1/agendamentos/{response.data["categoria"]}/{response.data["id"]}/'
         self.assertEqual(api.get(url).data['material_gasto'], self.material.pk)
         self.assertEqual(api.patch(url, {'versao': 1, 'material_gasto': True}, format='json').status_code, 400)
         legacy = self.create(material_gasto=None, inicio=self.data['inicio']+timedelta(days=2),
@@ -120,13 +121,13 @@ class SpacesAndMaterialTests(TestCase):
         base = {key: value for key, value in self.data.items() if key not in ('categoria', 'objeto', 'material_gasto')}
         for flag in (None, True):
             with self.subTest(flag=flag), self.assertRaises(IntegrityError), transaction.atomic():
-                Agendamento.objects.create(servico=self.service, material_gasto=self.material,
+                AgendaServico.objects.create(servico=self.service, material_gasto=self.material,
                                            **{**base, 'material_proprio': flag, 'material_gasto_gramas': None})
 
     def test_spaces_are_not_offered_in_new_booking_form(self):
         response = self.client.get('/agenda/novo/')
         self.assertNotContains(response, '<option value="espaco"')
-        self.assertContains(response, '<option value="visita"')
+        self.assertContains(response, '/agenda/visitas/novo/')
 
     def test_equipment_card_invalid_submission_preserves_selected_choice(self):
         equipment = Equipamento.objects.create(nome='Máquina de teste')
@@ -136,6 +137,6 @@ class SpacesAndMaterialTests(TestCase):
         self.assertContains(invalid, f'value="{equipment.pk}" required id=')
         self.assertContains(invalid, 'checked')
         response = self.client.post('/agenda/novo/', data)
-        booking = Agendamento.objects.get()
-        self.assertRedirects(response, f'/agenda/{booking.pk}/')
+        booking = AgendaEquipamento.objects.get()
+        self.assertRedirects(response, f'/agenda/{booking.categoria}/{booking.pk}/')
         self.assertEqual(booking.equipamento_id, equipment.pk)

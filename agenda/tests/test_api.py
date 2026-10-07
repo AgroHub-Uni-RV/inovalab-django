@@ -5,7 +5,7 @@ from django.contrib.auth.models import Group
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from agenda.models import Agendamento
+from agenda.models import AgendaEquipamento, BOOKING_MODELS, AgendaServico
 from agenda.services import save_booking
 from catalogo.models import Equipamento, Servico
 
@@ -33,7 +33,7 @@ class BookingAPITests(TestCase):
 
     def test_session_admin_without_staff_can_crud_and_history(self):
         booking = self.create()
-        url = f'{self.url}{booking["id"]}/'
+        url = f'{self.url}{booking["categoria"]}/{booking["id"]}/'
         self.assertEqual((booking['objeto_nome'], booking['versao']), (self.service.nome, 1))
         response = self.client.patch(url, {'versao': 1, 'motivo': 'Corrigido'}, format='json')
         self.assertEqual((response.status_code, response.data['versao']), (200, 2))
@@ -44,7 +44,7 @@ class BookingAPITests(TestCase):
         self.assertEqual(self.client.get(url).status_code, 404)
         self.assertEqual(self.client.get(url + 'historico/').status_code, 404)
         self.assertEqual(self.client.get(self.url).data['count'], 0)
-        self.assertEqual(Agendamento.objects.get(pk=booking['id']).eventos.count(), 3)
+        self.assertEqual(AgendaServico.objects.get(pk=booking['id']).eventos.count(), 3)
         self.create()
 
     def test_resource_categories_are_supported(self):
@@ -55,12 +55,12 @@ class BookingAPITests(TestCase):
     def test_anonymous_denied_and_normal_user_can_only_read_own_or_create_pending(self):
         booking = self.create()
         self.client.logout()
-        for suffix in ('', f'{booking["id"]}/', f'{booking["id"]}/historico/'):
+        for suffix in ('', f'{booking["categoria"]}/{booking["id"]}/', f'{booking["categoria"]}/{booking["id"]}/historico/'):
             self.assertEqual(self.client.get(self.url + suffix).status_code, 403)
         self.assertEqual(self.client.post(self.url, self.data, format='json').status_code, 403)
         self.client.force_login(self.user)
         self.assertEqual(self.client.get(self.url).data['count'], 0)
-        for suffix in (f'{booking["id"]}/', f'{booking["id"]}/historico/'):
+        for suffix in (f'{booking["categoria"]}/{booking["id"]}/', f'{booking["categoria"]}/{booking["id"]}/historico/'):
             self.assertEqual(self.client.get(self.url + suffix).status_code, 404)
         own = self.create()
         self.assertEqual(own['situacao'], 'pendente')
@@ -68,19 +68,19 @@ class BookingAPITests(TestCase):
             self.client.logout()
             if actor:
                 self.client.force_login(actor)
-            self.assertEqual(self.client.patch(f'{self.url}{booking["id"]}/', {'versao': 1}, format='json').status_code, 403)
-            self.assertEqual(self.client.delete(f'{self.url}{booking["id"]}/', {'versao': 1}, format='json').status_code, 403)
+            self.assertEqual(self.client.patch(f'{self.url}{booking["categoria"]}/{booking["id"]}/', {'versao': 1}, format='json').status_code, 403)
+            self.assertEqual(self.client.delete(f'{self.url}{booking["categoria"]}/{booking["id"]}/', {'versao': 1}, format='json').status_code, 403)
 
     def test_overlap_and_stale_version_are_409_without_partial_update(self):
         booking = self.create()
         response = self.client.post(self.url, self.data, format='json')
         self.assertEqual((response.status_code, response.data['code']), (409, 'horario_ocupado'))
-        url = f'{self.url}{booking["id"]}/'
+        url = f'{self.url}{booking["categoria"]}/{booking["id"]}/'
         self.client.patch(url, {'versao': 1, 'motivo': 'Atualizado'}, format='json')
         for method in (self.client.patch, self.client.delete):
             response = method(url, {'versao': 1}, format='json')
             self.assertEqual((response.status_code, response.data['code']), (409, 'versao_desatualizada'))
-        self.assertEqual(Agendamento.objects.get(pk=booking['id']).eventos.count(), 2)
+        self.assertEqual(AgendaServico.objects.get(pk=booking['id']).eventos.count(), 2)
 
     def test_strict_payload_versions_and_object_ids(self):
         for version in (True, 1.5, '1', 0, None):
@@ -93,7 +93,7 @@ class BookingAPITests(TestCase):
             self.assertEqual(self.client.post(self.url, {**self.data, 'objeto': value}, format='json').status_code, 400)
         self.assertEqual(self.client.post(self.url, [], format='json').status_code, 400)
         booking = self.create()
-        url = f'{self.url}{booking["id"]}/'
+        url = f'{self.url}{booking["categoria"]}/{booking["id"]}/'
         self.assertEqual(self.client.patch(url, {'motivo': 'Sem versão'}, format='json').status_code, 400)
         self.assertEqual(self.client.patch(url, {'versao': 1, 'categoria': 'espaco'}, format='json').status_code, 400)
         self.assertEqual(self.client.delete(url, {'versao': 1, 'motivo': 'Inesperado'}, format='json').status_code, 400)
@@ -102,7 +102,7 @@ class BookingAPITests(TestCase):
         for fields in ({'inicio': '2026-11-01T14:00:00'}, {'fim': self.data['inicio']}, {'fim': 'inválido'}, {'requerente': ' '}):
             self.assertEqual(self.client.post(self.url, {**self.data, **fields}, format='json').status_code, 400)
         booking = self.create()
-        url = f'{self.url}{booking["id"]}/'
+        url = f'{self.url}{booking["categoria"]}/{booking["id"]}/'
         self.assertEqual(self.client.put(url, {'versao': 1, 'motivo': 'Incompleto'}, format='json').status_code, 400)
         self.assertEqual(self.client.put(url, {**self.data, 'versao': 1}, format='json').status_code, 200)
 
@@ -111,7 +111,7 @@ class BookingAPITests(TestCase):
         self.service.status = 'indisponivel'
         self.service.save()
         self.assertEqual(self.client.post(self.url, self.data, format='json').status_code, 400)
-        self.assertEqual(self.client.patch(f'{self.url}{booking["id"]}/', {'versao': 1, 'motivo': 'Só descrição'}, format='json').status_code, 200)
+        self.assertEqual(self.client.patch(f'{self.url}{booking["categoria"]}/{booking["id"]}/', {'versao': 1, 'motivo': 'Só descrição'}, format='json').status_code, 200)
 
     def test_filters_include_cross_month_reservations_and_exclude_end_at_month_start(self):
         self.create(inicio='2026-10-31T23:00:00-03:00', fim='2026-11-01T01:00:00-03:00')
@@ -131,10 +131,10 @@ class BookingAPITests(TestCase):
         page = self.client.get(self.url).data
         self.assertEqual((page['count'], len(page['results'])), (26, 25))
         self.assertEqual(len(self.client.get(self.url, {'page': 2}).data['results']), 1)
-        booking = Agendamento.objects.first()
+        booking = AgendaServico.objects.first()
         for version in range(1, 27):
-            save_booking(actor=self.admin, booking_id=booking.pk, expected_version=version, data={'motivo': str(version)})
-        page = self.client.get(f'{self.url}{booking.pk}/historico/').data
+            save_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=version, data={'motivo': str(version)})
+        page = self.client.get(f'{self.url}{booking.categoria}/{booking.pk}/historico/').data
         self.assertEqual((page['count'], len(page['results'])), (27, 25))
 
     def test_session_authentication_requires_csrf_for_unsafe_requests(self):

@@ -3,14 +3,16 @@ from datetime import datetime
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase
+from agenda.tests.migration_helpers import PrivateArchiveMixin
 
 
-class SpaceRemovalMigrationTests(TransactionTestCase):
+class SpaceRemovalMigrationTests(PrivateArchiveMixin, TransactionTestCase):
     def test_removal_preserves_active_and_canceled_bookings_audit_and_receipts(self):
         previous = [('agenda', '0010_quantidade_pessoas_visitas'), ('catalogo', '0006_fotos_iniciais_webp'),
                     ('integracoes', '0001_initial')]
         executor = MigrationExecutor(connection)
         latest = executor.loader.graph.leaf_nodes()
+        current = [('agenda', '0012_identifica_reservas_recebidas_agrohub'), ('catalogo', '0007_remove_espaco'), ('integracoes', '0001_initial')]
         executor.migrate(previous)
         try:
             apps = executor.loader.project_state(previous).apps
@@ -32,8 +34,8 @@ class SpaceRemovalMigrationTests(TransactionTestCase):
                 cliente=client, agendamento=bookings[0], id_externo='antigo', requerente_id='1', conteudo_digest='a' * 64,
             )
             executor = MigrationExecutor(connection)
-            executor.migrate(latest)
-            apps = executor.loader.project_state(latest).apps
+            executor.migrate(current)
+            apps = executor.loader.project_state(current).apps
             with self.assertRaises(LookupError):
                 apps.get_model('catalogo', 'Espaco')
             self.assertNotIn('catalogo_espaco', connection.introspection.table_names())

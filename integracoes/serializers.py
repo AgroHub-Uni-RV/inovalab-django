@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from agenda.models import CATEGORIES
+from agenda.models import BOOKING_MODELS
 from agenda.serializers import AwareDateTimeField, StrictPayloadMixin, VersionField
 from integracoes.services import normalize_request
 
@@ -17,7 +17,7 @@ class ExternalBookingSerializer(StrictPayloadMixin, serializers.Serializer):
     requerente_id = ExternalIdField(max_length=150)
     requerente = ExternalIdField(max_length=150)
     motivo = ExternalIdField(required=False)
-    categoria = serializers.ChoiceField(choices={**CATEGORIES, 'espaco': 'Espaço (reenvio legado)'})
+    categoria = serializers.ChoiceField(choices=BOOKING_MODELS)
     objeto = VersionField(min_value=1, max_value=9223372036854775807, required=False)
     inicio = AwareDateTimeField()
     fim = AwareDateTimeField()

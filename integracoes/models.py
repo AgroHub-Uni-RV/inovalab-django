@@ -32,9 +32,17 @@ class PedidoIntegracao(models.Model):
     id_externo = models.CharField(max_length=150)
     requerente_id = models.CharField(max_length=150)
     conteudo_digest = models.CharField(max_length=64, editable=False)
-    agendamento = models.OneToOneField('agenda.Agendamento', on_delete=models.PROTECT, related_name='pedido_integracao')
+    agenda_servico = models.OneToOneField('agenda.AgendaServico', on_delete=models.PROTECT, related_name='pedido_integracao', null=True, blank=True)
+    agenda_equipamento = models.OneToOneField('agenda.AgendaEquipamento', on_delete=models.PROTECT, related_name='pedido_integracao', null=True, blank=True)
+
+    @property
+    def agendamento(self):
+        return self.agenda_servico or self.agenda_equipamento
+
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-pk']
-        constraints = [models.UniqueConstraint(fields=['cliente', 'id_externo'], name='integracoes_pedido_unico')]
+        constraints = [models.UniqueConstraint(fields=['cliente', 'id_externo'], name='integracoes_pedido_unico'),
+            models.CheckConstraint(condition=(models.Q(agenda_servico__isnull=False, agenda_equipamento__isnull=True)
+                | models.Q(agenda_servico__isnull=True, agenda_equipamento__isnull=False)), name='pedido_exatamente_uma_agenda')]

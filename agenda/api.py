@@ -10,11 +10,9 @@ from rest_framework.viewsets import ModelViewSet
 
 from accounts.policies import is_business_admin
 from agenda.policies import can_access_agenda
-from agenda.selectors import filter_bookings, visible_bookings
+from agenda.selectors import filter_bookings, visible_bookings, visible_booking
 from agenda.serializers import BookingSerializer, CancelSerializer, EventSerializer
 from agenda.services import BookingConflict, cancel_booking
-from agenda.agrohub import reservation_summary, sync_reservation
-from agenda.models import Agendamento
 
 
 class AgendaPermission(BasePermission):
@@ -39,15 +37,17 @@ class BookingViewSet(ModelViewSet):
     http_method_names = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options']
 
     def get_queryset(self):
-        if self.action == 'agrohub':
-            queryset = Agendamento.objects.filter(reserva_agrohub__isnull=False)
-            return queryset if is_business_admin(self.request.user) else queryset.filter(criado_por=self.request.user)
-        queryset = visible_bookings(self.request.user).prefetch_related('equipamentos')
+        queryset = visible_bookings(self.request.user)
         if self.action == 'list':
             return filter_bookings(queryset, month=self.request.query_params.get('mes'),
                                    category=self.request.query_params.get('categoria'),
                                    situation=self.request.query_params.get('situacao'))
         return queryset
+
+    def get_object(self):
+        booking = visible_booking(self.request.user, self.kwargs['category'], int(self.kwargs['pk']))
+        self.check_object_permissions(self.request, booking)
+        return booking
 
     def handle_exception(self, error):
         if isinstance(error, BookingConflict):
@@ -63,25 +63,10 @@ class BookingViewSet(ModelViewSet):
         booking = self.get_object()
         payload = CancelSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
-        saved = cancel_booking(actor=request.user, booking_id=booking.pk, expected_version=payload.validated_data['versao'], agrohub_request=request)
-        remote = reservation_summary(saved)
-        if remote and remote['estado'] != 'registrada':
-            return Response({'detail': 'Cancelado no InovaLab; confira o resultado no AgroHub.',
-                             'reserva_agrohub': remote}, status=202)
+        saved = cancel_booking(actor=request.user, category=booking.categoria, booking_id=booking.pk, expected_version=payload.validated_data['versao'])
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=True, methods=['get', 'post'])
-    def agrohub(self, request, pk=None):
-        booking = self.get_object()
-        if request.method == 'POST':
-            payload = CancelSerializer(data=request.data)
-            payload.is_valid(raise_exception=True)
-            if booking.versao != payload.validated_data['versao']:
-                raise BookingConflict('versao_desatualizada', 'O agendamento foi alterado. Atualize antes de tentar novamente.')
-            sync_reservation(request, booking)
-        return Response(reservation_summary(booking))
-
     @action(detail=True, methods=['get'])
-    def historico(self, request, pk=None):
+    def historico(self, request, pk=None, category=None):
         page = self.paginate_queryset(self.get_object().eventos.all())
         return self.get_paginated_response(EventSerializer(page, many=True).data)

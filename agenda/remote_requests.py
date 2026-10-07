@@ -27,6 +27,35 @@ class RemoteReservation:
     sala_id: int
     sala_slug: str
 
+    categoria = 'visita'
+    categoria_display = 'Visitas'
+    cancelado_em = None
+    motivo = ''
+    recebido_agrohub = True
+
+    @property
+    def pk(self):
+        return self.id
+
+    @property
+    def objeto_nome(self):
+        return self.titulo
+
+    @property
+    def criador_nome(self):
+        return self.solicitante or 'Não informado'
+
+    @property
+    def situacao(self):
+        return {'confirmada': 'confirmado', 'recusada': 'rejeitado'}.get(self.status, self.status)
+
+    def get_situacao_display(self):
+        return self.status_label
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('agenda:visit-detail', kwargs={'pk': self.pk})
+
     @property
     def status_label(self):
         return RESERVATION_STATUSES[self.status]

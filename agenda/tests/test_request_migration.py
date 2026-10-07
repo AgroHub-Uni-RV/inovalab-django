@@ -4,9 +4,10 @@ from django.db import connection
 from django.contrib.auth import get_user_model
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase
+from agenda.tests.migration_helpers import PrivateArchiveMixin
 
 
-class BookingRequestMigrationTests(TransactionTestCase):
+class BookingRequestMigrationTests(PrivateArchiveMixin, TransactionTestCase):
     def test_existing_booking_is_confirmed_and_keeps_owner_version_and_cancellation(self):
         previous = [('agenda', '0004_agendamento_material_gasto_and_more')]
         current = [('agenda', '0005_agendamento_avaliado_em_agendamento_avaliado_por_and_more')]

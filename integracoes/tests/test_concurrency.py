@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.db import connection, connections
 from django.test import TransactionTestCase
 
-from agenda.models import Agendamento, EventoAgendamento
+from agenda.models import AgendaEquipamento, BOOKING_MODELS, AgendaServico, EventoAgendamento
 from agenda.services import BookingConflict
 from catalogo.models import Servico
 from integracoes.credentials import authenticate_token
@@ -43,7 +43,7 @@ class IntegrationConcurrencyTests(TransactionTestCase):
         successes = [result for result in results if isinstance(result, tuple)]
         self.assertTrue(successes)
         self.assertEqual(len({result[0].pk for result in successes}), 1)
-        self.assertEqual((PedidoIntegracao.objects.count(), Agendamento.objects.count(), EventoAgendamento.objects.count()), (1, 1, 1))
+        self.assertEqual((PedidoIntegracao.objects.count(), (AgendaServico.objects.count() + AgendaEquipamento.objects.count()), EventoAgendamento.objects.count()), (1, 1, 1))
 
     def test_same_key_parallel_retries_have_one_receipt_booking_and_event(self):
         self.assert_single_booking(self.parallel(lambda index: self.data))

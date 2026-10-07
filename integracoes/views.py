@@ -106,7 +106,7 @@ class ClientRequestsView(IntegrationAccessMixin, ListView):
 
     def get_queryset(self):
         self.integration = get_object_or_404(visible_clients(self.request.user), pk=self.kwargs['pk'])
-        return self.integration.pedidos.select_related('agendamento').all()
+        return self.integration.pedidos.select_related('agenda_servico', 'agenda_equipamento').all()
 
     def get_context_data(self, **kwargs):
         return {**super().get_context_data(**kwargs), 'integration': self.integration}

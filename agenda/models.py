@@ -1,112 +1,57 @@
 from decimal import Decimal
-from uuid import uuid4
-
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.urls import reverse
 from django.utils import timezone
-
 
 CATEGORIES = {'servico': 'Serviço', 'equipamento': 'Equipamento', 'visita': 'Visita'}
 BOOKING_STATUSES = {'pendente': 'Pendente', 'confirmado': 'Confirmado', 'rejeitado': 'Rejeitado'}
 
 
-class Agendamento(models.Model):
-    servico = models.ForeignKey('catalogo.Servico', on_delete=models.PROTECT, null=True, blank=True)
-    equipamento = models.ForeignKey('catalogo.Equipamento', on_delete=models.PROTECT, null=True, blank=True)
-    espaco_legado_id = models.PositiveBigIntegerField(null=True, blank=True, editable=False)
-    espaco_legado_nome = models.CharField(max_length=150, blank=True, default='', editable=False)
-    visita = models.BooleanField(default=False)
-    quantidade_pessoas = models.PositiveIntegerField('quantidade de pessoas', null=True, blank=True,
-                                                     validators=[MinValueValidator(1)])
-    equipamentos = models.ManyToManyField('catalogo.Equipamento', blank=True, related_name='agendamentos_de_servico')
-    material_proprio = models.BooleanField('tem material próprio', null=True, blank=True)
-    material_gasto = models.ForeignKey('materiais.Material', on_delete=models.PROTECT, null=True, blank=True,
-                                      verbose_name='material utilizado')
-    material_gasto_gramas = models.DecimalField(
-        'material gasto (g)', max_digits=12, decimal_places=3, null=True, blank=True,
-        validators=[MinValueValidator(Decimal('0.001'))],
-    )
+class AgendaBase(models.Model):
     motivo = models.TextField(blank=True, default='')
     observacoes = models.TextField('observações', blank=True, default='')
     inicio = models.DateTimeField()
     fim = models.DateTimeField()
     versao = models.PositiveBigIntegerField(default=1, editable=False)
     cancelado_em = models.DateTimeField(null=True, blank=True, editable=False)
-    criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, editable=False)
+    criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, editable=False, related_name='%(class)s_criados')
     criado_em = models.DateTimeField(auto_now_add=True)
     situacao = models.CharField(max_length=10, choices=BOOKING_STATUSES.items(), default='confirmado', editable=False)
     avaliado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
-                                     editable=False, related_name='agendamentos_avaliados')
+                                     editable=False, related_name='%(class)s_avaliados')
     avaliado_em = models.DateTimeField(null=True, blank=True, editable=False)
 
+
     class Meta:
+        abstract = True
         ordering = ['inicio', 'pk']
         constraints = [
-            models.CheckConstraint(condition=(
-                models.Q(visita=False) & (
-                    models.Q(servico__isnull=False, equipamento__isnull=True, espaco_legado_id__isnull=True)
-                    | models.Q(servico__isnull=True, equipamento__isnull=False, espaco_legado_id__isnull=True)
-                    | models.Q(servico__isnull=True, equipamento__isnull=True, espaco_legado_id__isnull=False)
-                ) | models.Q(visita=True, servico__isnull=True, equipamento__isnull=True, espaco_legado_id__isnull=True)
-            ), name='agenda_exatamente_um_alvo'),
-            models.CheckConstraint(condition=(
-                models.Q(visita=True, quantidade_pessoas__isnull=False, quantidade_pessoas__gte=1)
-                | models.Q(visita=False, quantidade_pessoas__isnull=True)
-            ), name='agenda_quantidade_visita_valida'),
-            models.CheckConstraint(condition=(models.Q(visita=False) | models.Q(motivo='', observacoes='')),
-                                   name='agenda_visita_sem_textos'),
-            models.CheckConstraint(condition=models.Q(fim__gt=models.F('inicio')), name='agenda_intervalo_positivo'),
-            models.CheckConstraint(condition=models.Q(versao__gte=1), name='agenda_versao_positiva'),
-            models.CheckConstraint(condition=models.Q(situacao__in=list(BOOKING_STATUSES)), name='agenda_situacao_valida'),
-            models.CheckConstraint(condition=(
-                models.Q(material_proprio__isnull=True, material_gasto_gramas__isnull=True)
-                | models.Q(servico__isnull=False, material_proprio__isnull=False,
-                           material_proprio=True, material_gasto_gramas__isnull=True)
-                | models.Q(servico__isnull=False, material_proprio__isnull=False,
-                           material_proprio=False, material_gasto_gramas__gt=0)
-                  & models.Q(material_gasto_gramas__isnull=False)
-            ), name='agenda_material_de_servico_valido'),
-            models.CheckConstraint(condition=(
-                models.Q(material_gasto__isnull=True)
-                | models.Q(servico__isnull=False, material_proprio__isnull=False, material_proprio=False)
-            ), name='agenda_tipo_material_valido'),
+            models.CheckConstraint(condition=models.Q(fim__gt=models.F('inicio')), name='%(class)s_intervalo_positivo'),
+            models.CheckConstraint(condition=models.Q(versao__gte=1), name='%(class)s_versao_positiva'),
+            models.CheckConstraint(condition=models.Q(situacao__in=list(BOOKING_STATUSES)), name='%(class)s_situacao_valida'),
         ]
-        indexes = [models.Index(fields=['inicio', 'fim'], name='agenda_periodo_idx')]
-
-    @property
-    def categoria(self):
-        if self.visita:
-            return 'visita'
-        if self.espaco_legado_id is not None:
-            return 'espaco'
-        return next((name for name in ('servico', 'equipamento')
-                     if getattr(self, name + '_id') is not None), None)
+        indexes = [models.Index(fields=['inicio', 'fim'], name='%(class)s_periodo_idx')]
 
     @property
     def objeto_id(self):
-        if self.categoria == 'espaco':
-            return self.espaco_legado_id
-        return getattr(self, self.categoria + '_id') if self.categoria and not self.visita else None
+        return getattr(self, self.categoria + '_id')
 
     @property
     def objeto_nome(self):
-        if self.recebido_agrohub:
-            return self.reserva_agrohub.payload.get('titulo', 'Visita')
-        if self.categoria == 'espaco':
-            return self.espaco_legado_nome
-        return 'Visita' if self.visita else getattr(self, self.categoria).nome if self.categoria else ''
+        return getattr(self, self.categoria).nome
 
     @property
     def categoria_display(self):
-        return {'servico': 'Serviços', 'equipamento': 'Equipamentos', 'visita': 'Visitas',
-                'espaco': 'Espaço (legado)'}.get(self.categoria, '')
+        return {'servico': 'Serviços', 'equipamento': 'Equipamentos'}[self.categoria]
+
+    def get_absolute_url(self):
+        return reverse('agenda:detail', kwargs={'category': self.categoria, 'pk': self.pk})
 
     @property
     def criador_nome(self):
-        if self.recebido_agrohub:
-            return self.reserva_agrohub.payload.get('solicitante', '') or 'Não informado'
         if self.criado_por:
             return self.criado_por.get_full_name() or self.criado_por.username
         if self.pk is None:
@@ -116,48 +61,19 @@ class Agendamento(models.Model):
             return events[0].ator_nome if events else 'Não registrado'
         return self.eventos.filter(acao='criar').values_list('ator_nome', flat=True).first() or 'Não registrado'
 
-    @property
-    def recebido_agrohub(self):
-        sync = getattr(self, 'reserva_agrohub', None)
-        return bool(sync and sync.recebida)
 
     def clean(self):
         errors = {}
-        if self.visita:
-            if type(self.quantidade_pessoas) is not int or self.quantidade_pessoas < 1:
-                errors['quantidade_pessoas'] = 'Informe uma quantidade inteira de pelo menos 1 pessoa.'
-        elif self.quantidade_pessoas is not None:
-            errors['quantidade_pessoas'] = 'Quantidade de pessoas é informada somente em visitas.'
-        if isinstance(self.observacoes, str):
-            self.observacoes = self.observacoes.strip()
-        if self.material_gasto_id is not None and (self.categoria != 'servico' or self.material_proprio is not False):
-            errors['material_gasto'] = 'Selecione material somente para serviços que utilizam material do laboratório.'
-        if self.categoria != 'servico' and (self.material_proprio is not None or self.material_gasto_gramas is not None):
-            errors['material_proprio'] = 'Material é informado somente em agendamentos de serviço.'
-        elif self.material_proprio is False and self.material_gasto_gramas is None:
-            errors['material_gasto_gramas'] = 'Informe em gramas o material gasto do laboratório.'
-        elif self.material_proprio is not False and self.material_gasto_gramas is not None:
-            errors['material_gasto_gramas'] = 'O gasto é informado somente quando o material não é próprio.'
-        for name in ('motivo',):
-            value = getattr(self, name)
-            if isinstance(value, str):
-                setattr(self, name, value.strip())
-            if not self.visita and not getattr(self, name):
-                errors[name] = 'Este campo é obrigatório.'
-        if self.visita:
-            for name in ('motivo', 'observacoes'):
-                if getattr(self, name):
-                    errors[name] = 'Visitas possuem somente dia, horários e quantidade de pessoas.'
+        self.motivo = self.motivo.strip() if isinstance(self.motivo, str) else self.motivo
+        self.observacoes = self.observacoes.strip() if isinstance(self.observacoes, str) else self.observacoes
+        if not self.motivo:
+            errors['motivo'] = 'Este campo é obrigatório.'
         for name in ('inicio', 'fim'):
             value = getattr(self, name)
             if value is not None and timezone.is_naive(value):
                 errors[name] = 'Informe data e hora com fuso horário.'
         if not errors and self.inicio and self.fim and self.fim <= self.inicio:
             errors['fim'] = 'O término deve ser posterior ao início.'
-        if not errors and self.visita and self.inicio and self.fim:
-            zone = timezone.get_default_timezone()
-            if timezone.localtime(self.inicio, zone).date() != timezone.localtime(self.fim, zone).date():
-                errors['fim'] = 'A visita deve começar e terminar no mesmo dia.'
         if errors:
             raise ValidationError(errors)
 
@@ -165,38 +81,54 @@ class Agendamento(models.Model):
         return f'{self.objeto_nome} — {self.criador_nome}'
 
 
-class ControleAgendaVisitas(models.Model):
-    """Linha única usada para serializar alterações na agenda de visitas."""
-    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+class AgendaServico(AgendaBase):
+    categoria = 'servico'
+    servico = models.ForeignKey('catalogo.Servico', on_delete=models.PROTECT)
+    equipamentos = models.ManyToManyField('catalogo.Equipamento', blank=True, related_name='agendamentos_de_servico')
+    material_proprio = models.BooleanField('tem material próprio', null=True, blank=True)
+    material_gasto = models.ForeignKey('materiais.Material', on_delete=models.PROTECT, null=True, blank=True,
+                                      verbose_name='material utilizado')
+    material_gasto_gramas = models.DecimalField(
+        'material gasto (g)', max_digits=12, decimal_places=3, null=True, blank=True,
+        validators=[MinValueValidator(Decimal('0.001'))],
+    )
+
+    class Meta(AgendaBase.Meta):
+        abstract = False
+        constraints = AgendaBase.Meta.constraints + [
+            models.CheckConstraint(condition=(
+                models.Q(material_proprio__isnull=True, material_gasto_gramas__isnull=True)
+                | models.Q(material_proprio=True, material_proprio__isnull=False, material_gasto_gramas__isnull=True)
+                | models.Q(material_proprio=False, material_proprio__isnull=False, material_gasto_gramas__gt=0, material_gasto_gramas__isnull=False)
+            ), name='agendaservico_material_valido'),
+            models.CheckConstraint(condition=(models.Q(material_gasto__isnull=True)
+                | models.Q(material_proprio=False, material_proprio__isnull=False)), name='agendaservico_tipo_material_valido'),
+        ]
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.material_gasto_id is not None and self.material_proprio is not False:
+            errors['material_gasto'] = 'Selecione material somente para serviços que utilizam material do laboratório.'
+        if self.material_proprio is False and self.material_gasto_gramas is None:
+            errors['material_gasto_gramas'] = 'Informe em gramas o material gasto do laboratório.'
+        elif self.material_proprio is not False and self.material_gasto_gramas is not None:
+            errors['material_gasto_gramas'] = 'O gasto é informado somente quando o material não é próprio.'
+        if errors:
+            raise ValidationError(errors)
 
 
-class ReservaAgroHub(models.Model):
-    agendamento = models.OneToOneField(Agendamento, on_delete=models.CASCADE, related_name='reserva_agrohub')
-    referencia = models.UUIDField(default=uuid4, unique=True, editable=False)
-    origem = models.URLField(max_length=2048, editable=False)
-    recebida = models.BooleanField(default=False, editable=False)
-    reserva_id = models.PositiveBigIntegerField(null=True, blank=True, editable=False)
-    status_remoto = models.CharField(max_length=20, blank=True, editable=False)
-    operacao = models.CharField(max_length=10, default='criar', editable=False)
-    estado = models.CharField(max_length=12, default='pendente', editable=False,
-        choices=[('pendente', 'Envio pendente'), ('enviando', 'Envio em andamento'),
-                 ('registrada', 'Enviada ao AgroHub'), ('falha', 'Envio não concluído'), ('incerta', 'Aguardando conciliação')])
-    payload = models.JSONField(default=dict, editable=False)
-    mensagem = models.CharField(max_length=500, blank=True, editable=False)
-    ultima_tentativa = models.DateTimeField(null=True, blank=True, editable=False)
-    atualizado_em = models.DateTimeField(auto_now=True)
+class AgendaEquipamento(AgendaBase):
+    categoria = 'equipamento'
+    equipamento = models.ForeignKey('catalogo.Equipamento', on_delete=models.PROTECT)
 
-    class Meta:
-        constraints = [models.UniqueConstraint(fields=['origem', 'reserva_id'], name='agrohub_reserva_origem_id_unico')]
 
-    @property
-    def status_display(self):
-        return {'pendente': 'Pendente', 'confirmada': 'Confirmada', 'cancelada': 'Cancelada',
-                'recusada': 'Recusada'}.get(self.status_remoto, 'Ainda não registrada')
+BOOKING_MODELS = {'servico': AgendaServico, 'equipamento': AgendaEquipamento}
 
 
 class EventoAgendamento(models.Model):
-    agendamento = models.ForeignKey(Agendamento, on_delete=models.CASCADE, related_name='eventos')
+    agenda_servico = models.ForeignKey(AgendaServico, on_delete=models.CASCADE, related_name='eventos', null=True, blank=True)
+    agenda_equipamento = models.ForeignKey(AgendaEquipamento, on_delete=models.CASCADE, related_name='eventos', null=True, blank=True)
     ator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     ator_nome = models.CharField(max_length=150)
     instante = models.DateTimeField(auto_now_add=True)
@@ -204,5 +136,13 @@ class EventoAgendamento(models.Model):
                                                   ('aprovar', 'Aprovar'), ('rejeitar', 'Rejeitar')])
     alteracoes = models.JSONField(default=dict)
 
+    @property
+    def agendamento(self):
+        return self.agenda_servico or self.agenda_equipamento
+
     class Meta:
         ordering = ['-pk']
+        constraints = [models.CheckConstraint(condition=(
+            models.Q(agenda_servico__isnull=False, agenda_equipamento__isnull=True)
+            | models.Q(agenda_servico__isnull=True, agenda_equipamento__isnull=False)
+        ), name='evento_exatamente_uma_agenda')]

@@ -16,11 +16,11 @@
     <div class="card-action">{% if is_business_admin %}<a class="outline-button" href="{% url 'tarefas:create' %}">+Nova tarefa</a>{% else %}<a class="outline-button" href="{% url 'tarefas:board' %}">Ver minhas tarefas</a>{% endif %}</div>
   </section>
   <section class="dashboard-card bookings-panel" aria-labelledby="bookings-title">
-    <div class="card-heading"><h2 id="bookings-title">Agendamentos</h2><a class="view-all" href="{% url 'agenda:list' %}">Ver todos</a></div>
+    {% if visits_unavailable %}<p role="alert">Visitas indisponíveis no AgroHub.</p>{% endif %}<div class="card-heading"><h2 id="bookings-title">Agendamentos</h2><a class="view-all" href="{% url 'agenda:list' %}">Ver todos</a></div>
     <nav class="tabs" aria-label="Filtrar agendamentos">{% for tab in booking_tabs %}<a href="?{{ tab.query }}"{% if tab.key == booking_tab %} class="selected" aria-current="page"{% endif %}>{{ tab.label }}</a>{% endfor %}</nav>
     <div class="card-list booking-list" tabindex="0" aria-label="Lista de agendamentos">
       {% for booking in bookings %}
-      <a class="booking-row" href="{% url 'agenda:detail' booking.pk %}">
+      <a class="booking-row" href="{{ booking.get_absolute_url }}">
         <span class="booking-date"><strong>{{ booking.inicio|date:'d' }}</strong><span>{{ booking.inicio|date:'M'|upper }}</span></span>
         <span class="booking-copy"><span class="booking-time">Das {{ booking.inicio|date:'H:i' }} às {{ booking.fim|date:'H:i' }}{% if booking.inicio|date:'Y-m-d' != booking.fim|date:'Y-m-d' %} · {{ booking.fim|date:'d/m' }}{% endif %}</span><strong>{{ booking.objeto_nome }}</strong><span class="requester">{{ booking.criador_nome }}</span></span>
       </a>

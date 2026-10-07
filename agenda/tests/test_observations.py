@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from agenda.models import Agendamento
+from agenda.models import AgendaEquipamento, BOOKING_MODELS, AgendaServico
 from agenda.services import save_booking
 from catalogo.models import Equipamento, Servico
 
@@ -28,7 +28,7 @@ class BookingObservationsTests(TestCase):
         response = self.client.post('/agenda/novo/', {**self.web,
             'observacoes': '  Trazer peças\n<script>alert(1)</script>  '})
         self.assertEqual(response.status_code, 302)
-        booking = Agendamento.objects.get()
+        booking = AgendaEquipamento.objects.get()
         self.assertEqual(booking.observacoes, 'Trazer peças\n<script>alert(1)</script>')
         detail = self.client.get(response.url)
         self.assertContains(detail, 'Observações')
@@ -41,12 +41,12 @@ class BookingObservationsTests(TestCase):
             payload = self.web if observations is None else {**self.web, 'observacoes': observations}
             response = self.client.post('/agenda/novo/', payload)
             self.assertEqual(response.status_code, 302)
-            self.assertEqual(Agendamento.objects.latest('pk').observacoes, '')
+            self.assertEqual(AgendaEquipamento.objects.latest('pk').observacoes, '')
 
     def test_admin_can_edit_and_clear_observations_with_history(self):
         booking = save_booking(actor=self.user, data={**self.data, 'observacoes': 'Original'})
         self.client.force_login(self.admin)
-        url = f'/agenda/{booking.pk}/editar/'
+        url = f'/agenda/{booking.categoria}/{booking.pk}/editar/'
         self.assertEqual(self.client.get(url).context['form']['observacoes'].value(), 'Original')
         for version, before, after in [(1, 'Original', 'Correção'), (2, 'Correção', '')]:
             response = self.client.post(url, {**self.web, 'versao': version, 'observacoes': after})
@@ -61,7 +61,7 @@ class BookingObservationsTests(TestCase):
         response = self.client.post('/agenda/novo/', {**self.web, 'categoria': 'equipamento',
                                                     'observacoes': 'Rascunho de observações', 'atualizar': '1'})
         self.assertEqual(response.context['form']['observacoes'].value(), 'Rascunho de observações')
-        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(AgendaServico.objects.exists())
 
     def test_api_preserves_observations_on_patch_and_rejects_stale_clear(self):
         api = APIClient()
@@ -69,7 +69,7 @@ class BookingObservationsTests(TestCase):
         response = api.post('/api/v1/agendamentos/', {**self.data, 'observacoes': '  Detalhe  '}, format='json')
         self.assertEqual(response.status_code, 201, response.data)
         self.assertEqual(response.data['observacoes'], 'Detalhe')
-        url = f'/api/v1/agendamentos/{response.data["id"]}/'
+        url = f'/api/v1/agendamentos/{response.data["categoria"]}/{response.data["id"]}/'
         response = api.patch(url, {'versao': 1, 'motivo': 'Corrigido'}, format='json')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['observacoes'], 'Detalhe')

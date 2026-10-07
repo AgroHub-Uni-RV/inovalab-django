@@ -4,22 +4,43 @@ from datetime import datetime, timedelta
 
 from django.core.exceptions import ValidationError
 from django.db.models import Prefetch
+from django.http import Http404
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from accounts.policies import is_business_admin
-from agenda.models import Agendamento, EventoAgendamento
+from agenda.models import BOOKING_MODELS, EventoAgendamento
 from agenda.models import BOOKING_STATUSES, CATEGORIES
 from agenda.policies import can_access_agenda
 
 
-def visible_bookings(actor):
-    queryset = Agendamento.objects.filter(cancelado_em__isnull=True).select_related(
-        'servico', 'equipamento', 'criado_por', 'material_gasto', 'avaliado_por', 'reserva_agrohub',
-    ).prefetch_related(Prefetch('eventos', queryset=EventoAgendamento.objects.filter(acao='criar'),
-                               to_attr='eventos_de_criacao'))
+def _visible_queryset(actor, category):
+    model = BOOKING_MODELS[category]
     if not can_access_agenda(actor):
-        return queryset.none()
-    return queryset if is_business_admin(actor) else queryset.filter(criado_por=actor)
+        return model.objects.none()
+    related = [category, 'criado_por', 'avaliado_por']
+    if category == 'servico':
+        related.append('material_gasto')
+    query = model.objects.filter(cancelado_em__isnull=True).select_related(*related).prefetch_related(
+        Prefetch('eventos', queryset=EventoAgendamento.objects.filter(acao='criar'), to_attr='eventos_de_criacao'))
+    if category == 'servico':
+        query = query.prefetch_related('equipamentos')
+    if not is_business_admin(actor):
+        query = query.filter(criado_por=actor)
+    return query
+
+
+def visible_bookings(actor):
+    rows = []
+    for category in BOOKING_MODELS:
+        rows.extend(_visible_queryset(actor, category))
+    return sorted(rows, key=lambda row: (row.inicio, row.categoria, row.pk))
+
+
+def visible_booking(actor, category, pk):
+    if category not in BOOKING_MODELS:
+        raise Http404
+    return get_object_or_404(_visible_queryset(actor, category), pk=pk)
 
 
 def month_bounds(value):
@@ -38,26 +59,24 @@ def filter_bookings(queryset, *, month=None, category=None, situation=None):
     if situation:
         if situation not in BOOKING_STATUSES:
             raise ValidationError({'situacao': 'Selecione uma situação válida.'})
-        queryset = queryset.filter(situacao=situation)
+        queryset = [row for row in queryset if row.situacao == situation]
     if category:
         if category not in CATEGORIES:
             raise ValidationError({'categoria': 'Selecione uma categoria válida.'})
-        queryset = queryset.filter(**category_filter(category))
+        queryset = [row for row in queryset if row.categoria == category]
     if month:
         start, end = month_bounds(month)
-        queryset = queryset.filter(inicio__lt=end, fim__gt=start)
+        queryset = [row for row in queryset if row.inicio < end and row.fim > start]
     return queryset
-
-
-def category_filter(category):
-    return {'visita': True} if category == 'visita' else {category + '__isnull': False}
 
 
 def calendar_weeks(queryset, month):
     start, end = month_bounds(month)
     # Count from the entire filtered month, independently of table pagination.
     counts, previews = {}, {}
-    for booking in queryset.filter(situacao='confirmado', cancelado_em__isnull=True).iterator(chunk_size=100):
+    for booking in queryset:
+        if booking.situacao != 'confirmado' or booking.cancelado_em is not None:
+            continue
         first, last = booking.inicio, booking.fim
         first, last = max(first, start), min(last, end)
         day = timezone.localtime(first).date()

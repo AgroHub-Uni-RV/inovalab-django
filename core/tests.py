@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.test import Client, TestCase
 
-from agenda.models import Agendamento
+from agenda.models import AgendaEquipamento, BOOKING_MODELS, AgendaServico
 from catalogo.models import Servico
 from tarefas.models import Tarefa
 from core.dashboard import dashboard_context
@@ -32,7 +32,7 @@ class DashboardTests(TestCase):
             conclusao=NOW if status == 'concluido' else None, **kwargs)
 
     def booking(self, start=None, end=None, **kwargs):
-        return Agendamento.objects.create(servico=self.service, motivo='Motivo',
+        return AgendaServico.objects.create(servico=self.service, motivo='Motivo',
             inicio=start or NOW, fim=end or NOW+timedelta(hours=1), criado_por=self.admin, **kwargs)
 
     def panel(self, path='/painel/', user=None):
@@ -78,29 +78,30 @@ class DashboardTests(TestCase):
 
     def test_normal_index_has_booking_card_with_only_own_confirmed_bookings(self):
         foreign = self.booking()
-        own = Agendamento.objects.create(servico=self.service, motivo='Meu projeto',
+        own = AgendaServico.objects.create(servico=self.service, motivo='Meu projeto',
                                          inicio=NOW, fim=NOW+timedelta(hours=1), criado_por=self.user)
-        Agendamento.objects.create(servico=self.service, motivo='Pedido',
+        AgendaServico.objects.create(servico=self.service, motivo='Pedido',
             inicio=NOW, fim=NOW+timedelta(hours=1), criado_por=self.user, situacao='pendente')
         response = self.panel(user=self.user)
         self.assertEqual([booking.pk for booking in response.context['bookings']], [own.pk])
         self.assertContains(response, 'id="bookings-title"')
         self.assertContains(response, 'Ana Silva')
-        self.assertNotContains(response, f'/agenda/{foreign.pk}/')
+        self.assertNotContains(response, f'/agenda/{foreign.categoria}/{foreign.pk}/')
         self.assertNotContains(response, 'Pedido pendente')
 
-    def test_index_and_panel_show_legacy_bookings_after_space_table_removal(self):
-        booking = Agendamento.objects.create(
-            espaco_legado_id=42, espaco_legado_nome='Sala histórica', motivo='Reserva antiga',
-            inicio=NOW, fim=NOW + timedelta(hours=1), criado_por=self.admin,
-        )
+    def test_index_and_panel_show_independent_equipment_bookings(self):
+        from catalogo.models import Equipamento
+        equipment = Equipamento.objects.create(nome='Equipamento independente')
+        booking = AgendaEquipamento.objects.create(equipamento=equipment, motivo='Uso',
+            inicio=NOW, fim=NOW + timedelta(hours=1), criado_por=self.admin)
         for path in ('/index/', '/painel/'):
-            with self.subTest(path=path):
-                response = self.panel(path)
-                self.assertEqual([item.pk for item in response.context['bookings']], [booking.pk])
-                self.assertContains(response, 'Sala histórica')
-                days = [day for week in response.context['months'][0]['weeks'] for day in week if day['today']]
-                self.assertEqual(days[0]['reservations'], 1)
+            response = self.panel(path)
+            self.assertEqual([(item.categoria, item.pk) for item in response.context['bookings']], [('equipamento', booking.pk)])
+            self.assertContains(response, 'Equipamento independente')
+            self.assertContains(response, f'/agenda/equipamento/{booking.pk}/')
+            days = [day for week in response.context['months'][0]['weeks'] for day in week if day['today']]
+            self.assertEqual(days[0]['reservations'], 1)
+
 
     def test_task_tabs_are_real_status_filters(self):
         tasks = {state: self.task(status=state) for state in ('demanda', 'criacao', 'avaliacao', 'concluido')}

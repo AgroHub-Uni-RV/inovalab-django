@@ -2,7 +2,7 @@
 {% block content_class %}module-page detail-page{% endblock %}
 {% block content %}
 <div class="detail-sheet">
-  <div class="sheet-topbar"><a class="secondary-button" href="{% url 'agenda:list' %}">Voltar à agenda</a><span class="sheet-meta">{% include 'core/icon.html' with name='calendar' %}Agendamento</span></div>
+  <div class="sheet-topbar">{% if not booking %}<a class="secondary-button" href="{% url 'agenda:visit-create' %}">Agendar visita</a>{% endif %}<a class="secondary-button" href="{% url 'agenda:list' %}">Voltar à agenda</a><span class="sheet-meta">{% include 'core/icon.html' with name='calendar' %}Agendamento</span></div>
   <div class="sheet-content">
     <h1>{% if booking %}Editar agendamento #{{ booking.pk }}{% else %}Novo agendamento{% endif %}</h1>
     {% if not is_business_admin %}<p>O pedido será enviado para avaliação. Aguarde a confirmação de um administrador para ter o horário reservado.</p>{% endif %}
@@ -20,7 +20,7 @@
         </div>
         {% endif %}{% endif %}{% endfor %}
       </div>
-      <div class="sheet-actions"><button type="submit">{% if is_business_admin %}Salvar agendamento{% else %}Solicitar agendamento{% endif %}</button>{% if booking %}<a class="secondary-button" href="{% url 'agenda:detail' booking.pk %}">Voltar</a>{% else %}<a class="secondary-button" href="{% url 'agenda:list' %}">Voltar</a>{% endif %}</div>
+      <div class="sheet-actions"><button type="submit">{% if is_business_admin %}Salvar agendamento{% else %}Solicitar agendamento{% endif %}</button>{% if booking %}<a class="secondary-button" href="{{ booking.get_absolute_url }}">Voltar</a>{% else %}<a class="secondary-button" href="{% url 'agenda:list' %}">Voltar</a>{% endif %}</div>
     </form>
   </div>
 </div>

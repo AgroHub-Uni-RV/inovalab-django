@@ -3,9 +3,10 @@ from datetime import datetime
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase
+from agenda.tests.migration_helpers import PrivateArchiveMixin
 
 
-class VisitMigrationTests(TransactionTestCase):
+class VisitMigrationTests(PrivateArchiveMixin, TransactionTestCase):
     def test_existing_space_and_audit_survive_visit_migration(self):
         previous = [('agenda', '0007_agendamento_observacoes')]
         current = [('agenda', '0008_visitas_e_espacos_legados')]

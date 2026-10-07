@@ -3,9 +3,10 @@ from datetime import datetime
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase
+from agenda.tests.migration_helpers import PrivateArchiveMixin
 
 
-class VisitPeopleMigrationTests(TransactionTestCase):
+class VisitPeopleMigrationTests(PrivateArchiveMixin, TransactionTestCase):
     def test_existing_visits_get_one_person_without_changing_pending_payload(self):
         previous = [('agenda', '0009_reserva_agrohub')]
         current = [('agenda', '0010_quantidade_pessoas_visitas')]

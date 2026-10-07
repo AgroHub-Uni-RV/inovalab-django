@@ -24,7 +24,10 @@ def _months(bookings, today, events=()):
     first = timezone.make_aware(_month_date(today.year, today.month, 0))
     last = timezone.make_aware(_month_date(today.year, today.month, 6))
     counts = {}
-    for begin, end in bookings.filter(inicio__lt=last, fim__gt=first).prefetch_related(None).values_list('inicio', 'fim').iterator():
+    for booking in bookings:
+        begin, end = booking.inicio, booking.fim
+        if begin >= last or end <= first:
+            continue
         day = timezone.localtime(max(begin, first)).date()
         final = timezone.localtime(min(end, last)-timedelta(microseconds=1)).date()
         while day <= final:
@@ -53,7 +56,7 @@ def _months(bookings, today, events=()):
     return months
 
 
-def dashboard_context(actor, *, now=None, task_tab='pendentes', booking_tab='semana', events=()):
+def dashboard_context(actor, *, now=None, task_tab='pendentes', booking_tab='semana', events=(), remote_visits=()):
     now = now if now is not None else timezone.now()
     admin = is_business_admin(actor)
     task_tab = task_tab if task_tab in TASK_TABS else 'pendentes'
@@ -61,17 +64,18 @@ def dashboard_context(actor, *, now=None, task_tab='pendentes', booking_tab='sem
     tasks = list(visible_tasks(actor).filter(status__in=TASK_TABS[task_tab][1])[:10])
     for task in tasks:
         task.overdue = bool(task.prazo and task.prazo < now and task.status != 'concluido')
-    all_bookings = visible_bookings(actor).filter(situacao='confirmado')
+    all_bookings = sorted([row for row in visible_bookings(actor) + list(remote_visits) if row.situacao == 'confirmado'],
+                          key=lambda row: (row.inicio, row.categoria, row.pk))
     today = timezone.localdate(now)
     monday = today - timedelta(days=today.weekday())
     start = timezone.make_aware(datetime.combine(monday, datetime.min.time()))
     end = start + timedelta(days=7)
     if booking_tab == 'concluidos':
-        bookings = all_bookings.filter(fim__lte=now).order_by('-fim', '-pk')
+        bookings = sorted([row for row in all_bookings if row.fim <= now], key=lambda row: (row.fim, row.pk), reverse=True)
     elif booking_tab == 'proximos':
-        bookings = all_bookings.filter(inicio__gte=end)
+        bookings = [row for row in all_bookings if row.inicio >= end]
     else:
-        bookings = all_bookings.filter(inicio__lt=end, fim__gt=max(start, now))
+        bookings = [row for row in all_bookings if row.inicio < end and row.fim > max(start, now)]
     return {
         'is_business_admin': admin, 'tasks': tasks, 'bookings': list(bookings[:10]),
         'task_tab': task_tab, 'booking_tab': booking_tab, 'months': _months(all_bookings, today, events),
