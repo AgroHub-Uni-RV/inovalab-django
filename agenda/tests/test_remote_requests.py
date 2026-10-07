@@ -1,7 +1,7 @@
 from urllib.parse import parse_qs, urlsplit
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase, override_settings
+from django.test import Client, TestCase, override_settings
 
 from accounts.tests.agrohub_stub import PASSWORD
 from agenda.models import Agendamento, EventoAgendamento, ReservaAgroHub
@@ -13,12 +13,29 @@ class PendingRequestsStub(ReservationsStub):
     def reset(self):
         super().reset()
         self.state.update(rooms=[dict(self.state['sala'])], listing_error=None,
-                          listing_page_size=100, ignore_filters=False, remote_next=None, malformed=None)
+                          listing_page_size=100, ignore_filters=False, remote_next=None, malformed=None,
+                          action_error=None, action_uncertain=False, action_reply=None, detail_reply=None)
 
     def dispatch_extra(self, handler, data):
         if self.state['expired'] or handler.headers.get('Authorization') not in ('Bearer access-1', 'Bearer access-2'):
             return super().dispatch_extra(handler, data)
         path = urlsplit(handler.path).path
+        if path.startswith('/api/v1/agendamentos/reservas/') and path != '/api/v1/agendamentos/reservas/':
+            if handler.command == 'GET' and self.state['detail_reply'] is not None:
+                handler.reply(200, self.state['detail_reply'])
+                return True
+            if handler.command in ('PATCH', 'POST'):
+                remote_id = int(path.split('/')[5])
+                remote = next((row for row in self.state['reservas'] if row['id'] == remote_id), None)
+                if self.state['action_error']:
+                    handler.reply(self.state['action_error'], {})
+                elif remote is None:
+                    handler.reply(404, {})
+                else:
+                    remote['status'] = 'cancelada' if path.endswith('/cancelar/') else data['status']
+                    handler.reply(503 if self.state['action_uncertain'] else 200,
+                                  self.state['action_reply'] if self.state['action_reply'] is not None else remote)
+                return True
         if handler.command != 'GET' or path not in ('/api/v1/agendamentos/salas/', '/api/v1/agendamentos/reservas/'):
             return super().dispatch_extra(handler, data)
         if self.state['listing_error']:
@@ -71,7 +88,7 @@ class RemotePendingRequestsTests(TestCase):
     def listing_requests(self):
         return [row for row in self.stub.state['requests'] if '/agendamentos/' in row[1]]
 
-    def test_remote_pending_reservations_display_without_local_copy_or_write_actions(self):
+    def test_remote_pending_reservations_display_without_local_copy_or_local_actions(self):
         self.stub.state['reservas'] = [self.reservation(), self.reservation(102, status='confirmada')]
         user = get_user_model().objects.get(agrohub_id=42)
         Agendamento.objects.create(servico=Servico.objects.first(), motivo='Pedido somente local',
@@ -83,8 +100,11 @@ class RemotePendingRequestsTests(TestCase):
         self.assertContains(response, 'Pessoa externa')
         self.assertContains(response, '10/11/2026 09:00')
         self.assertEqual(response.context['paginator'].count, 1)
-        for value in ('#102', 'Pedido somente local', '/avaliar/', 'name="decisao"', 'name="categoria"', 'name="situacao"'):
+        for value in ('#102', 'Pedido somente local', '/avaliar/', 'name="categoria"', 'name="situacao"'):
             self.assertNotContains(response, value)
+        self.assertContains(response, '/agenda/solicitacoes/101/decidir/')
+        self.assertContains(response, 'value="confirmar"')
+        self.assertContains(response, 'value="cancelar"')
         self.assertEqual(before, (Agendamento.objects.count(), EventoAgendamento.objects.count(), ReservaAgroHub.objects.count()))
         self.assertIn('no-store', response['Cache-Control'])
         self.assertTrue(all(row[0] == 'GET' and row[3] == 'Bearer access-1' for row in self.listing_requests()))
@@ -182,3 +202,99 @@ class RemotePendingRequestsTests(TestCase):
         self.assertEqual(self.client.head('/agenda/solicitacoes/').status_code, 200)
         self.assertEqual(self.client.post('/agenda/solicitacoes/', {}).status_code, 405)
         self.assertFalse(Agendamento.objects.exists())
+
+    def writes(self):
+        return [row for row in self.listing_requests() if row[0] != 'GET']
+
+    def test_confirm_uses_remote_id_and_only_status_without_local_copy(self):
+        room = {**self.stub.state['sala'], 'id': 2, 'slug': 'segunda-sala'}
+        self.stub.state.update(rooms=[room], reservas=[self.reservation(room=room)])
+        response = self.client.post('/agenda/solicitacoes/101/decidir/',
+                                    {'decisao': 'confirmar', 'q': 'Pedido', 'mes': '2026-11'})
+        self.assertRedirects(response, '/agenda/solicitacoes/?q=Pedido&mes=2026-11', fetch_redirect_response=False)
+        self.assertEqual(self.writes(), [('PATCH', '/api/v1/agendamentos/reservas/101/',
+                                         {'status': 'confirmada'}, 'Bearer access-1')])
+        self.assertContains(self.client.get('/agenda/solicitacoes/'), 'Reserva #101 confirmada no AgroHub.')
+        self.assertEqual(self.stub.state['reservas'][0]['status'], 'confirmada')
+        self.assertEqual((Agendamento.objects.count(), EventoAgendamento.objects.count(), ReservaAgroHub.objects.count()),
+                         (0, 0, 0))
+
+    def test_cancel_posts_to_provider_and_reservation_disappears(self):
+        self.stub.state['reservas'] = [self.reservation()]
+        response = self.client.post('/agenda/solicitacoes/101/decidir/', {'decisao': 'cancelar'}, follow=True)
+        self.assertContains(response, 'Reserva #101 cancelada no AgroHub.')
+        self.assertEqual(response.context['paginator'].count, 0)
+        self.assertEqual(self.writes(), [('POST', '/api/v1/agendamentos/reservas/101/cancelar/', {}, 'Bearer access-1')])
+
+    def test_action_is_post_only_protected_by_csrf_and_admin_role(self):
+        self.stub.state['reservas'] = [self.reservation()]
+        url = '/agenda/solicitacoes/101/decidir/'
+        self.assertEqual(self.client.get(url).status_code, 405)
+        secure = Client(enforce_csrf_checks=True)
+        secure.cookies = self.client.cookies.copy()
+        self.assertEqual(secure.post(url, {'decisao': 'confirmar'}).status_code, 403)
+        secure.get('/agenda/solicitacoes/')
+        response = secure.post(url, {'decisao': 'confirmar'}, HTTP_X_CSRFTOKEN=secure.cookies['csrftoken'].value)
+        self.assertEqual(response.status_code, 302)
+        before = len(self.writes())
+        for roles in (['staff'], ['student'], []):
+            self.login(roles)
+            self.assertEqual(self.client.post(url, {'decisao': 'confirmar'}).status_code, 403)
+        local = get_user_model().objects.create_superuser('admin-local')
+        self.client.force_login(local)
+        self.assertEqual(self.client.post(url, {'decisao': 'confirmar'}).status_code, 403)
+        self.assertEqual(len(self.writes()), before)
+
+    def test_action_rejects_forged_fields_invalid_decision_month_and_id(self):
+        self.stub.state['reservas'] = [self.reservation()]
+        url = '/agenda/solicitacoes/101/decidir/'
+        for payload in ({}, {'decisao': 'aprovar'}, {'decisao': 'confirmar', 'status': 'cancelada'},
+                        {'decisao': ['confirmar', 'cancelar']}, {'decisao': 'confirmar', 'mes': '2026-99'}):
+            self.assertEqual(self.client.post(url, payload).status_code, 400)
+        for pk in (0, 9223372036854775808):
+            self.assertEqual(self.client.post(f'/agenda/solicitacoes/{pk}/decidir/', {'decisao': 'confirmar'}).status_code, 400)
+        self.assertFalse(self.listing_requests())
+
+    def test_foreign_or_stale_reservation_cannot_be_decided(self):
+        url = '/agenda/solicitacoes/101/decidir/'
+        foreign = {**self.stub.state['sala'], 'id': 3, 'slug': 'outra-sala', 'site_code': 'agrohub'}
+        self.stub.state.update(rooms=[self.stub.state['sala'], foreign], reservas=[self.reservation(room=foreign)])
+        self.assertEqual(self.client.post(url, {'decisao': 'confirmar'}).status_code, 403)
+        for status in ('confirmada', 'cancelada', 'recusada'):
+            self.stub.state['reservas'] = [self.reservation(status=status)]
+            self.assertContains(self.client.post(url, {'decisao': 'cancelar'}), 'não está mais pendente', status_code=409)
+        self.assertFalse(self.writes())
+
+    def test_provider_refusals_and_uncertain_result_do_not_claim_success_or_retry(self):
+        url = '/agenda/solicitacoes/101/decidir/'
+        self.stub.state['reservas'] = [self.reservation()]
+        for upstream, status in ((400, 400), (403, 403), (404, 404), (422, 400), (503, 503)):
+            self.stub.state['action_error'] = upstream
+            response = self.client.post(url, {'decisao': 'confirmar'})
+            self.assertEqual(response.status_code, status)
+            self.assertContains(response, 'Voltar às solicitações', status_code=status)
+        self.stub.state.update(action_error=None, action_uncertain=True)
+        before = len(self.writes())
+        self.assertContains(self.client.post(url, {'decisao': 'confirmar'}), 'Atualize as solicitações', status_code=503)
+        self.assertEqual(len(self.writes()), before+1)
+        self.assertEqual(self.stub.state['reservas'][0]['status'], 'confirmada')
+        self.assertEqual(self.client.post(url, {'decisao': 'confirmar'}).status_code, 409)
+        self.assertEqual(len(self.writes()), before+1)
+
+    def test_malformed_detail_or_mutation_response_cannot_claim_success(self):
+        url = '/agenda/solicitacoes/101/decidir/'
+        for detail in ({}, {'id': True, 'sala': {}}, self.reservation(status='unexpected')):
+            self.stub.state.update(reservas=[self.reservation()], detail_reply=detail)
+            self.assertEqual(self.client.post(url, {'decisao': 'confirmar'}).status_code, 503)
+        self.assertFalse(self.writes())
+        for reply in ({}, self.reservation(id=102, status='confirmada'),
+                      self.reservation(status='pendente'), self.reservation(status='confirmada', sala={'id': 3})):
+            self.stub.state.update(reservas=[self.reservation()], detail_reply=None, action_reply=reply)
+            self.assertEqual(self.client.post(url, {'decisao': 'confirmar'}).status_code, 503)
+        self.assertFalse(Agendamento.objects.exists())
+
+    def test_action_refreshes_credentials_and_uses_renewed_bearer(self):
+        self.stub.state.update(reservas=[self.reservation()], expired=True)
+        response = self.client.post('/agenda/solicitacoes/101/decidir/', {'decisao': 'cancelar'})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.writes()[0][3], 'Bearer access-2')

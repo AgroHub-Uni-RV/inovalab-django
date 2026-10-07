@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -5,6 +7,7 @@ from django.db.models import Q, Value
 from django.db.models.functions import Concat
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import DetailView, ListView, View
 from django.utils.decorators import method_decorator
@@ -19,7 +22,7 @@ from agenda.services import PUBLIC_FIELDS, SERVICE_FIELDS, BookingConflict, canc
 from accounts.photos import profile_photo_response
 from agenda.agrohub import can_sync, reservation_summary, sync_reservation
 from accounts.agrohub.client import AgroHubError
-from agenda.remote_requests import pending_reservations
+from agenda.remote_requests import decide_reservation, pending_reservations
 
 
 class AgendaAccessMixin(LoginRequiredMixin):
@@ -271,6 +274,45 @@ class BookingReviewListView(AdminAgendaAccessMixin, ListView):
             paginator = self.get_paginator([], page_size)
             return paginator, paginator.page(1), [], False
         return super().paginate_queryset(queryset, page_size)
+
+
+@method_decorator(never_cache, name='dispatch')
+class RemoteBookingDecisionView(AdminAgendaAccessMixin, View):
+    http_method_names = ['post', 'options']
+
+    def post(self, request, pk):
+        decision = request.POST.get('decisao')
+        allowed = {'csrfmiddlewaretoken', 'decisao', 'q', 'mes'}
+        if (decision not in ('confirmar', 'cancelar') or set(request.POST) - allowed
+                or any(len(request.POST.getlist(key)) != 1 for key in request.POST)):
+            return self.error(request, 'Confira a ação e os campos enviados.', 400)
+        if request.user.agrohub_id is None:
+            return self.error(request, 'Entre com uma conta administrativa vinculada ao AgroHub.', 403)
+        month = request.POST.get('mes', '')
+        try:
+            if month:
+                month_bounds(month)
+            decide_reservation(request, pk, decision)
+        except ValidationError:
+            return self.error(request, 'Informe um mês válido.', 400)
+        except AgroHubError as error:
+            status = error.status
+            if status in (401, 403):
+                return self.error(request, 'Sua conta não tem permissão para alterar esta reserva no AgroHub.', 403)
+            if status == 404:
+                return self.error(request, 'A reserva não está mais disponível no AgroHub.', 404)
+            if status == 409:
+                return self.error(request, 'A reserva não está mais pendente. Atualize as solicitações.', 409)
+            if status in (400, 422):
+                return self.error(request, 'O AgroHub recusou a operação. Confira a situação e o horário da reserva.', 400)
+            return self.error(request, 'Não foi possível confirmar o resultado no AgroHub. Atualize as solicitações antes de tentar novamente.', 503)
+        messages.success(request, f'Reserva #{pk} confirmada no AgroHub.' if decision == 'confirmar'
+                         else f'Reserva #{pk} cancelada no AgroHub.')
+        params = {key: request.POST.get(key, '').strip()[:150] for key in ('q', 'mes') if request.POST.get(key)}
+        return redirect(reverse('agenda:requests') + ('?'+urlencode(params) if params else ''))
+
+    def error(self, request, message, status):
+        return render(request, 'agenda/error.html', {'message': message, 'remote_request': True}, status=status)
 
 
 class BookingReviewView(AdminAgendaAccessMixin, View):

@@ -1,6 +1,6 @@
 # Orientações do projeto
 
-- A solicitação posterior de 07/10/2026 altera `/agenda/solicitacoes/` para listar somente as reservas pendentes do InovaLab no AgroHub via API, como em `/InovaLab/laboratorio/` do monólito. Consulta autenticada e somente leitura, sem modificar o monólito nem criar cópias locais de reservas. Ver `docs/modules/12-solicitacoes-remotas-agrohub.md`.
+- As solicitações posteriores de 07/10/2026 alteram `/agenda/solicitacoes/` para listar as reservas pendentes do InovaLab no AgroHub via API e autorizam botões Confirmar/Cancelar em cada linha. As decisões usam a sessão do administrador, POST com CSRF e os endpoints da API, verificando sala InovaLab/status pendente antes do envio. Não modificar o repositório do monólito nem criar cópias locais de reservas. Ver `docs/modules/12-solicitacoes-remotas-agrohub.md`.
 
 - Em 07/10/2026, a solicitação posterior remove o modelo `Espaco`, seu cadastro, telas/API e carga inicial. Catálogo mantém Serviços e Equipamentos; agenda mantém Serviços, Equipamentos e Visitas. Reservas antigas preservam ID/nome como dados históricos sem FK para espaço, além de eventos e recibos. Consultar `docs/modules/11-remocao-espacos.md`.
 

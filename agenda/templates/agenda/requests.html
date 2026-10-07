@@ -12,7 +12,7 @@
 {% if provider_error %}<p role="alert">{{ provider_error }}</p>{% else %}
 <h2>Solicitações pendentes · {{ paginator.count }}</h2>
 <div class="table-wrapper" tabindex="0" role="region" aria-label="Solicitações de agendamento">
-  <table><thead><tr><th>Reserva</th><th>Sala</th><th>Solicitante</th><th>Período</th><th>Pessoas</th><th>Situação</th></tr></thead>
+  <table><thead><tr><th>Reserva</th><th>Sala</th><th>Solicitante</th><th>Período</th><th>Pessoas</th><th>Situação</th><th>Ações</th></tr></thead>
     <tbody>{% for booking in object_list %}<tr>
       <td>#{{ booking.id }} · {{ booking.titulo }}</td>
       <td>{{ booking.sala }}</td>
@@ -20,7 +20,12 @@
       <td>{{ booking.inicio|date:'d/m/Y H:i' }}<br>até {{ booking.fim|date:'d/m/Y H:i' }}</td>
       <td>{{ booking.quantidade_pessoas }}</td>
       <td><span class="badge booking-status pendente">Pendente</span></td>
-    </tr>{% empty %}<tr><td colspan="6">Nenhuma reserva pendente no AgroHub para estes filtros.</td></tr>{% endfor %}</tbody>
+      <td><form method="post" action="{% url 'agenda:remote-decision' booking.id %}" class="booking-review-actions">
+        {% csrf_token %}<input type="hidden" name="q" value="{{ query }}"><input type="hidden" name="mes" value="{{ month }}">
+        <button type="submit" name="decisao" value="confirmar" aria-label="Confirmar reserva {{ booking.id }}">Confirmar</button>
+        <button type="submit" name="decisao" value="cancelar" class="secondary-button" aria-label="Cancelar reserva {{ booking.id }}">Cancelar</button>
+      </form></td>
+    </tr>{% empty %}<tr><td colspan="7">Nenhuma reserva pendente no AgroHub para estes filtros.</td></tr>{% endfor %}</tbody>
   </table>
 </div>
 {% include 'core/pagination.html' %}

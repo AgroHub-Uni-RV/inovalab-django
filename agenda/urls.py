@@ -7,6 +7,7 @@ urlpatterns = [
     path('', views.BookingListView.as_view(), name='list'),
     path('novo/', views.BookingWriteView.as_view(), name='create'),
     path('solicitacoes/', views.BookingReviewListView.as_view(), name='requests'),
+    path('solicitacoes/<int:pk>/decidir/', views.RemoteBookingDecisionView.as_view(), name='remote-decision'),
     path('<int:pk>/avaliar/', views.BookingReviewView.as_view(), name='review'),
     path('<int:pk>/agrohub/', views.BookingSyncView.as_view(), name='agrohub'),
     path('<int:pk>/', views.BookingDetailView.as_view(), name='detail'),

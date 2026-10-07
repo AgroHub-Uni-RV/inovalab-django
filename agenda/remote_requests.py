@@ -41,43 +41,47 @@ def _instant(value):
     return parsed
 
 
-def pending_reservations(request, *, query='', month=''):
-    """Consulta somente leitura das reservas pendentes das salas InovaLab."""
-    remaining_requests = 40
-
-    def pages(route, params):
-        nonlocal remaining_requests
-        page = 1
-        while remaining_requests:
-            remaining_requests -= 1
-            payload = authenticated_request(request, 'GET', route, namespace='agendamentos',
-                                            params={**params, 'page': page, 'page_size': 100})
-            rows, next_page = payload.get('results'), payload.get('next')
-            if (not isinstance(rows, list) or len(rows) > 100
-                    or (next_page is not None and not isinstance(next_page, str))):
+def _pages(request, route, params, budget):
+    page = 1
+    while budget[0]:
+        budget[0] -= 1
+        payload = authenticated_request(request, 'GET', route, namespace='agendamentos',
+                                        params={**params, 'page': page, 'page_size': 100})
+        rows, next_page = payload.get('results'), payload.get('next')
+        if (not isinstance(rows, list) or len(rows) > 100
+                or (next_page is not None and not isinstance(next_page, str))):
+            raise AgroHubError()
+        for row in rows:
+            if not isinstance(row, dict):
                 raise AgroHubError()
-            for row in rows:
-                if not isinstance(row, dict):
-                    raise AgroHubError()
-                yield row
-            if not next_page:
-                return
-            # Nunca seguir a URL next: preservar origem, filtros e Bearer da sessão.
-            page += 1
-        raise AgroHubError()
+            yield row
+        if not next_page:
+            return
+        # Nunca seguir a URL next: preservar origem, filtros e Bearer da sessão.
+        page += 1
+    raise AgroHubError()
 
+
+def _rooms(request, budget):
     rooms = {}
-    for room in pages('salas/', {'site_code': 'inovalab', 'ativas': 'false'}):
+    for room in _pages(request, 'salas/', {'site_code': 'inovalab', 'ativas': 'false'}, budget):
         if room.get('site_code') != 'inovalab':
             continue
         room_id, slug = room.get('id'), room.get('slug')
         if type(room_id) is not int or room_id < 1 or not isinstance(slug, str) or not re.fullmatch(r'[\w-]{1,220}', slug, re.ASCII):
             raise AgroHubError()
         rooms[room_id] = (slug, _text(room.get('nome'), 160))
+    return rooms
+
+
+def pending_reservations(request, *, query='', month=''):
+    """Consulta somente leitura das reservas pendentes das salas InovaLab."""
+    budget = [40]
+    rooms = _rooms(request, budget)
 
     reservations = {}
     for room_id, (slug, name) in rooms.items():
-        for row in pages('reservas/', {'sala': slug, 'status': 'pendente'}):
+        for row in _pages(request, 'reservas/', {'sala': slug, 'status': 'pendente'}, budget):
             room = row.get('sala')
             if (not isinstance(room, dict) or type(room.get('id')) is not int or room['id'] < 1
                     or not isinstance(room.get('slug'), str)
@@ -107,3 +111,36 @@ def pending_reservations(request, *, query='', month=''):
         query = query.casefold()
         rows = [row for row in rows if query in ' '.join((str(row.id), row.sala, row.titulo, row.solicitante)).casefold()]
     return rows
+
+
+def decide_reservation(request, reservation_id, decision):
+    """Aplica uma decisão somente a uma reserva pendente do InovaLab."""
+    if (decision not in ('confirmar', 'cancelar') or type(reservation_id) is not int
+            or not 0 < reservation_id <= 9223372036854775807):
+        raise AgroHubError(400)
+    route = f'reservas/{reservation_id}/'
+    row = authenticated_request(request, 'GET', route, namespace='agendamentos')
+    room = row.get('sala')
+    if (type(row.get('id')) is not int or row['id'] != reservation_id
+            or not isinstance(room, dict) or type(room.get('id')) is not int
+            or not isinstance(room.get('slug'), str)):
+        raise AgroHubError()
+    rooms = _rooms(request, [40])
+    if room['id'] not in rooms or rooms[room['id']][0] != room['slug']:
+        raise AgroHubError(403)
+    if row.get('status') not in ('pendente', 'confirmada', 'cancelada', 'recusada'):
+        raise AgroHubError()
+    if row['status'] != 'pendente':
+        raise AgroHubError(409)
+    expected_status = 'confirmada' if decision == 'confirmar' else 'cancelada'
+    result = authenticated_request(
+        request, 'PATCH' if decision == 'confirmar' else 'POST',
+        route if decision == 'confirmar' else route+'cancelar/', namespace='agendamentos',
+        data={'status': expected_status} if decision == 'confirmar' else {},
+    )
+    updated_room = result.get('sala')
+    if (type(result.get('id')) is not int or result['id'] != reservation_id
+            or result.get('status') != expected_status or not isinstance(updated_room, dict)
+            or type(updated_room.get('id')) is not int or updated_room['id'] != room['id']
+            or updated_room.get('slug') != room['slug']):
+        raise AgroHubError()

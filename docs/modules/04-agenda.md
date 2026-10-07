@@ -1,6 +1,6 @@
 # Módulo 4 — Agenda interna
 
-**Solicitação posterior de 07/10/2026:** `/agenda/solicitacoes/` passou a consultar somente reservas pendentes do InovaLab no AgroHub via API. A tela é de consulta, com busca/mês/paginação, e não apresenta as ações locais de avaliação. Ver [solicitações remotas](12-solicitacoes-remotas-agrohub.md); descrições anteriores da lista de pedidos locais são históricas.
+**Solicitações posteriores de 07/10/2026:** `/agenda/solicitacoes/` consulta reservas pendentes do InovaLab no AgroHub via API, com busca/mês/paginação e botões Confirmar/Cancelar que aplicam decisões no provedor. Ver [solicitações remotas](12-solicitacoes-remotas-agrohub.md); descrições anteriores da lista de pedidos locais são históricas.
 
 **Atualização de 07/10/2026:** o modelo `Espaco` e sua FK foram removidos. Reservas antigas conservam ID/nome como dados históricos, eventos, recibos e consulta/cancelamento. Categorias atuais continuam Serviços, Equipamentos e Visitas. Ver [remoção de espaços](11-remocao-espacos.md); as referências abaixo à FK registram a implementação anterior.
 
