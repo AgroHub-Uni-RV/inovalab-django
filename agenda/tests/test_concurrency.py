@@ -1,12 +1,12 @@
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import date, time, datetime
 from threading import Barrier
 
 from django.contrib.auth import get_user_model
 from django.db import connection, connections
 from django.test import TransactionTestCase
 
-from agenda.models import AgendaEquipamento, BOOKING_MODELS, AgendaServico, EventoAgendamento
+from agenda.models import AgendaEquipamento, AgendaServico, AgendaVisita, EventoAgendamento
 from agenda.services import BookingConflict, review_booking, save_booking
 from catalogo.models import Servico, Equipamento
 
@@ -47,6 +47,27 @@ class BookingConcurrencyTests(TransactionTestCase):
         self.assertEqual(sum(isinstance(result, AgendaEquipamento) for result in results), 1)
         self.assertEqual(sum(isinstance(result, BookingConflict) for result in results), 1)
         self.assertEqual(((AgendaServico.objects.count() + AgendaEquipamento.objects.count()), EventoAgendamento.objects.count()), (1, 1))
+
+    def test_parallel_visits_in_empty_agenda_commit_only_one_booking_and_event(self):
+        data = {'categoria': 'visita', 'quantidade_pessoas': 5, 'data': date(2099, 11, 10),
+                'hora_inicio': time(9), 'hora_termino': time(10)}
+        results = self.run_parallel(lambda index: save_booking(actor=self.admin, data=data))
+        self.assertEqual(sum(isinstance(result, AgendaVisita) for result in results), 1)
+        self.assertEqual(sum(isinstance(result, BookingConflict) for result in results), 1)
+        self.assertEqual((AgendaVisita.objects.count(), EventoAgendamento.objects.count()), (1, 1))
+
+    def test_parallel_visit_approvals_confirm_only_one_and_preserve_pending_request(self):
+        user = get_user_model().objects.create_user('solicitante-local-visita', is_staff=True)
+        data = {'categoria': 'visita', 'quantidade_pessoas': 5, 'data': date(2099, 11, 10),
+                'hora_inicio': time(9), 'hora_termino': time(10)}
+        bookings = [save_booking(actor=user, data=data) for _ in range(2)]
+        results = self.run_parallel(lambda index: review_booking(actor=self.admin, category='visita',
+            booking_id=bookings[index].pk, expected_version=1, decision='aprovar'))
+        self.assertEqual(sum(isinstance(result, AgendaVisita) for result in results), 1)
+        self.assertEqual(sum(isinstance(result, BookingConflict) for result in results), 1)
+        self.assertEqual(AgendaVisita.objects.filter(situacao='confirmado').count(), 1)
+        self.assertEqual(AgendaVisita.objects.filter(situacao='pendente').count(), 1)
+        self.assertEqual(EventoAgendamento.objects.filter(acao='aprovar').count(), 1)
 
     def test_parallel_equipment_approvals_confirm_only_one(self):
         user = get_user_model().objects.create_user('solicitante_visita', is_staff=True)

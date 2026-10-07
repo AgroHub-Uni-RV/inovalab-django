@@ -1,5 +1,7 @@
 # Meus agendamentos
 
+> A decisão posterior de 07/10/2026 em [Agenda de visitas local](17-agenda-visitas-local.md) substitui a consulta remota de visitas e suas limitações abaixo. As três categorias agora são locais; Accounts continua sincronizando a sessão. Esta documentação registra o estado da entrega anterior.
+
 A solicitação de 07/10/2026 substitui a página limitada a Minhas visitas por uma consulta pessoal de **Serviços**, **Equipamentos** e **Visitas**. A entrada principal é `/agenda/meus/`; `/agenda/visitas/` mantém compatibilidade com links antigos e apresenta a mesma consulta unificada. A antiga view e o template de listagem exclusiva de visitas foram removidos.
 
 ## Acesso e titularidade

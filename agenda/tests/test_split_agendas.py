@@ -47,7 +47,7 @@ class SplitAgendaTests(TestCase):
         self.assertIsInstance(rows, list)
         self.assertEqual({(row.categoria, row.pk) for row in rows}, {('servico', 77), ('equipamento', 77)})
 
-    def test_category_is_immutable_and_visits_cannot_be_saved_locally(self):
+    def test_category_is_immutable_and_visits_require_complete_fields(self):
         with self.assertRaises(ValidationError):
             save_booking(actor=self.admin, category='servico', booking_id=77, expected_version=1,
                          data={'categoria': 'equipamento', 'objeto': self.equipment.pk})

@@ -1,12 +1,9 @@
 from datetime import datetime, timedelta
-from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from accounts.tests.agrohub_stub import PASSWORD
 from agenda.models import AgendaEquipamento, AgendaServico, EventoAgendamento
-from agenda.tests.test_agrohub import VisitsProviderMixin, visit_fixture
 from catalogo.models import Equipamento, Servico
 
 
@@ -96,63 +93,3 @@ class PersonalLocalBookingsTests(TestCase):
         self.assertEqual(len(self.client.get('/agenda/meus/', {**params, 'page': 2}).context['object_list']), 2)
         for invalid in ({'mes': '2099-99'}, {'categoria': 'espaco'}, {'situacao': 'invalida'}):
             self.assertEqual(self.client.get('/agenda/meus/', invalid).status_code, 400)
-
-
-class PersonalRemoteBookingsTests(VisitsProviderMixin, TestCase):
-    def setUp(self):
-        super().setUp()
-        self.stub.state['profile'].update(is_staff=False, roles=['student'])
-        self.actor = get_user_model().objects.get(agrohub_id=42)
-
-    def test_regular_account_sees_all_own_visit_statuses_and_local_bookings(self):
-        self.stub.state['reservas'] = [visit_fixture(pk, status=status, owner_id=42)
-            for pk, status in enumerate(('pendente', 'confirmada', 'cancelada', 'recusada'), 101)]
-        self.stub.state['reservas'].append(visit_fixture(999, owner_id=99, titulo='Visita alheia'))
-        AgendaServico.objects.create(servico=Servico.objects.first(), criado_por=self.actor,
-            motivo='Serviço próprio', inicio=datetime.fromisoformat('2099-11-01T10:00:00-03:00'),
-            fim=datetime.fromisoformat('2099-11-01T11:00:00-03:00'))
-        response = self.client.get('/agenda/meus/')
-        self.assertContains(response, 'Meus agendamentos')
-        self.assertEqual(response.context['paginator'].count, 5)
-        self.assertNotContains(response, 'Visita alheia')
-        self.assertNotContains(response, 'id="sidebar"')
-        for pk in range(101, 105):
-            self.assertContains(response, f'/agenda/meus/visitas/{pk}/')
-            self.assertContains(self.client.get(f'/agenda/meus/visitas/{pk}/'), 'Observação remota')
-        self.assertEqual(self.client.get('/agenda/meus/visitas/999/').status_code, 404)
-        self.assertEqual(self.client.get('/agenda/solicitacoes/').status_code, 403)
-        self.assertFalse(self.writes())
-
-    def test_staff_provider_cannot_leak_other_users_visits_even_to_a_local_admin(self):
-        self.stub.state['profile'].update(is_staff=True, roles=['admin'])
-        self.stub.state['reservas'] = [visit_fixture(owner_id=99, titulo='Segredo de outro usuário')]
-        with patch('agenda.personal.reservations') as listing, patch('agenda.personal.get_reservation') as detail:
-            response = self.client.get('/agenda/meus/')
-            self.assertContains(response, 'consulta individual')
-            self.assertNotContains(response, 'Segredo de outro usuário')
-            self.assertEqual(self.client.get('/agenda/meus/visitas/101/').status_code, 404)
-        listing.assert_not_called()
-        detail.assert_not_called()
-
-    def test_provider_failure_keeps_local_records_without_writes(self):
-        AgendaServico.objects.create(servico=Servico.objects.first(), criado_por=self.actor,
-            motivo='Serviço preservado', inicio=datetime.fromisoformat('2099-11-01T10:00:00-03:00'),
-            fim=datetime.fromisoformat('2099-11-01T11:00:00-03:00'))
-        self.stub.state['responses'][('GET', '/api/v1/agendamentos/reservas/?sala=laboratorio-inovalab&page=1&page_size=100')] = (503, {})
-        response = self.client.get('/agenda/meus/')
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Não foi possível consultar suas visitas')
-        self.assertEqual(response.context['paginator'].count, 1)
-        self.assertFalse(self.writes())
-
-    def test_personal_entry_is_discoverable_without_granting_internal_access(self):
-        self.enterContext(patch('conteudo.public_events.load_events', return_value=([], False)))
-        for path in ('/', '/perfil/'):
-            self.assertContains(self.client.get(path), '/agenda/meus/')
-        self.assertEqual(self.client.get('/agenda/novo/').status_code, 403)
-        self.client.logout()
-        self.assertRedirects(self.client.get('/agenda/meus/'), '/entrar/?next=%2Fagenda%2Fmeus%2F',
-                             fetch_redirect_response=False)
-        response = self.client.post('/entrar/', {'username': 'agro-ana', 'password': PASSWORD,
-                                                'next': '/agenda/meus/'})
-        self.assertRedirects(response, '/agenda/meus/', fetch_redirect_response=False)

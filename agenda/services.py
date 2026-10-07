@@ -1,6 +1,6 @@
 import sqlite3
 from decimal import Decimal
-from datetime import datetime, timezone as dt_timezone
+from datetime import date, time, datetime, timezone as dt_timezone
 from functools import wraps
 
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -11,7 +11,7 @@ from django.http import Http404
 from django.utils import timezone
 
 from accounts.policies import is_business_admin
-from agenda.models import BOOKING_MODELS, EventoAgendamento
+from agenda.models import BOOKING_MODELS, AgendaVisita, EventoAgendamento
 from agenda.policies import can_access_agenda
 from catalogo.models import Equipamento, Servico
 from materiais.models import Material
@@ -21,6 +21,7 @@ CATEGORY_MODELS = {'servico': Servico, 'equipamento': Equipamento}
 BASE_FIELDS = {'categoria', 'objeto', 'motivo', 'inicio', 'fim'}
 SERVICE_FIELDS = {'equipamentos', 'material_proprio', 'material_gasto', 'material_gasto_gramas'}
 PUBLIC_FIELDS = BASE_FIELDS | SERVICE_FIELDS | {'observacoes'}
+VISIT_FIELDS = {'categoria', 'quantidade_pessoas', 'data', 'hora_inicio', 'hora_termino', 'observacoes'}
 
 
 
@@ -57,7 +58,7 @@ def _check_version(booking, version):
 
 def booking_model(category):
     if category not in BOOKING_MODELS:
-        raise ValidationError({'categoria': 'Selecione serviço ou equipamento.'})
+        raise ValidationError({'categoria': 'Selecione serviço, equipamento ou visita.'})
     return BOOKING_MODELS[category]
 
 
@@ -75,6 +76,13 @@ def _lock_targets(*targets):
     # First database access inside atomic: acquire write locks before reading conflicts.
     # A no-op UPDATE also works on SQLite, where select_for_update is ineffective.
     for category, pk in sorted(set(targets)):
+        if category == 'visita':
+            if connection.vendor == 'postgresql':
+                with connection.cursor() as cursor:
+                    cursor.execute('SELECT pg_advisory_xact_lock(%s)', [718304261])
+            else:
+                AgendaVisita.objects.all().update(versao=F('versao'))
+            continue
         if not CATEGORY_MODELS[category].objects.filter(pk=pk).update(status=F('status')):
             raise ValidationError({'objeto': 'Selecione um cadastro válido.'})
 
@@ -84,14 +92,19 @@ def _snapshot(booking):
         'motivo', 'observacoes', 'inicio', 'fim', 'cancelado_em',
         'situacao', 'avaliado_em')}
     values.update(categoria=booking.categoria, objeto=booking.objeto_id)
+    if booking.categoria == 'visita':
+        values.pop('motivo')
+        values.pop('objeto')
+        values.update({name: getattr(booking, name) for name in VISIT_FIELDS - {'categoria', 'observacoes'}})
     values['criado_por'] = booking.criado_por_id
     if booking.categoria == 'servico':
         values.update(material_gasto=booking.material_gasto_id, material_proprio=booking.material_proprio,
                       material_gasto_gramas=booking.material_gasto_gramas,
                       equipamentos=sorted(booking.equipamentos.values_list('pk', flat=True)))
     values['avaliado_por'] = booking.avaliado_por_id
-    return {name: value.astimezone(dt_timezone.utc).isoformat() if isinstance(value, datetime) else value
-            if not isinstance(value, Decimal) else format(value, '.3f')
+    return {name: value.astimezone(dt_timezone.utc).isoformat() if isinstance(value, datetime)
+            else value.isoformat() if isinstance(value, (date, time))
+            else format(value, '.3f') if isinstance(value, Decimal) else value
             for name, value in values.items()}
 
 
@@ -118,10 +131,45 @@ def save_booking(*, actor, data, category=None, booking_id=None, expected_versio
         raise PermissionDenied('Entre com uma conta ativa para acessar a agenda.')
     if booking_id is not None:
         _require_admin(actor)
+    if (category or data.get('categoria')) == 'visita':
+        return _save_visit(actor=actor, data=data, booking_id=booking_id, expected_version=expected_version)
     booking = _save_booking(actor=actor, actor_name=actor.username, data=data,
                          category=category, booking_id=booking_id, expected_version=expected_version,
                          initial_status='confirmado' if is_business_admin(actor) else 'pendente')
     return booking
+
+
+def _save_visit(*, actor, data, booking_id=None, expected_version=None):
+    unknown = set(data) - VISIT_FIELDS
+    if unknown:
+        raise ValidationError({name: 'Este campo não pode ser alterado.' for name in unknown})
+    if data.get('categoria', 'visita') != 'visita':
+        raise ValidationError({'categoria': 'A categoria do agendamento não pode ser alterada.'})
+    with transaction.atomic():
+        _lock_targets(('visita', 0))
+        booking = _load(booking_id, expected_version, 'visita') if booking_id is not None else AgendaVisita(
+            criado_por=actor, situacao='confirmado' if is_business_admin(actor) else 'pendente')
+        before = _snapshot(booking) if booking_id is not None else {}
+        for name in VISIT_FIELDS - {'categoria'}:
+            if name in data:
+                setattr(booking, name, data[name])
+        if type(booking.quantidade_pessoas) is not int or not 1 <= booking.quantidade_pessoas <= 2147483647:
+            raise ValidationError({'quantidade_pessoas': 'Informe uma quantidade inteira positiva.'})
+        if type(booking.data) is not date:
+            raise ValidationError({'data': 'Informe uma data válida.'})
+        for name in ('hora_inicio', 'hora_termino'):
+            value = getattr(booking, name)
+            if not isinstance(value, time) or value.tzinfo is not None:
+                raise ValidationError({name: 'Informe um horário válido de Brasília.'})
+        booking.full_clean()
+        if booking.situacao == 'confirmado':
+            _check_overlap(booking)
+        if booking_id is not None:
+            _persist_existing(booking, expected_version)
+        else:
+            booking.save()
+        _record(actor, booking, 'editar' if booking_id is not None else 'criar', before)
+        return booking
 
 
 def _save_booking(*, actor, actor_name, data, category=None, booking_id=None, expected_version=None, initial_status='confirmado'):
@@ -207,12 +255,18 @@ def _save_booking(*, actor, actor_name, data, category=None, booking_id=None, ex
 
 
 def _check_overlap(booking):
-    overlap = type(booking).objects.filter(situacao='confirmado', cancelado_em__isnull=True,
-        inicio__lt=booking.fim, fim__gt=booking.inicio, **{booking.categoria + '_id': booking.objeto_id})
+    if booking.categoria == 'visita':
+        overlap = AgendaVisita.objects.filter(situacao='confirmado', cancelado_em__isnull=True,
+            data=booking.data, hora_inicio__lt=booking.hora_termino, hora_termino__gt=booking.hora_inicio)
+    else:
+        overlap = type(booking).objects.filter(situacao='confirmado', cancelado_em__isnull=True,
+            inicio__lt=booking.fim, fim__gt=booking.inicio, **{booking.categoria + '_id': booking.objeto_id})
     if booking.pk:
         overlap = overlap.exclude(pk=booking.pk)
     if overlap.exists():
-        raise BookingConflict('horario_ocupado', 'Já existe uma reserva deste objeto no período informado.')
+        message = ('Já existe uma visita confirmada no período informado.' if booking.categoria == 'visita'
+                   else 'Já existe uma reserva deste objeto no período informado.')
+        raise BookingConflict('horario_ocupado', message)
 
 
 @_busy_as_conflict
@@ -229,7 +283,7 @@ def review_booking(*, actor, category, booking_id, expected_version, decision):
             raise BookingConflict('pedido_avaliado', 'Esta solicitação já foi avaliada.')
         before = _snapshot(booking)
         if decision == 'aprovar':
-            resource = CATEGORY_MODELS[booking.categoria].objects.get(pk=booking.objeto_id)
+            resource = CATEGORY_MODELS[booking.categoria].objects.get(pk=booking.objeto_id) if category != 'visita' else None
             if resource is not None and resource.status == 'indisponivel':
                 raise ValidationError({'objeto': 'Este cadastro está indisponível para reservar este período.'})
             if Equipamento.objects.filter(pk__in=equipment_ids, status='indisponivel').exists():

@@ -5,7 +5,6 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from agenda.models import AgendaEquipamento, AgendaServico, EventoAgendamento
-from agenda.tests.test_agrohub import VisitsProviderMixin
 from catalogo.models import Equipamento, Servico
 
 
@@ -68,14 +67,12 @@ class BookingCreationFlowTests(TestCase):
                     payload['material_proprio'] = 'sim'
                 self.client.get(url)
                 other_count = other.objects.count()
-                with patch('agenda.remote_views.save_reservation') as remote_save:
-                    invalid = self.client.post(url, {**payload, 'hora_termino': '09:00'})
-                    self.assertIn('hora_termino', invalid.context['form'].errors)
-                    self.assertEqual(invalid.context['form']['categoria'].value(), category)
-                    self.assertEqual(invalid.context['form']['motivo'].value(), payload['motivo'])
-                    self.assertFalse(model.objects.exists())
-                    response = self.client.post(url, payload)
-                remote_save.assert_not_called()
+                invalid = self.client.post(url, {**payload, 'hora_termino': '09:00'})
+                self.assertIn('hora_termino', invalid.context['form'].errors)
+                self.assertEqual(invalid.context['form']['categoria'].value(), category)
+                self.assertEqual(invalid.context['form']['motivo'].value(), payload['motivo'])
+                self.assertFalse(model.objects.exists())
+                response = self.client.post(url, payload)
                 booking = model.objects.get()
                 self.assertRedirects(response, booking.get_absolute_url())
                 self.assertEqual(booking.eventos.get().acao, 'criar')
@@ -94,23 +91,3 @@ class BookingCreationFlowTests(TestCase):
                 self.assertEqual(response.context['form'].category, 'equipamento')
                 self.assertContains(response, 'Editar agendamento')
                 self.assertNotContains(response, 'name="material_proprio"')
-
-
-class VisitCreationChoiceFlowTests(VisitsProviderMixin, TestCase):
-    def test_choice_and_visit_confirmation_use_provider_without_local_persistence(self):
-        choice = self.client.get('/agenda/novo/')
-        self.assertContains(choice, '/agenda/visitas/novo/')
-        form = self.client.get('/agenda/visitas/novo/')
-        self.assertContains(form, 'name="sala"')
-        self.assertContains(form, 'Alterar tipo de agendamento')
-        self.assertContains(form, 'Confirmar agendamento')
-        self.assertNotContains(form, 'name="material_proprio"')
-        self.assertFalse(self.writes())
-        invalid = self.client.post('/agenda/visitas/novo/', self.payload(hora_fim='08:00'))
-        self.assertEqual(invalid.status_code, 400)
-        self.assertIn('hora_fim', invalid.context['form'].errors)
-        self.assertFalse(self.writes())
-        response = self.client.post('/agenda/visitas/novo/', self.payload())
-        self.assertRedirects(response, '/agenda/visitas/101/', fetch_redirect_response=False)
-        self.assertEqual(len(self.writes()), 1)
-        self.assert_no_local_visits()

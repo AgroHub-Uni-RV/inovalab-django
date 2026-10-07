@@ -67,7 +67,7 @@ class BookingServiceTests(TestCase):
 
     def test_database_requires_target_and_positive_interval_for_both_types(self):
         base = {'motivo': 'Reserva', 'inicio': self.start, 'fim': self.end}
-        for category, model in BOOKING_MODELS.items():
+        for category, model in (('servico', AgendaServico), ('equipamento', AgendaEquipamento)):
             with self.assertRaises(IntegrityError), transaction.atomic():
                 model.objects.create(**base)
             with self.assertRaises(IntegrityError), transaction.atomic():

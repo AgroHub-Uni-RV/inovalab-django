@@ -1,6 +1,0 @@
-{% extends 'agenda/base.html' %}
-{% block content_class %}module-page detail-page{% endblock %}
-{% block content %}<div class="detail-sheet"><section class="sheet-content">
-<h1>Cancelar visita #{{ booking.pk }}</h1><p>{{ booking.titulo }} · {{ booking.sala }}</p><p>{{ booking.inicio|date:'d/m/Y H:i' }} até {{ booking.fim|date:'d/m/Y H:i' }} · {{ booking.status_label }}</p>
-<form method="post" class="sheet-form">{% csrf_token %}<p>O cancelamento será realizado no AgroHub e liberará o horário da visita.</p><div class="sheet-actions"><button type="submit">Confirmar cancelamento</button><a class="secondary-button" href="{{ booking.get_absolute_url }}">Voltar</a></div></form>
-</section></div>{% endblock %}

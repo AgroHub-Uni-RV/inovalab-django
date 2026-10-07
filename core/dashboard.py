@@ -56,7 +56,7 @@ def _months(bookings, today, events=()):
     return months
 
 
-def dashboard_context(actor, *, now=None, task_tab='pendentes', booking_tab='semana', events=(), remote_visits=()):
+def dashboard_context(actor, *, now=None, task_tab='pendentes', booking_tab='semana', events=()):
     now = now if now is not None else timezone.now()
     admin = is_business_admin(actor)
     task_tab = task_tab if task_tab in TASK_TABS else 'pendentes'
@@ -64,7 +64,7 @@ def dashboard_context(actor, *, now=None, task_tab='pendentes', booking_tab='sem
     tasks = list(visible_tasks(actor).filter(status__in=TASK_TABS[task_tab][1])[:10])
     for task in tasks:
         task.overdue = bool(task.prazo and task.prazo < now and task.status != 'concluido')
-    all_bookings = sorted([row for row in visible_bookings(actor) + list(remote_visits) if row.situacao == 'confirmado'],
+    all_bookings = sorted([row for row in visible_bookings(actor) if row.situacao == 'confirmado'],
                           key=lambda row: (row.inicio, row.categoria, row.pk))
     today = timezone.localdate(now)
     monday = today - timedelta(days=today.weekday())

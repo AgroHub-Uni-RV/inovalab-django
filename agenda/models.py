@@ -1,4 +1,6 @@
+from datetime import datetime
 from decimal import Decimal
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
@@ -10,11 +12,8 @@ CATEGORIES = {'servico': 'Serviço', 'equipamento': 'Equipamento', 'visita': 'Vi
 BOOKING_STATUSES = {'pendente': 'Pendente', 'confirmado': 'Confirmado', 'rejeitado': 'Rejeitado'}
 
 
-class AgendaBase(models.Model):
-    motivo = models.TextField(blank=True, default='')
+class AgendaControle(models.Model):
     observacoes = models.TextField('observações', blank=True, default='')
-    inicio = models.DateTimeField()
-    fim = models.DateTimeField()
     versao = models.PositiveBigIntegerField(default=1, editable=False)
     cancelado_em = models.DateTimeField(null=True, blank=True, editable=False)
     criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, editable=False, related_name='%(class)s_criados')
@@ -24,7 +23,31 @@ class AgendaBase(models.Model):
                                      editable=False, related_name='%(class)s_avaliados')
     avaliado_em = models.DateTimeField(null=True, blank=True, editable=False)
 
+    class Meta:
+        abstract = True
 
+    def get_absolute_url(self):
+        return reverse('agenda:detail', kwargs={'category': self.categoria, 'pk': self.pk})
+
+    @property
+    def criador_nome(self):
+        if self.criado_por:
+            return self.criado_por.get_full_name() or self.criado_por.username
+        if self.pk is None:
+            return 'Não registrado'
+        events = getattr(self, 'eventos_de_criacao', None)
+        if events is not None:
+            return events[0].ator_nome if events else 'Não registrado'
+        return self.eventos.filter(acao='criar').values_list('ator_nome', flat=True).first() or 'Não registrado'
+
+    def __str__(self):
+        return f'{self.objeto_nome} — {self.criador_nome}'
+
+
+class AgendaBase(AgendaControle):
+    motivo = models.TextField(blank=True, default='')
+    inicio = models.DateTimeField()
+    fim = models.DateTimeField()
     class Meta:
         abstract = True
         ordering = ['inicio', 'pk']
@@ -47,21 +70,6 @@ class AgendaBase(models.Model):
     def categoria_display(self):
         return {'servico': 'Serviços', 'equipamento': 'Equipamentos'}[self.categoria]
 
-    def get_absolute_url(self):
-        return reverse('agenda:detail', kwargs={'category': self.categoria, 'pk': self.pk})
-
-    @property
-    def criador_nome(self):
-        if self.criado_por:
-            return self.criado_por.get_full_name() or self.criado_por.username
-        if self.pk is None:
-            return 'Não registrado'
-        events = getattr(self, 'eventos_de_criacao', None)
-        if events is not None:
-            return events[0].ator_nome if events else 'Não registrado'
-        return self.eventos.filter(acao='criar').values_list('ator_nome', flat=True).first() or 'Não registrado'
-
-
     def clean(self):
         errors = {}
         self.motivo = self.motivo.strip() if isinstance(self.motivo, str) else self.motivo
@@ -76,9 +84,6 @@ class AgendaBase(models.Model):
             errors['fim'] = 'O término deve ser posterior ao início.'
         if errors:
             raise ValidationError(errors)
-
-    def __str__(self):
-        return f'{self.objeto_nome} — {self.criador_nome}'
 
 
 class AgendaServico(AgendaBase):
@@ -123,12 +128,52 @@ class AgendaEquipamento(AgendaBase):
     equipamento = models.ForeignKey('catalogo.Equipamento', on_delete=models.PROTECT)
 
 
-BOOKING_MODELS = {'servico': AgendaServico, 'equipamento': AgendaEquipamento}
+class AgendaVisita(AgendaControle):
+    categoria = 'visita'
+    visita = True
+    objeto_id = 0
+    objeto_nome = 'Visita ao InovaLab'
+    categoria_display = 'Visitas'
+    motivo = ''
+    quantidade_pessoas = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+    data = models.DateField()
+    hora_inicio = models.TimeField()
+    hora_termino = models.TimeField()
+
+    @property
+    def inicio(self):
+        return timezone.make_aware(datetime.combine(self.data, self.hora_inicio))
+
+    @property
+    def fim(self):
+        return timezone.make_aware(datetime.combine(self.data, self.hora_termino))
+
+    def clean(self):
+        errors = {}
+        if self.hora_inicio and self.hora_termino and self.hora_termino <= self.hora_inicio:
+            errors['hora_termino'] = 'O término deve ser posterior ao início, no mesmo dia.'
+        self.observacoes = self.observacoes.strip() if isinstance(self.observacoes, str) else self.observacoes
+        if errors:
+            raise ValidationError(errors)
+
+    class Meta:
+        ordering = ['data', 'hora_inicio', 'pk']
+        constraints = [
+            models.CheckConstraint(condition=models.Q(quantidade_pessoas__gte=1), name='agendavisita_pessoas_positivas'),
+            models.CheckConstraint(condition=models.Q(hora_termino__gt=models.F('hora_inicio')), name='agendavisita_periodo_positivo'),
+            models.CheckConstraint(condition=models.Q(versao__gte=1), name='agendavisita_versao_positiva'),
+            models.CheckConstraint(condition=models.Q(situacao__in=list(BOOKING_STATUSES)), name='agendavisita_situacao_valida'),
+        ]
+        indexes = [models.Index(fields=['data', 'hora_inicio', 'hora_termino'], name='agendavisita_periodo_idx')]
+
+
+BOOKING_MODELS = {'servico': AgendaServico, 'equipamento': AgendaEquipamento, 'visita': AgendaVisita}
 
 
 class EventoAgendamento(models.Model):
     agenda_servico = models.ForeignKey(AgendaServico, on_delete=models.CASCADE, related_name='eventos', null=True, blank=True)
     agenda_equipamento = models.ForeignKey(AgendaEquipamento, on_delete=models.CASCADE, related_name='eventos', null=True, blank=True)
+    agenda_visita = models.ForeignKey(AgendaVisita, on_delete=models.CASCADE, related_name='eventos', null=True, blank=True)
     ator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     ator_nome = models.CharField(max_length=150)
     instante = models.DateTimeField(auto_now_add=True)
@@ -138,11 +183,12 @@ class EventoAgendamento(models.Model):
 
     @property
     def agendamento(self):
-        return self.agenda_servico or self.agenda_equipamento
+        return self.agenda_servico or self.agenda_equipamento or self.agenda_visita
 
     class Meta:
         ordering = ['-pk']
         constraints = [models.CheckConstraint(condition=(
-            models.Q(agenda_servico__isnull=False, agenda_equipamento__isnull=True)
-            | models.Q(agenda_servico__isnull=True, agenda_equipamento__isnull=False)
+            models.Q(agenda_servico__isnull=False, agenda_equipamento__isnull=True, agenda_visita__isnull=True)
+            | models.Q(agenda_servico__isnull=True, agenda_equipamento__isnull=False, agenda_visita__isnull=True)
+            | models.Q(agenda_servico__isnull=True, agenda_equipamento__isnull=True, agenda_visita__isnull=False)
         ), name='evento_exatamente_uma_agenda')]

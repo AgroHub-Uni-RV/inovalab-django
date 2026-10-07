@@ -5,7 +5,6 @@
 <section class="module-page personal-bookings-page">
   <div class="page-heading"><h1>Meus agendamentos</h1>{% if can_access_panel %}<div class="page-heading-actions"><a class="secondary-button" href="{% url 'agenda:list' %}">Voltar à agenda</a><a class="primary-button" href="{% url 'agenda:create' %}">Novo agendamento {% include 'core/icon.html' with name='plus' %}</a></div>{% endif %}</div>
   <p>Consulte seus serviços, equipamentos e visitas e abra os detalhes de cada agendamento.</p>
-  {% if visits_warning %}<p class="error-message" role="alert">{{ visits_warning }}</p>{% endif %}
   <form method="get" class="filter-bar">
     <div class="filter-field search-field"><label for="my-query">Pesquisar agendamento</label><input id="my-query" name="q" value="{{ query }}" maxlength="150" placeholder="Nome, motivo, observações ou número"></div>
     <div class="filter-field month-field"><label for="my-month">Mês (opcional)</label><input id="my-month" type="month" name="mes" value="{{ month }}"></div>
@@ -15,7 +14,7 @@
   </form>
   <h2>Agendamentos · {{ paginator.count }}</h2>
   <div class="table-wrapper" tabindex="0" role="region" aria-label="Meus agendamentos"><table><thead><tr><th>Categoria</th><th>Agendamento</th><th>Período</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
-    {% for booking in object_list %}<tr><td>{{ booking.categoria_display }}</td><td><a href="{{ booking.get_absolute_url }}">#{{ booking.pk }} · {{ booking.objeto_nome }}</a>{% if booking.categoria == 'visita' %}<br>{{ booking.sala }}{% endif %}</td><td>{{ booking.inicio|date:'d/m/Y H:i' }}<br>até {{ booking.fim|date:'d/m/Y H:i' }}</td><td><span class="badge booking-status {{ booking.situacao }}">{{ booking.get_situacao_display }}</span></td><td><a href="{{ booking.get_absolute_url }}">Ver detalhes</a></td></tr>{% empty %}<tr><td colspan="5">Nenhum agendamento neste filtro.</td></tr>{% endfor %}
+    {% for booking in object_list %}<tr><td>{{ booking.categoria_display }}</td><td><a href="{{ booking.get_absolute_url }}">#{{ booking.pk }} · {{ booking.objeto_nome }}</a></td><td>{{ booking.inicio|date:'d/m/Y H:i' }}<br>até {{ booking.fim|date:'d/m/Y H:i' }}</td><td><span class="badge booking-status {{ booking.situacao }}">{{ booking.get_situacao_display }}</span></td><td><a href="{{ booking.get_absolute_url }}">Ver detalhes</a></td></tr>{% empty %}<tr><td colspan="5">Nenhum agendamento neste filtro.</td></tr>{% endfor %}
   </tbody></table></div>
   {% include 'core/pagination.html' %}
 </section>

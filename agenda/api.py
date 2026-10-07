@@ -11,7 +11,7 @@ from rest_framework.viewsets import ModelViewSet
 from accounts.policies import is_business_admin
 from agenda.policies import can_access_agenda
 from agenda.selectors import filter_bookings, visible_bookings, visible_booking
-from agenda.serializers import BookingSerializer, CancelSerializer, EventSerializer
+from agenda.serializers import BookingSerializer, VisitSerializer, CancelSerializer, EventSerializer
 from agenda.services import BookingConflict, cancel_booking
 
 
@@ -35,6 +35,12 @@ class BookingViewSet(ModelViewSet):
     pagination_class = BookingPagination
     serializer_class = BookingSerializer
     http_method_names = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options']
+
+    def get_serializer_class(self):
+        if self.kwargs.get('category') == 'visita' or (
+                self.action == 'create' and isinstance(self.request.data, dict) and self.request.data.get('categoria') == 'visita'):
+            return VisitSerializer
+        return super().get_serializer_class()
 
     def get_queryset(self):
         queryset = visible_bookings(self.request.user)

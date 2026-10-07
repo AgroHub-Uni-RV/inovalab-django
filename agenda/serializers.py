@@ -6,8 +6,8 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from rest_framework import serializers
 
-from agenda.models import BOOKING_MODELS, EventoAgendamento
-from agenda.services import save_booking
+from agenda.models import EventoAgendamento
+from agenda.services import CATEGORY_MODELS, save_booking
 from catalogo.models import Equipamento
 from materiais.models import Material
 
@@ -43,7 +43,7 @@ class AwareDateTimeField(serializers.DateTimeField):
 
 class BookingSerializer(StrictPayloadMixin, serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
-    categoria = serializers.ChoiceField(choices=BOOKING_MODELS)
+    categoria = serializers.ChoiceField(choices=CATEGORY_MODELS)
     objeto = VersionField(source='objeto_id', min_value=1, required=False, allow_null=True)
     objeto_nome = serializers.CharField(read_only=True)
     motivo = serializers.CharField(required=False)
@@ -65,6 +65,11 @@ class BookingSerializer(StrictPayloadMixin, serializers.Serializer):
     avaliado_por = serializers.IntegerField(source='avaliado_por_id', read_only=True)
     avaliado_em = serializers.DateTimeField(read_only=True)
 
+    def to_representation(self, instance):
+        if instance.categoria == 'visita':
+            return VisitSerializer(instance, context=self.context).data
+        return super().to_representation(instance)
+
     def validate(self, attrs):
         if 'material_gasto' in attrs:
             attrs['material_gasto'] = attrs['material_gasto'].pk if attrs['material_gasto'] else None
@@ -74,10 +79,9 @@ class BookingSerializer(StrictPayloadMixin, serializers.Serializer):
             raise serializers.ValidationError({'versao': 'A versão inicial é definida pelo sistema.'})
         if self.instance is not None and 'versao' not in attrs:
             raise serializers.ValidationError({'versao': 'Informe a versão do agendamento.'})
-        category = attrs.get('categoria', self.instance.categoria if self.instance else None)
-        if category != 'visita' and (('categoria' in attrs) != ('objeto_id' in attrs)):
+        if ('categoria' in attrs) != ('objeto_id' in attrs):
             raise serializers.ValidationError({'objeto': 'Informe categoria e objeto juntos.'})
-        if category != 'visita' and self.instance is None and 'motivo' not in attrs:
+        if self.instance is None and 'motivo' not in attrs:
             raise serializers.ValidationError({'motivo': 'Este campo é obrigatório.'})
         if 'objeto_id' in attrs:
             attrs['objeto'] = attrs.pop('objeto_id')
@@ -90,7 +94,36 @@ class BookingSerializer(StrictPayloadMixin, serializers.Serializer):
         version = validated_data.pop('versao')
         return save_booking(actor=self.context['request'].user, category=instance.categoria, booking_id=instance.pk,
                             expected_version=version, data=validated_data)
+class VisitSerializer(StrictPayloadMixin, serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    categoria = serializers.ChoiceField(choices=['visita'], default='visita')
+    quantidade_pessoas = VersionField(min_value=1, max_value=2147483647)
+    data = serializers.DateField()
+    hora_inicio = serializers.TimeField()
+    hora_termino = serializers.TimeField()
+    observacoes = serializers.CharField(required=False, allow_blank=True)
+    versao = VersionField(min_value=1, required=False)
+    criado_por = serializers.IntegerField(source='criado_por_id', read_only=True)
+    criado_por_nome = serializers.CharField(source='criador_nome', read_only=True)
+    criado_em = serializers.DateTimeField(read_only=True)
+    situacao = serializers.CharField(read_only=True)
+    avaliado_por = serializers.IntegerField(source='avaliado_por_id', read_only=True)
+    avaliado_em = serializers.DateTimeField(read_only=True)
 
+    def validate(self, attrs):
+        if self.instance is None and 'versao' in attrs:
+            raise serializers.ValidationError({'versao': 'A versão inicial é definida pelo sistema.'})
+        if self.instance is not None and 'versao' not in attrs:
+            raise serializers.ValidationError({'versao': 'Informe a versão do agendamento.'})
+        return attrs
+
+    def create(self, validated_data):
+        return save_booking(actor=self.context['request'].user, data=validated_data)
+
+    def update(self, instance, validated_data):
+        version = validated_data.pop('versao')
+        return save_booking(actor=self.context['request'].user, category='visita', booking_id=instance.pk,
+                            expected_version=version, data=validated_data)
 
 
 class CancelSerializer(StrictPayloadMixin, serializers.Serializer):

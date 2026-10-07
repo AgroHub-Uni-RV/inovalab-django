@@ -235,9 +235,9 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
             self.assertEqual(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/{suffix}').status_code, 403)
         self.client.force_login(self.admin)
         response = self.client.get('/agenda/solicitacoes/')
-        self.assertEqual(response.context['object_list'], [])
-        self.assertNotContains(response, url)
-        self.assertContains(response, 'conta administrativa vinculada ao AgroHub')
+        self.assertEqual([row.pk for row in response.context['object_list']], [booking.pk])
+        self.assertContains(response, url)
+        self.assertNotContains(response, 'AgroHub')
         self.assertEqual(self.client.get(url).status_code, 405)
         self.assertRedirects(self.client.post(url, {'versao': 1, 'decisao': 'aprovar'}), '/agenda/solicitacoes/')
         self.assertContains(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/'), 'Confirmado')
@@ -302,7 +302,7 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         selected = [item['label'] for item in response.context['nav_items'] if item['current']]
         self.assertEqual(selected, ['Agendamentos'])
 
-    def test_remote_requests_page_does_not_include_local_decisions_or_bookings(self):
+    def test_local_requests_page_excludes_confirmed_bookings(self):
         request = self.create()
         self.review(request)
         self.create(actor=self.admin, inicio=self.data['fim'], fim=self.data['fim'] + timedelta(hours=1))
@@ -359,5 +359,5 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         booking = self.create()
         self.user.delete()
         self.client.force_login(self.admin)
-        self.assertContains(self.client.get('/agenda/solicitacoes/'), 'conta administrativa vinculada ao AgroHub')
+        self.assertContains(self.client.get('/agenda/solicitacoes/'), booking.objeto_nome)
         self.assertEqual(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/').status_code, 200)

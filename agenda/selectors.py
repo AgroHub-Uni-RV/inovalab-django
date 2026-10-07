@@ -18,7 +18,9 @@ def _visible_queryset(actor, category, *, personal=False):
     model = BOOKING_MODELS[category]
     if not (can_view_own_bookings(actor) if personal else can_access_agenda(actor)):
         return model.objects.none()
-    related = [category, 'criado_por', 'avaliado_por']
+    related = ['criado_por', 'avaliado_por']
+    if category != 'visita':
+        related.append(category)
     if category == 'servico':
         related.append('material_gasto')
     query = model.objects.all().select_related(*related).prefetch_related(
