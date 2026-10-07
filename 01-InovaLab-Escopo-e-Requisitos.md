@@ -82,7 +82,7 @@ Os critérios abaixo são a especificação operacional proposta; onde o comport
 | RF27 | Atualizar a própria foto pelo AgroHub | C — F6 | MVP | Foto validada usa PUT multipart me/picture; avatares exibem a foto remota com as permissões existentes |
 | RF28 | Solicitar recuperação de senha pelo AgroHub | C — F6 | MVP | E-mail usa password-reset; a interface mostra confirmação genérica sem revelar existência da conta |
 | RF29 | Confirmar recuperação de senha pelo AgroHub | C — F6 | MVP | UID/token e nova senha confirmada usam password-reset/confirm; sucesso limpa a sessão e solicita novo login |
-| RF30 | Registrar novas visitas internas na sala 1 do AgroHub na criação | C — F7 | MVP | POST Agendamentos com sessão do criador e data/horários; vínculo e resultado externo visíveis; manutenção no mesmo ID e conciliação sem repetir mutação incerta |
+| RF30 | Registrar novas visitas internas na sala 1 do AgroHub na criação | C — F7; correção de contrato autorizada em 06/10/2026 | MVP | Pré-validar minutos, antecedência e disponibilidade remota antes de salvar; POST com sessão do criador e horários HH:MM, status inicial definido pela API; vínculo e motivo de falha visíveis; manutenção no mesmo ID e conciliação sem repetir mutação incerta |
 
 O PDF apresenta dois modelos de agendamento na página 2: “Agendamento Figma” (`servico`, `data_hora`, `requerente`) e “Agendamento AgroHub já existente” (`categoria`, `objeto_agendadado`, `motivo`, `data`, `horario_inicio`, `horario_fim`). A página 3 confirma sua unificação. Representar `data_hora` por início completo ou por data/horário é derivação técnica; a fonte não define a conversão nem fornece horário final no primeiro modelo. Não inventar duração para registros antigos; esclarecer essa eventual migração em Q07.
 
