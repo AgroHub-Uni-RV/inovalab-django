@@ -26,6 +26,8 @@ class BookingForm(StrictFormMixin, forms.Form):
     motivo = forms.CharField(label='Motivo', widget=forms.Textarea(attrs={'rows': 3}))
     observacoes = forms.CharField(label='Observações', required=False, help_text='Opcional.',
                                   widget=forms.Textarea(attrs={'rows': 3}))
+    quantidade_pessoas = forms.IntegerField(label='Quantidade de pessoas', min_value=1, max_value=2147483647,
+                                            initial=1, widget=forms.NumberInput(attrs={'min': '1', 'step': '1'}))
     dia = forms.DateField(label='Dia', input_formats=['%Y-%m-%d'],
                           widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}))
     hora_inicio = forms.TimeField(label='Hora de início', help_text='Horário de Brasília.',
@@ -63,6 +65,7 @@ class BookingForm(StrictFormMixin, forms.Form):
             self.legacy_multiday = start.date() != end.date()
             initial.update(categoria=booking.categoria, objeto=booking.objeto_id, motivo=booking.motivo,
                            observacoes=booking.observacoes,
+                           quantidade_pessoas=booking.quantidade_pessoas if booking.visita else 1,
                            dia=start.date(), hora_inicio=start.time().replace(microsecond=0),
                            hora_termino=end.time().replace(microsecond=0), versao=booking.versao)
             initial.update(equipamentos=list(booking.equipamentos.values_list('pk', flat=True)),
@@ -101,6 +104,8 @@ class BookingForm(StrictFormMixin, forms.Form):
                     self.initial[name] = original
                 if not original or not original.second:
                     field.widget.format = '%H:%M'
+        else:
+            del self.fields['quantidade_pessoas']
         if category == 'servico':
             self.fields['material_gasto'].queryset = Material.objects.filter(
                 ~Q(status='indisponivel') | Q(pk=booking.material_gasto_id if booking else None),

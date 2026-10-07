@@ -41,7 +41,7 @@ class VisitAgroHubTests(TestCase):
 
     def create(self, **data):
         return self.client.post('/agenda/novo/', {'categoria': 'visita', 'dia': '2026-11-10',
-            'hora_inicio': '09:00', 'hora_termino': '10:00', **data})
+            'hora_inicio': '09:00', 'hora_termino': '10:00', 'quantidade_pessoas': 1, **data})
 
     def writes(self, method='POST'):
         return [row for row in self.stub.state['requests'] if row[0] == method
@@ -68,6 +68,122 @@ class VisitAgroHubTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(len(self.writes()), 1)
         self.assertEqual(response.json()['reserva_agrohub']['reserva_id'], 101)
+
+    def test_visit_people_and_creator_name_are_sent_and_visible(self):
+        response = self.create(quantidade_pessoas=8)
+        self.assertEqual(response.status_code, 302)
+        booking = Agendamento.objects.get()
+        self.assertEqual(booking.quantidade_pessoas, 8)
+        sent = self.writes()[0][2]
+        self.assertEqual(sent['quantidade_pessoas'], 8)
+        self.assertIn('Registrado por: Ana Silva', sent['observacoes'])
+        self.assertIn('inovalab-visita:'+str(booking.reserva_agrohub.referencia), sent['observacoes'])
+        self.assertContains(self.client.get(response.url), 'Quantidade de pessoas')
+
+    def test_visit_people_capacity_is_checked_before_saving(self):
+        self.stub.state['sala']['capacidade'] = 5
+        response = self.create(quantidade_pessoas=6)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'não comporta')
+        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(self.writes())
+
+    def test_visit_people_api_rejects_invalid_values_before_writes(self):
+        for quantity in (0, -1, 1.5, True, None):
+            response = self.client.post('/api/v1/agendamentos/', {'categoria': 'visita',
+                'inicio': '2026-11-10T12:00:00Z', 'fim': '2026-11-10T13:00:00Z',
+                'quantidade_pessoas': quantity}, content_type='application/json')
+            self.assertEqual(response.status_code, 400, quantity)
+        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(self.writes())
+
+    def test_api_people_are_saved_and_sent_to_agrohub(self):
+        response = self.client.post('/api/v1/agendamentos/', {'categoria': 'visita',
+            'inicio': '2026-11-10T12:00:00Z', 'fim': '2026-11-10T13:00:00Z',
+            'quantidade_pessoas': 12}, content_type='application/json')
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()['quantidade_pessoas'], 12)
+        self.assertEqual(self.writes()[0][2]['quantidade_pessoas'], 12)
+
+    def test_creator_without_full_name_uses_login_in_observations(self):
+        self.stub.state['profile'].update(first_name='', last_name='')
+        self.create()
+        self.assertIn('Registrado por: agro-ana', self.writes()[0][2]['observacoes'])
+
+    def test_editing_legacy_reference_updates_people_and_creator_without_new_id(self):
+        self.create()
+        booking = Agendamento.objects.get()
+        sync = booking.reserva_agrohub
+        marker = 'inovalab-visita:'+str(sync.referencia)
+        sync.payload['observacoes'] = marker
+        sync.save()
+        self.stub.state['reservas'][0]['observacoes'] = marker
+        self.admin()
+        response = self.client.patch(f'/api/v1/agendamentos/{booking.pk}/',
+            {'versao': 1, 'quantidade_pessoas': 5}, content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['reserva_agrohub']['estado'], 'registrada')
+        self.assertEqual(response.json()['reserva_agrohub']['reserva_id'], 101)
+        self.assertEqual(len(self.writes()), 1)
+        self.assertIn('Registrado por: Ana Silva', self.writes('PATCH')[0][2]['observacoes'])
+
+    def test_admin_edit_people_keeps_original_creator_in_observations(self):
+        self.create(quantidade_pessoas=3)
+        booking = Agendamento.objects.get()
+        other = get_user_model().objects.create_user(username='outro-gestor', agrohub_id=43, is_superuser=True,
+                                                     first_name='Outro', last_name='Gestor')
+        request = self.request(other)
+        request.session = {'agrohub_credentials': {'user_id': 43, 'access': 'access-2', 'refresh': 'refresh-2'}}
+        saved = save_booking(actor=other, booking_id=booking.pk, expected_version=1,
+                             data={'quantidade_pessoas': 7}, agrohub_request=request)
+        self.assertEqual(saved.quantidade_pessoas, 7)
+        sent = self.writes('PATCH')[0][2]
+        self.assertEqual(sent['quantidade_pessoas'], 7)
+        self.assertIn('Registrado por: Ana Silva', sent['observacoes'])
+        self.assertNotIn('Outro Gestor', sent['observacoes'])
+        self.assertEqual(saved.reserva_agrohub.reserva_id, 101)
+
+    def test_uncertain_people_creation_uses_stored_name_after_profile_change(self):
+        self.stub.state['create_uncertain'] = True
+        self.create(quantidade_pessoas=4)
+        booking = Agendamento.objects.get()
+        self.stub.state['profile']['first_name'] = 'Nome alterado'
+        self.client.post(f'/agenda/{booking.pk}/agrohub/', {'versao': 1})
+        sync = Agendamento.objects.get().reserva_agrohub
+        self.assertEqual((sync.estado, sync.reserva_id), ('registrada', 101))
+        self.assertIn('Registrado por: Ana Silva', sync.payload['observacoes'])
+        self.assertEqual(len(self.writes()), 1)
+
+    def test_divergent_remote_quantity_is_uncertain_and_never_reposts(self):
+        from agenda.agrohub import _request
+        def divergent_quantity(request, method, route, **kwargs):
+            result = _request(request, method, route, **kwargs)
+            if method == 'POST' and route == 'reservas/':
+                self.stub.state['reservas'][0]['quantidade_pessoas'] = 2
+            return result
+        with patch('agenda.agrohub._request', side_effect=divergent_quantity):
+            self.create(quantidade_pessoas=5)
+        booking = Agendamento.objects.get()
+        self.assertEqual(booking.reserva_agrohub.estado, 'incerta')
+        self.client.post(f'/agenda/{booking.pk}/agrohub/', {'versao': 1})
+        self.assertEqual(Agendamento.objects.get().reserva_agrohub.estado, 'incerta')
+        self.assertEqual(len(self.writes()), 1)
+
+    def test_divergent_remote_creator_is_uncertain_and_never_reposts(self):
+        from agenda.agrohub import _request
+        def divergent_creator(request, method, route, **kwargs):
+            result = _request(request, method, route, **kwargs)
+            if method == 'POST' and route == 'reservas/':
+                original = self.stub.state['reservas'][0]['observacoes']
+                self.stub.state['reservas'][0]['observacoes'] = original.replace('Ana Silva', 'Outro nome')
+            return result
+        with patch('agenda.agrohub._request', side_effect=divergent_creator):
+            self.create()
+        booking = Agendamento.objects.get()
+        self.assertEqual(booking.reserva_agrohub.estado, 'incerta')
+        self.client.post(f'/agenda/{booking.pk}/agrohub/', {'versao': 1})
+        self.assertEqual(Agendamento.objects.get().reserva_agrohub.estado, 'incerta')
+        self.assertEqual(len(self.writes()), 1)
 
     def test_provider_can_confirm_creation_without_changing_local_approval(self):
         self.stub.state['create_status'] = 'confirmada'
@@ -401,7 +517,7 @@ class VisitAgroHubTests(TestCase):
         self.stub.state['create_error'] = None
         self.stub.state['requests'].clear()
         from agenda.agrohub import _room
-        def interrupted(request):
+        def interrupted(request, **kwargs):
             ReservaAgroHub.objects.filter(agendamento=booking).update(ultima_tentativa=timezone.now()-timedelta(minutes=3))
             with patch('agenda.agrohub._room', wraps=_room):
                 sync_reservation(self.request(), booking)

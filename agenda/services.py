@@ -20,8 +20,8 @@ CATEGORY_MODELS = {'servico': Servico, 'equipamento': Equipamento}
 LEGACY_CATEGORY_MODELS = {**CATEGORY_MODELS, 'espaco': Espaco}
 BASE_FIELDS = {'categoria', 'objeto', 'motivo', 'inicio', 'fim'}
 SERVICE_FIELDS = {'equipamentos', 'material_proprio', 'material_gasto', 'material_gasto_gramas'}
-PUBLIC_FIELDS = BASE_FIELDS | SERVICE_FIELDS | {'observacoes'}
-STORED_FIELDS = ('servico_id', 'equipamento_id', 'espaco_id', 'visita', 'motivo', 'observacoes', 'inicio', 'fim', 'cancelado_em',
+PUBLIC_FIELDS = BASE_FIELDS | SERVICE_FIELDS | {'observacoes', 'quantidade_pessoas'}
+STORED_FIELDS = ('servico_id', 'equipamento_id', 'espaco_id', 'visita', 'quantidade_pessoas', 'motivo', 'observacoes', 'inicio', 'fim', 'cancelado_em',
                  'material_proprio', 'material_gasto_id', 'material_gasto_gramas',
                  'situacao', 'avaliado_por_id', 'avaliado_em')
 
@@ -82,7 +82,7 @@ def _lock_targets(*targets):
 
 def _snapshot(booking):
     values = {name: getattr(booking, name) for name in (
-        'motivo', 'observacoes', 'inicio', 'fim', 'cancelado_em', 'material_proprio', 'material_gasto_gramas',
+        'motivo', 'observacoes', 'quantidade_pessoas', 'inicio', 'fim', 'cancelado_em', 'material_proprio', 'material_gasto_gramas',
         'situacao', 'avaliado_em')}
     values.update(categoria=booking.categoria, objeto=booking.objeto_id)
     values['criado_por'] = booking.criado_por_id
@@ -138,10 +138,12 @@ def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=
     if booking.espaco_id is not None:
         raise ValidationError({'categoria': 'Reservas de espaços são legado: consulte ou cancele o registro.'})
     category = data.get('categoria', booking.categoria)
+    if category != 'visita' and 'quantidade_pessoas' in data:
+        raise ValidationError({'quantidade_pessoas': 'Quantidade de pessoas é informada somente em visitas.'})
     if category == 'visita':
         extra = set(data) & ({'objeto', 'motivo', 'observacoes'} | SERVICE_FIELDS)
         if extra:
-            raise ValidationError({name: 'Visitas possuem somente dia e horários.' for name in extra})
+            raise ValidationError({name: 'Visitas possuem somente dia, horários e quantidade de pessoas.' for name in extra})
     elif ('categoria' in data) != ('objeto' in data):
         raise ValidationError({'objeto': 'Informe categoria e objeto juntos.'})
     if 'categoria' in data:
@@ -157,6 +159,12 @@ def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=
             booking.motivo = booking.observacoes = ''
     if booking.categoria is None:
         raise ValidationError({'objeto': 'Selecione categoria e objeto.'})
+    if booking.visita:
+        booking.quantidade_pessoas = data.get('quantidade_pessoas', booking.quantidade_pessoas if booking.quantidade_pessoas is not None else 1)
+        if type(booking.quantidade_pessoas) is not int or not 1 <= booking.quantidade_pessoas <= 2147483647:
+            raise ValidationError({'quantidade_pessoas': 'Informe uma quantidade inteira de pelo menos 1 pessoa.'})
+    else:
+        booking.quantidade_pessoas = None
     equipment_ids = data.get('equipamentos', sorted(old_equipment_ids))
     if not isinstance(equipment_ids, (list, tuple)) or any(type(pk) is not int or pk < 1 for pk in equipment_ids):
         raise ValidationError({'equipamentos': 'Informe uma lista de IDs inteiros positivos.'})

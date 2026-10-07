@@ -33,15 +33,15 @@ class VisitTests(TestCase):
         self.assertEqual((booking.criado_por_id, booking.motivo, booking.observacoes), (self.admin.pk, '', ''))
         self.assertEqual(booking.eventos.get().alteracoes['categoria']['novo'], 'visita')
 
-    def test_visit_form_only_requires_day_and_times(self):
+    def test_visit_form_requires_day_times_and_people(self):
         self.client.force_login(self.user)
         response = self.client.get('/agenda/novo/?categoria=visita')
         self.assertEqual(set(response.context['form'].fields),
-                         {'categoria', 'dia', 'hora_inicio', 'hora_termino', 'versao'})
+                         {'categoria', 'dia', 'hora_inicio', 'hora_termino', 'quantidade_pessoas', 'versao'})
         for field in ('objeto', 'motivo', 'observacoes', 'equipamentos'):
             self.assertNotContains(response, f'name="{field}"')
         response = self.client.post('/agenda/novo/', {'categoria': 'visita', 'dia': '2026-11-01',
-            'hora_inicio': '14:00', 'hora_termino': '15:00'})
+            'hora_inicio': '14:00', 'hora_termino': '15:00', 'quantidade_pessoas': 1})
         self.assertEqual(response.status_code, 302)
         booking = Agendamento.objects.get()
         self.assertEqual((booking.inicio, booking.fim, booking.situacao), (self.start, self.end, 'pendente'))
@@ -95,6 +95,20 @@ class VisitTests(TestCase):
         with self.assertRaises(ValidationError):
             save_booking(actor=self.admin, booking_id=booking.pk, expected_version=2,
                          data={'categoria': 'equipamento', 'objeto': self.equipment.pk})
+
+    def test_people_are_audited_and_cleared_when_visit_becomes_equipment(self):
+        booking = save_booking(actor=self.admin, data=self.data(quantidade_pessoas=9))
+        self.assertEqual(booking.eventos.get().alteracoes['quantidade_pessoas']['novo'], 9)
+        booking = save_booking(actor=self.admin, booking_id=booking.pk, expected_version=1,
+                               data={'categoria': 'equipamento', 'objeto': self.equipment.pk, 'motivo': 'Uso'})
+        self.assertIsNone(booking.quantidade_pessoas)
+        self.assertEqual(booking.eventos.first().alteracoes['quantidade_pessoas'], {'anterior': 9, 'novo': None})
+
+    def test_equipment_does_not_accept_people(self):
+        with self.assertRaises(ValidationError):
+            save_booking(actor=self.admin, data=self.data(categoria='equipamento', objeto=self.equipment.pk,
+                                                         motivo='Uso', quantidade_pessoas=2))
+        self.assertFalse(Agendamento.objects.exists())
 
     def test_no_new_space_reservation_even_for_admin(self):
         with self.assertRaises(ValidationError):

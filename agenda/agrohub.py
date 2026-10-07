@@ -35,9 +35,10 @@ def _period(booking, *, creating=False):
 
 def _payload(sync):
     start, end = _period(sync.agendamento)
-    payload = {'titulo': 'Visita ao Laboratório InovaLab', 'quantidade_pessoas': 1,
+    creator = ' '.join(sync.agendamento.criador_nome.split())
+    payload = {'titulo': 'Visita ao Laboratório InovaLab', 'quantidade_pessoas': sync.agendamento.quantidade_pessoas,
                'data': start.date().isoformat(), 'hora_inicio': start.strftime('%H:%M'),
-               'hora_fim': end.strftime('%H:%M'), 'observacoes': _marker(sync)}
+               'hora_fim': end.strftime('%H:%M'), 'observacoes': f'Registrado por: {creator}\n{_marker(sync)}'}
     if sync.reserva_id is not None:
         payload['status'] = 'pendente' if sync.agendamento.situacao == 'pendente' else 'confirmada'
     return payload
@@ -87,13 +88,18 @@ def validate_before_save(request, booking, *, allow_create=False):
             raise BookingConflict('origem_agrohub_alterada', 'A reserva pertence a outra origem do AgroHub. Confira a configuração.')
     _period(booking, creating=sync is None or sync.reserva_id is None)
     try:
-        _availability(request, booking, _room(request), reserva_id=sync.reserva_id if sync else None)
+        _availability(request, booking, _room(request, quantidade_pessoas=booking.quantidade_pessoas), reserva_id=sync.reserva_id if sync else None)
     except AgroHubError as error:
         raise ValidationError({'__all__': 'Não foi possível validar a reserva no AgroHub. '+_error_message(error)}) from None
 
 
 def _marker(sync):
     return 'inovalab-visita:'+str(sync.referencia)
+
+
+def _matches_reference(row, sync):
+    observations = row.get('observacoes') if isinstance(row, dict) else None
+    return isinstance(observations, str) and observations.splitlines().count(_marker(sync)) == 1
 
 
 def queue_reservation(booking, actor, *, allow_create=False):
@@ -141,13 +147,13 @@ def _pages(request, route, params):
     raise AgroHubError()
 
 
-def _room(request):
+def _room(request, *, quantidade_pessoas=1):
     rooms = [row for row in _pages(request, 'salas/', {'site_code': 'inovalab'})
              if isinstance(row, dict) and type(row.get('id')) is int and row['id'] == SALA_ID]
     if len(rooms) != 1 or rooms[0].get('ativa') is not True or rooms[0].get('site_code') != 'inovalab':
         raise AgroHubError(400, {'sala': ['O Laboratório InovaLab (sala 1) não está disponível para reservas.']})
     capacity = rooms[0].get('capacidade')
-    if capacity is not None and (type(capacity) is not int or capacity < 1):
+    if capacity is not None and (type(capacity) is not int or capacity < quantidade_pessoas):
         raise AgroHubError(400, {'sala': ['A sala não comporta a quantidade de pessoas da visita.']})
     slug = rooms[0].get('slug')
     if not isinstance(slug, str) or not slug or len(slug) > 200:
@@ -160,10 +166,14 @@ def _validate_remote(row, sync, *, period=False):
         raise AgroHubError()
     room = row.get('sala')
     if (not isinstance(room, dict) or type(room.get('id')) is not int or room['id'] != SALA_ID
-            or row.get('observacoes') != _marker(sync) or not isinstance(row.get('status'), str)
+            or not _matches_reference(row, sync) or not isinstance(row.get('status'), str)
             or row['status'] not in REMOTE_STATUSES):
         raise AgroHubError()
     if period:
+        if (row.get('observacoes') != sync.payload.get('observacoes', _marker(sync))
+                or type(row.get('quantidade_pessoas')) is not int
+                or row['quantidade_pessoas'] != sync.payload.get('quantidade_pessoas', 1)):
+            raise AgroHubError()
         try:
             for remote_name, local_name in (('inicio', 'hora_inicio'), ('fim', 'hora_fim')):
                 remote = parse_datetime(row.get(remote_name, ''))
@@ -177,7 +187,7 @@ def _validate_remote(row, sync, *, period=False):
 
 def _find(request, sync):
     rows = [row for row in _pages(request, 'reservas/', {'sala': sync.payload['sala'], 'data': sync.payload['data']})
-            if isinstance(row, dict) and row.get('observacoes') == _marker(sync)]
+            if _matches_reference(row, sync)]
     if len(rows) != 1:
         raise AgroHubError()
     return _validate_remote(rows[0], sync, period=True)
@@ -219,7 +229,7 @@ def _maintain(request, sync, claim, progress, *, read_only=False):
                 _request(request, 'POST', f'reservas/{sync.reserva_id}/cancelar/', data={})
                 progress['accepted'] = True
         else:
-            _availability(request, sync.agendamento, _room(request), reserva_id=sync.reserva_id)
+            _availability(request, sync.agendamento, _room(request, quantidade_pessoas=sync.agendamento.quantidade_pessoas), reserva_id=sync.reserva_id)
             progress['mutation'] = True
             _request(request, 'PATCH', f'reservas/{sync.reserva_id}/', data={key: value for key, value in sync.payload.items() if key != 'sala'})
             progress['accepted'] = True
@@ -268,7 +278,7 @@ def sync_reservation(request, booking):
             if sync.reserva_id is None:
                 if not uncertain:
                     sync.payload = _payload(sync)
-                    sync.payload['sala'] = _room(request)
+                    sync.payload['sala'] = _room(request, quantidade_pessoas=sync.agendamento.quantidade_pessoas)
                     _availability(request, sync.agendamento, sync.payload['sala'])
                     if not claim.update(payload=sync.payload, atualizado_em=timezone.now()):
                         return ReservaAgroHub.objects.get(pk=sync.pk)

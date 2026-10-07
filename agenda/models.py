@@ -17,6 +17,8 @@ class Agendamento(models.Model):
     equipamento = models.ForeignKey('catalogo.Equipamento', on_delete=models.PROTECT, null=True, blank=True)
     espaco = models.ForeignKey('catalogo.Espaco', on_delete=models.PROTECT, null=True, blank=True)
     visita = models.BooleanField(default=False)
+    quantidade_pessoas = models.PositiveIntegerField('quantidade de pessoas', null=True, blank=True,
+                                                     validators=[MinValueValidator(1)])
     equipamentos = models.ManyToManyField('catalogo.Equipamento', blank=True, related_name='agendamentos_de_servico')
     material_proprio = models.BooleanField('tem material próprio', null=True, blank=True)
     material_gasto = models.ForeignKey('materiais.Material', on_delete=models.PROTECT, null=True, blank=True,
@@ -48,6 +50,10 @@ class Agendamento(models.Model):
                     | models.Q(servico__isnull=True, equipamento__isnull=True, espaco__isnull=False)
                 ) | models.Q(visita=True, servico__isnull=True, equipamento__isnull=True, espaco__isnull=True)
             ), name='agenda_exatamente_um_alvo'),
+            models.CheckConstraint(condition=(
+                models.Q(visita=True, quantidade_pessoas__isnull=False, quantidade_pessoas__gte=1)
+                | models.Q(visita=False, quantidade_pessoas__isnull=True)
+            ), name='agenda_quantidade_visita_valida'),
             models.CheckConstraint(condition=(models.Q(visita=False) | models.Q(motivo='', observacoes='')),
                                    name='agenda_visita_sem_textos'),
             models.CheckConstraint(condition=models.Q(fim__gt=models.F('inicio')), name='agenda_intervalo_positivo'),
@@ -101,6 +107,11 @@ class Agendamento(models.Model):
 
     def clean(self):
         errors = {}
+        if self.visita:
+            if type(self.quantidade_pessoas) is not int or self.quantidade_pessoas < 1:
+                errors['quantidade_pessoas'] = 'Informe uma quantidade inteira de pelo menos 1 pessoa.'
+        elif self.quantidade_pessoas is not None:
+            errors['quantidade_pessoas'] = 'Quantidade de pessoas é informada somente em visitas.'
         if isinstance(self.observacoes, str):
             self.observacoes = self.observacoes.strip()
         if self.material_gasto_id is not None and (self.categoria != 'servico' or self.material_proprio is not False):
@@ -120,7 +131,7 @@ class Agendamento(models.Model):
         if self.visita:
             for name in ('motivo', 'observacoes'):
                 if getattr(self, name):
-                    errors[name] = 'Visitas possuem somente dia e horários.'
+                    errors[name] = 'Visitas possuem somente dia, horários e quantidade de pessoas.'
         for name in ('inicio', 'fim'):
             value = getattr(self, name)
             if value is not None and timezone.is_naive(value):

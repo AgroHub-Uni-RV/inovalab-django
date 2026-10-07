@@ -39,6 +39,12 @@ class ReservationsStub(AccountsStub):
                         datetime.strptime(data[name], '%H:%M')
                     except (ValueError, TypeError):
                         errors[name] = ['Formato de hora inválido. Use hh:mm.']
+            quantity = data.get('quantidade_pessoas')
+            capacity = self.state['sala']['capacidade']
+            if quantity is not None and (type(quantity) is not int or quantity < 1):
+                errors['quantidade_pessoas'] = ['Informe pelo menos uma pessoa.']
+            elif capacity is not None and quantity is not None and quantity > capacity:
+                errors['quantidade_pessoas'] = ['Quantidade superior à capacidade da sala.']
             if errors:
                 handler.reply(400, errors)
                 return True
