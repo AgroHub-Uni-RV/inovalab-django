@@ -170,6 +170,23 @@
             current.dataset.bookingField === sibling.dataset.bookingField && grid.contains(current))).find(Boolean);
           grid.insertBefore(node, next || null);
         });
+        ['hora_inicio', 'hora_termino'].forEach(name => {
+          const input = form.elements.namedItem(name);
+          const next = nextForm.elements.namedItem(name);
+          if (!input || !next) return;
+          input.step = next.step;
+          // Preserva a digitação; somente segundos iguais a zero saem da exibição.
+          if (value === 'visita') {
+            const normalized = input.value.replace(/^(\d{2}:\d{2}):00(?:\.0+)?$/, '$1');
+            if (normalized !== input.value) input.value = normalized;
+          }
+          const container = input.closest('[data-booking-field]');
+          const help = container.querySelector('.field-help');
+          const nextHelp = next.closest('[data-booking-field]').querySelector('.field-help');
+          if (help && nextHelp) help.replaceWith(nextHelp.cloneNode(true));
+          else if (help) help.remove();
+          else if (nextHelp) container.append(nextHelp.cloneNode(true));
+        });
         form.dataset.bookingCategory = value;
         form.querySelectorAll('[data-material-proprio]').forEach(updateMaterial);
       },

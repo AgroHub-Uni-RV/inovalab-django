@@ -89,6 +89,18 @@ class BookingForm(StrictFormMixin, forms.Form):
         if category == 'visita':
             for name in ('objeto', 'motivo', 'observacoes'):
                 del self.fields[name]
+            for name in ('hora_inicio', 'hora_termino'):
+                field = self.fields[name]
+                field.widget.attrs['step'] = '60'
+                field.help_text = 'Horário de Brasília. Informe horas e minutos, sem segundos.'
+                try:
+                    original = field.to_python(self.initial.get(name))
+                except forms.ValidationError:
+                    original = None
+                if original is not None:
+                    self.initial[name] = original
+                if not original or not original.second:
+                    field.widget.format = '%H:%M'
         if category == 'servico':
             self.fields['material_gasto'].queryset = Material.objects.filter(
                 ~Q(status='indisponivel') | Q(pk=booking.material_gasto_id if booking else None),
@@ -141,6 +153,9 @@ class BookingForm(StrictFormMixin, forms.Form):
     def _clean_period(self, cleaned):
         day, start, end = (cleaned.get(name) for name in ('dia', 'hora_inicio', 'hora_termino'))
         if day is None or start is None or end is None:
+            return
+        if self.category == 'visita' and (start.second or end.second or start.microsecond or end.microsecond):
+            self.add_error('hora_inicio', 'Informe horas e minutos, sem segundos.')
             return
         if self.booking:
             original_start, original_end = timezone.localtime(self.booking.inicio), timezone.localtime(self.booking.fim)

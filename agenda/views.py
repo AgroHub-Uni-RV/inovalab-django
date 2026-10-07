@@ -179,6 +179,7 @@ class BookingWriteView(AgendaAccessMixin, View):
                 response_status = 409
             except ValidationError as error:
                 for field, errors in error.message_dict.items():
+                    field = {'inicio': 'hora_inicio', 'fim': 'hora_termino', 'data': 'dia'}.get(field, field)
                     form.add_error(field if field in form.fields else None, errors)
             else:
                 remote = reservation_summary(saved)

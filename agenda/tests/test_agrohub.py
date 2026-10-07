@@ -29,6 +29,11 @@ class VisitAgroHubTests(TestCase):
         super().tearDownClass()
 
     def setUp(self):
+        now = timezone.make_aware(datetime(2026, 10, 6, 12))
+        for target in ('agenda.agrohub.current_time', 'agenda.tests.agrohub_stub.current_time'):
+            clock = patch(target, return_value=now)
+            clock.start()
+            self.addCleanup(clock.stop)
         self.stub.reset()
         response = self.client.post('/', {'username': 'agro-ana', 'password': PASSWORD})
         self.assertEqual(response.status_code, 302)
@@ -51,8 +56,9 @@ class VisitAgroHubTests(TestCase):
         sent = self.writes()[0]
         self.assertEqual(sent[3], 'Bearer access-1')
         self.assertEqual({key: sent[2][key] for key in ('sala', 'data', 'hora_inicio', 'hora_fim')},
-            {'sala': 'laboratorio-inovalab', 'data': '2026-11-10', 'hora_inicio': '09:00:00', 'hora_fim': '10:00:00'})
+            {'sala': 'laboratorio-inovalab', 'data': '2026-11-10', 'hora_inicio': '09:00', 'hora_fim': '10:00'})
         self.assertEqual(sent[2]['quantidade_pessoas'], 1)
+        self.assertNotIn('status', sent[2])
         self.assertEqual(booking.reserva_agrohub.reserva_id, 101)
         self.assertContains(self.client.get(response.url), 'Laboratório InovaLab')
 
@@ -70,6 +76,106 @@ class VisitAgroHubTests(TestCase):
         self.assertEqual(booking.situacao, 'pendente')
         self.assertEqual(booking.reserva_agrohub.estado, 'registrada')
         self.assertEqual(booking.reserva_agrohub.status_remoto, 'confirmada')
+
+    def test_api_defines_initial_status_even_when_local_admin_creates_confirmed_visit(self):
+        self.admin()
+        self.create()
+        booking = Agendamento.objects.get()
+        self.assertEqual(booking.situacao, 'confirmado')
+        self.assertEqual(booking.reserva_agrohub.estado, 'registrada')
+        self.assertEqual(booking.reserva_agrohub.status_remoto, 'pendente')
+
+    def test_seconds_are_rejected_before_saving_or_calling_reservations(self):
+        response = self.create(hora_inicio='09:00:10')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'sem segundos')
+        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(self.writes())
+
+    def test_category_refresh_preserves_typed_hours_without_saving(self):
+        response = self.create(atualizar='1', hora_inicio='09:00:00', hora_termino='10:00:00')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="09:00"')
+        self.assertContains(response, 'step="60"')
+        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(self.writes())
+
+    def test_api_fractional_seconds_are_rejected_before_saving(self):
+        response = self.client.post('/api/v1/agendamentos/', {'categoria': 'visita',
+            'inicio': '2026-11-10T12:00:00.123Z', 'fim': '2026-11-10T13:00:00Z'}, content_type='application/json')
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(Agendamento.objects.exists())
+
+    def test_insufficient_notice_is_rejected_before_local_save(self):
+        now = timezone.make_aware(datetime(2026, 11, 10, 8))
+        with patch('agenda.agrohub.current_time', return_value=now):
+            response = self.create()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '2 horas de antecedência')
+        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(self.writes())
+
+    def test_remote_pending_conflict_is_shown_before_local_save(self):
+        self.create()
+        initial = len(self.writes())
+        response = self.create()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'já possui uma reserva nesse horário')
+        self.assertEqual(Agendamento.objects.count(), 1)
+        self.assertEqual(len(self.writes()), initial)
+
+    def test_specific_post_field_error_is_preserved_for_late_api_rejection(self):
+        self.stub.state['responses'][('POST', '/api/v1/agendamentos/reservas/')] = (400,
+            {'hora_inicio': ['Antecedência alterada no provedor.']})
+        response = self.create()
+        self.assertEqual(Agendamento.objects.count(), 1)
+        self.assertContains(self.client.get(response.url), 'Antecedência alterada no provedor.')
+
+    def test_availability_failure_does_not_save_local_visit(self):
+        route = '/api/v1/agendamentos/disponibilidade/?sala=laboratorio-inovalab&data=2026-11-10'
+        self.stub.state['responses'][('GET', route)] = (503, {})
+        response = self.create()
+        self.assertContains(response, 'Não foi possível validar a reserva no AgroHub.')
+        self.assertFalse(Agendamento.objects.exists())
+        self.assertFalse(self.writes())
+
+    def test_malformed_availability_fails_before_local_save(self):
+        route = '/api/v1/agendamentos/disponibilidade/?sala=laboratorio-inovalab&data=2026-11-10'
+        self.stub.state['responses'][('GET', route)] = (200, {'sala': 'laboratorio-inovalab',
+            'data': '2026-11-10', 'reservas': [{'id': 999, 'status': 'pendente', 'inicio': 'invalid', 'fim': None}]})
+        self.assertContains(self.create(), 'Não foi possível validar a reserva no AgroHub.')
+        self.assertFalse(Agendamento.objects.exists())
+
+    def test_adjacent_remote_reservations_are_allowed(self):
+        self.create()
+        response = self.create(hora_inicio='10:00', hora_termino='11:00')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(len(self.writes()), 2)
+
+    def test_retry_does_not_truncate_seconds_in_legacy_booking(self):
+        self.stub.state['create_error'] = 400
+        self.create()
+        booking = Agendamento.objects.get()
+        Agendamento.objects.filter(pk=booking.pk).update(inicio=booking.inicio+timedelta(seconds=10))
+        self.stub.state['create_error'] = None
+        response = self.client.post(f'/agenda/{booking.pk}/agrohub/', {'versao': 1})
+        self.assertContains(self.client.get(response.url), 'sem segundos')
+        self.assertEqual(len(self.writes()), 1)
+
+    def test_retry_normalizes_stored_second_format_with_same_reference(self):
+        self.stub.state['create_error'] = 400
+        self.create()
+        booking = Agendamento.objects.get()
+        sync = booking.reserva_agrohub
+        reference = sync.referencia
+        sync.payload.update(hora_inicio='09:00:00', hora_fim='10:00:00', status='pendente')
+        sync.save()
+        self.stub.state['create_error'] = None
+        response = self.client.post(f'/agenda/{booking.pk}/agrohub/', {'versao': 1})
+        self.assertEqual(response.status_code, 302)
+        sync.refresh_from_db()
+        self.assertEqual((sync.referencia, sync.reserva_id, sync.estado), (reference, 101, 'registrada'))
+        self.assertEqual(self.writes()[-1][2]['hora_inicio'], '09:00')
 
     def test_write_response_without_id_is_reconciled_by_reference(self):
         self.stub.state['omit_id'] = True
@@ -156,7 +262,7 @@ class VisitAgroHubTests(TestCase):
         response = self.client.patch(f'/api/v1/agendamentos/{booking.pk}/',
             {'fim': '2026-11-10T14:00:00Z', 'versao': 2}, content_type='application/json')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(self.stub.state['reservas'][0]['hora_fim'], '11:00:00')
+        self.assertEqual(self.stub.state['reservas'][0]['hora_fim'], '11:00')
         response = self.client.delete(f'/api/v1/agendamentos/{booking.pk}/', {'versao': 3}, content_type='application/json')
         self.assertEqual(response.status_code, 204)
         self.assertEqual(self.stub.state['reservas'][0]['status'], 'cancelada')
@@ -186,11 +292,12 @@ class VisitAgroHubTests(TestCase):
         self.assertEqual(self.stub.state['reservas'][0]['status'], 'cancelada')
 
     def test_room_must_be_active_and_have_id_one(self):
-        for changes in ({'id': 2}, {'ativa': False}, {'site_code': 'outro'}):
+        for changes in ({'id': 2}, {'ativa': False}, {'site_code': 'outro'}, {'capacidade': 0}):
             self.stub.reset()
             self.stub.state['sala'].update(changes)
             self.create()
         self.assertFalse(self.writes())
+        self.assertFalse(Agendamento.objects.exists())
 
     def test_wrong_remote_room_never_binds_and_retry_does_not_create(self):
         self.stub.state['responses'][('GET', '/api/v1/agendamentos/reservas/101/')] = (200, {'id': 101, 'sala': {'id': 2}})
@@ -227,7 +334,7 @@ class VisitAgroHubTests(TestCase):
         self.assertEqual(guarded.post(f'/api/v1/agendamentos/{booking.pk}/agrohub/', {'versao': 1}, content_type='application/json').status_code, 403)
 
     def test_historical_visit_without_link_is_not_exported_on_review(self):
-        start = timezone.now()+timedelta(days=40)
+        start = (timezone.now()+timedelta(days=40)).replace(second=0, microsecond=0)
         booking = save_booking(actor=self.user, data={'categoria': 'visita', 'inicio': start, 'fim': start+timedelta(hours=1)})
         booking.reserva_agrohub.delete()
         self.admin()
@@ -236,14 +343,16 @@ class VisitAgroHubTests(TestCase):
         self.assertFalse(hasattr(Agendamento.objects.get(), 'reserva_agrohub'))
 
     def test_interrupted_room_lookup_can_resume_without_missing_slug(self):
-        self.stub.state['sala']['ativa'] = False
+        self.stub.state['create_error'] = 400
         self.create()
         booking = Agendamento.objects.get()
         sync = booking.reserva_agrohub
         sync.estado = 'enviando'
+        sync.payload.pop('sala')
         sync.ultima_tentativa = timezone.now()-timedelta(minutes=3)
         sync.save()
-        self.stub.state['sala']['ativa'] = True
+        self.stub.state['create_error'] = None
+        self.stub.state['requests'].clear()
         self.assertEqual(self.client.post(f'/agenda/{booking.pk}/agrohub/', {'versao': 1}).status_code, 302)
         self.assertEqual(len(self.writes()), 1)
         self.assertEqual(Agendamento.objects.get().reserva_agrohub.reserva_id, 101)
@@ -283,10 +392,14 @@ class VisitAgroHubTests(TestCase):
         return request
 
     def test_worker_that_loses_claim_during_room_lookup_cannot_post(self):
-        self.stub.state['sala']['ativa'] = False
+        self.stub.state['create_error'] = 400
         self.create()
         booking = Agendamento.objects.get()
-        self.stub.state['sala']['ativa'] = True
+        sync = booking.reserva_agrohub
+        sync.payload.pop('sala')
+        sync.save()
+        self.stub.state['create_error'] = None
+        self.stub.state['requests'].clear()
         from agenda.agrohub import _room
         def interrupted(request):
             ReservaAgroHub.objects.filter(agendamento=booking).update(ultima_tentativa=timezone.now()-timedelta(minutes=3))
@@ -307,7 +420,7 @@ class VisitAgroHubTests(TestCase):
             decision='aprovar', agrohub_request=self.request(admin))
         self.assertEqual(saved.situacao, 'confirmado')
         self.assertEqual(len(self.writes()), 1)
-        self.assertEqual(saved.reserva_agrohub.payload['status'], 'confirmada')
+        self.assertNotIn('status', saved.reserva_agrohub.payload)
 
     def test_malformed_status_is_visible_failure_not_server_error(self):
         self.create()
@@ -333,6 +446,44 @@ class VisitAgroHubTests(TestCase):
         response = self.client.post(f'/api/v1/agendamentos/{booking.pk}/agrohub/', {'versao': 2}, content_type='application/json')
         self.assertEqual(response.json()['estado'], 'registrada')
         self.assertEqual(len(self.writes('PATCH')), 1)
+
+    def test_successful_patch_with_failed_confirmation_is_not_repeated(self):
+        self.create()
+        booking = Agendamento.objects.get()
+        self.admin()
+        from agenda.agrohub import _request
+        def reject_confirmation(request, method, route, **kwargs):
+            result = _request(request, method, route, **kwargs)
+            if method == 'PATCH':
+                self.stub.state['responses'][('GET', '/api/v1/agendamentos/reservas/101/')] = (404, {})
+            return result
+        with patch('agenda.agrohub._request', side_effect=reject_confirmation):
+            response = self.client.patch(f'/api/v1/agendamentos/{booking.pk}/',
+                {'fim': '2026-11-10T14:00:00Z', 'versao': 1}, content_type='application/json')
+        self.assertEqual(response.json()['reserva_agrohub']['estado'], 'incerta')
+        del self.stub.state['responses'][('GET', '/api/v1/agendamentos/reservas/101/')]
+        self.client.post(f'/agenda/{booking.pk}/agrohub/', {'versao': 2})
+        self.assertEqual(Agendamento.objects.get().reserva_agrohub.estado, 'registrada')
+        self.assertEqual(len(self.writes('PATCH')), 1)
+
+    def test_successful_cancel_with_failed_confirmation_is_not_repeated(self):
+        self.create()
+        booking = Agendamento.objects.get()
+        self.admin()
+        from agenda.agrohub import _request
+        def reject_confirmation(request, method, route, **kwargs):
+            result = _request(request, method, route, **kwargs)
+            if route.endswith('/cancelar/'):
+                self.stub.state['responses'][('GET', '/api/v1/agendamentos/reservas/101/')] = (403, {})
+            return result
+        with patch('agenda.agrohub._request', side_effect=reject_confirmation):
+            self.client.post(f'/agenda/{booking.pk}/cancelar/', {'versao': 1})
+        self.assertEqual(Agendamento.objects.get().reserva_agrohub.estado, 'incerta')
+        del self.stub.state['responses'][('GET', '/api/v1/agendamentos/reservas/101/')]
+        self.client.post(f'/agenda/{booking.pk}/agrohub/', {'versao': 2})
+        self.assertEqual(Agendamento.objects.get().reserva_agrohub.estado, 'registrada')
+        cancels = [row for row in self.writes() if row[1].endswith('/cancelar/')]
+        self.assertEqual(len(cancels), 1)
 
     def test_resources_are_not_exported_but_conversion_to_visit_registers_room(self):
         from catalogo.models import Servico
@@ -363,7 +514,9 @@ class VisitAgroHubConcurrencyTests(TransactionTestCase):
         stub = ReservationsStub()
         entered, release = Event(), Event()
         try:
-            with override_settings(AGROHUB_API_BASE_URL=stub.url, DEBUG=True):
+            with override_settings(AGROHUB_API_BASE_URL=stub.url, DEBUG=True), \
+                    patch('agenda.agrohub.current_time', return_value=timezone.make_aware(datetime(2026, 10, 6, 12))), \
+                    patch('agenda.tests.agrohub_stub.current_time', return_value=timezone.make_aware(datetime(2026, 10, 6, 12))):
                 user = get_user_model().objects.create_user(username='agro-ana', agrohub_id=42, is_superuser=True)
                 request = RequestFactory().post('/')
                 request.user = user
@@ -395,6 +548,6 @@ class VisitAgroHubConcurrencyTests(TransactionTestCase):
                     finally:
                         release.set()
                     self.assertEqual(future.result(timeout=10).estado, 'registrada')
-                self.assertEqual(stub.state['reservas'][0]['hora_fim'], '11:00:00')
+                self.assertEqual(stub.state['reservas'][0]['hora_fim'], '11:00')
         finally:
             stub.close()

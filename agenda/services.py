@@ -118,14 +118,14 @@ def save_booking(*, actor, data, booking_id=None, expected_version=None, agrohub
         _require_admin(actor)
     booking = _save_booking(actor=actor, actor_name=actor.username, data=data,
                          booking_id=booking_id, expected_version=expected_version,
-                         initial_status='confirmado' if is_business_admin(actor) else 'pendente')
+                         initial_status='confirmado' if is_business_admin(actor) else 'pendente', agrohub_request=agrohub_request)
     if agrohub_request is not None:
         from agenda.agrohub import sync_after_change
         sync_after_change(agrohub_request, booking)
     return booking
 
 
-def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=None, initial_status='confirmado'):
+def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=None, initial_status='confirmado', agrohub_request=None):
     # Trusted core: role-aware facade or authenticated integration adapter only.
     unknown = set(data) - PUBLIC_FIELDS
     if unknown:
@@ -188,6 +188,10 @@ def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=
         if name in data:
             setattr(booking, name, data[name])
     target = _target(booking)
+    if agrohub_request is not None and booking.visita and actor.agrohub_id is not None:
+        from agenda.agrohub import validate_before_save
+        booking.full_clean()
+        validate_before_save(agrohub_request, booking, allow_create=old_target is None or old_target[0] != 'visita')
     with transaction.atomic():
         _lock_targets(*(item for item in (old_target, target) if item is not None),
                       *(('equipamento', pk) for pk in set(equipment_ids) | old_equipment_ids))

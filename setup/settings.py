@@ -80,6 +80,7 @@ AUTH_USER_MODEL = 'accounts.User'
 AUTHENTICATION_BACKENDS = ['accounts.backends.AgroHubBackend']
 AGROHUB_API_BASE_URL = os.environ.get('AGROHUB_API_BASE_URL', 'https://agrohub.unirv.edu.br/api/v1/')
 AGROHUB_API_TIMEOUT = 10
+AGROHUB_MIN_ADVANCE_NOTICE_HOURS = int(os.environ.get('AGROHUB_MIN_ADVANCE_NOTICE_HOURS', '2'))
 AGROHUB_PHOTO_ALLOWED_HOSTS = tuple(value.strip() for value in os.environ.get('AGROHUB_PHOTO_ALLOWED_HOSTS', '').split(',') if value.strip())
 LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = '/index/'

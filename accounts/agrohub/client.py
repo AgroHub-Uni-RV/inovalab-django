@@ -57,7 +57,7 @@ class AgroHubClient:
     def request(self, method, route, *, data=None, access=None, photo=None, namespace='accounts', params=None):
         allowed = namespace == 'accounts' and route in self.ROUTES
         if namespace == 'agendamentos':
-            allowed = (route == 'salas/' and method == 'GET') or (route == 'reservas/' and method in ('GET', 'POST'))
+            allowed = (route in ('salas/', 'disponibilidade/') and method == 'GET') or (route == 'reservas/' and method in ('GET', 'POST'))
             allowed = allowed or bool(re.fullmatch(r'reservas/[1-9][0-9]*/', route) and method in ('GET', 'PATCH'))
             allowed = allowed or bool(re.fullmatch(r'reservas/[1-9][0-9]*/cancelar/', route) and method == 'POST')
         if not allowed:
@@ -122,7 +122,8 @@ class AgroHubClient:
                     value = json.loads(raw) if len(raw) <= 64*1024 else {}
                     allowed = {'username', 'email', 'password', 'password_confirm', 'first_name', 'last_name',
                                'cpf', 'telefone', 'profile_picture', 'uid', 'token',
-                               'new_password', 'new_password_confirm', 'non_field_errors'}
+                               'new_password', 'new_password_confirm', 'non_field_errors',
+                               'sala', 'titulo', 'quantidade_pessoas', 'data', 'hora_inicio', 'hora_fim', 'observacoes', 'status'}
                     if isinstance(value, dict):
                         for name, messages in value.items():
                             if name in allowed:
