@@ -18,6 +18,8 @@ Execute em outros ambientes:
 
 A migração já foi aplicada ao SQLite local e verificou a preservação da única reserva antiga, sem alterar as contagens de reservas, eventos e pedidos externos. Antes dela, foi criado um backup em `C:\Users\henri\AppData\Local\Temp\inovalab-antes-remocao-espacos-2026-10-07.sqlite3`.
 
+Ao atualizar um ambiente em execução, reinicie os processos Django após as migrações. Um servidor iniciado com `--noreload` continua usando os modelos/consultas anteriores em memória, mesmo quando os arquivos já foram atualizados. Isso causou `no such table: catalogo_espaco` em `/index/` no servidor local antigo. Para desenvolvimento, use `python manage.py runserver` com recarga automática; alterações de esquema ainda exigem aplicar as migrações e reiniciar o servidor quando necessário.
+
 A exclusão da tabela descarta os cadastros de espaços e seus atributos de capacidade/status/restrição/código inicial. A reversão das migrações recupera somente espaços referenciados, com ID/nome e demais atributos padrão; recuperar o catálogo completo exige restaurar o backup.
 
 ## Verificação e depuração
@@ -35,5 +37,7 @@ git diff --check
 Os testes incluem remoção do modelo/tabela/rotas, renderização do catálogo com duas abas, atualização preservada de equipamentos, migração com reservas ativas e canceladas, visitas, auditoria, recibos e reversão. A agenda verifica a leitura/busca/cancelamento do legado, rejeição de novos espaços e reenvios externos.
 
 Resultados: suíte completa com **578 testes aprovados** em 64,681 s; após ampliar as verificações de leitura/busca e proteção dos campos históricos, **41 testes da agenda aprovados**. `makemigrations --check --dry-run` não encontrou alterações pendentes, `manage.py check` não apontou problemas e `git diff --check` não encontrou erros de whitespace.
+
+Na correção do erro de `/index/`, o processo antigo com `--noreload` foi encerrado e o servidor com recarga automática já iniciado pelo responsável assumiu a porta 8000. Requisições HTTP autenticadas reais a `/index/`, `/index/?agenda=proximos`, `/painel/` e às duas listas do catálogo retornaram 200; `/api/v1/espacos/` retornou 404. A sessão temporária de verificação foi removida. Foi acrescentado um teste de `/index/` e `/painel/` com reserva histórica, incluindo a contagem do calendário, e removida a rota extinta do script de verificação visual. A nova execução de `manage.py test --noinput` aprovou **579 testes** em 64,178 s; verificações Django/migrações/diff continuam sem problemas. O conector de navegador permaneceu indisponível.
 
 Verificação visual pendente: esta sessão não disponibilizou Chrome nem navegador integrado; ambas as tentativas de conexão retornaram navegador indisponível. Conferir o catálogo de Serviços/Equipamentos e seus formulários, sidebar expandida/recolhida, mobile, busca/detalhe de reservas antigas e cancelamento em dados de teste. Validar também a atualização e os dados de produção no PostgreSQL; o banco alterado nesta entrega foi somente o SQLite local.

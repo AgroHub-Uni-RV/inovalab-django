@@ -89,6 +89,19 @@ class DashboardTests(TestCase):
         self.assertNotContains(response, f'/agenda/{foreign.pk}/')
         self.assertNotContains(response, 'Pedido pendente')
 
+    def test_index_and_panel_show_legacy_bookings_after_space_table_removal(self):
+        booking = Agendamento.objects.create(
+            espaco_legado_id=42, espaco_legado_nome='Sala histórica', motivo='Reserva antiga',
+            inicio=NOW, fim=NOW + timedelta(hours=1), criado_por=self.admin,
+        )
+        for path in ('/index/', '/painel/'):
+            with self.subTest(path=path):
+                response = self.panel(path)
+                self.assertEqual([item.pk for item in response.context['bookings']], [booking.pk])
+                self.assertContains(response, 'Sala histórica')
+                days = [day for week in response.context['months'][0]['weeks'] for day in week if day['today']]
+                self.assertEqual(days[0]['reservations'], 1)
+
     def test_task_tabs_are_real_status_filters(self):
         tasks = {state: self.task(status=state) for state in ('demanda', 'criacao', 'avaliacao', 'concluido')}
         self.task(excluida_em=NOW)
