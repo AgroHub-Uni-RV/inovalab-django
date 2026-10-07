@@ -1,5 +1,7 @@
 # Orientações do projeto
 
+- A solicitação seguinte de 07/10/2026 remove Meus agendamentos da sidebar. Os acessos no perfil, cabeçalho da agenda e início institucional permanecem disponíveis; Agendamentos representa todas as rotas do módulo na seleção da sidebar.
+
 - A solicitação seguinte de 07/10/2026 redireciona o administrador após cancelar um agendamento para `/agenda/solicitacoes/`, tanto no fluxo interno quanto no pessoal. Usuários comuns continuam retornando a Meus agendamentos, pois Solicitações é administrativa. Preservar a restrição de cancelamento administrativo somente de confirmados.
 
 - A solicitação seguinte de 07/10/2026 restringe o cancelamento por administradores a agendamentos confirmados nas três categorias, inclusive os de autoria do próprio administrador. Ocultar Cancelar nos pendentes/recusados e bloquear também as rotas pessoais, a API e o serviço; Solicitações oferece Cancelar apenas nos cartões confirmados. Preservar cancelamento pessoal pelos usuários comuns, aprovação/recusa administrativa, CSRF, versão e histórico. Ver `docs/modules/21-cancelamento-admin-confirmados.md`.

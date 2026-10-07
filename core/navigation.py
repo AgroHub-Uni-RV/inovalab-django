@@ -15,7 +15,6 @@ def panel_navigation(request):
     routes = [('Dashboard', 'core:dashboard', 'home')]
     if can_access_agenda(actor):
         routes.append(('Agendamentos', 'agenda:list', 'calendar'))
-    routes.append(('Meus agendamentos', 'agenda:mine', 'calendar'))
     routes.extend([('Estoque/materiais', 'materiais:list', 'box'), ('Tarefas', 'tarefas:board', 'task')])
     if is_technical_admin(actor):
         routes.append(('Usuários', 'accounts:users', 'users'))
@@ -35,10 +34,5 @@ def panel_navigation(request):
             current = request.path in ('/', '/sobre/', '/servicos/', '/contato/', '/regimento/', '/calendario-de-funcionamento/')
         elif route == 'catalogo:servicos-list':
             current = request.path.startswith('/catalogo/')
-        elif route == 'agenda:mine':
-            current = request.path.startswith('/agenda/meus/') or request.path == '/agenda/visitas/'
-        elif route == 'agenda:list':
-            current = request.path.startswith('/agenda/') and not (
-                request.path.startswith('/agenda/meus/') or request.path == '/agenda/visitas/')
         items.append({'label': label, 'href': href, 'icon': icon, 'current': current})
     return {'can_access_panel': True, 'is_business_admin': admin, 'nav_items': items}
