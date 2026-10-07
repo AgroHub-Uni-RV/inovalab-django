@@ -1,0 +1,18 @@
+{% extends 'agenda/base.html' %}
+{% block content_class %}module-page detail-page{% endblock %}
+{% block content %}
+<div class="detail-sheet">
+  <div class="sheet-topbar"><a class="secondary-button" href="{% url 'agenda:visit-list' %}">Voltar às visitas</a><span class="sheet-meta">{% include 'core/icon.html' with name='calendar' %}Visita</span></div>
+  <div class="sheet-content">
+    <h1>{% if booking %}Editar visita #{{ booking.pk }}{% else %}Nova visita{% endif %}</h1>
+    <p>A situação e a disponibilidade são definidas pelo AgroHub. As visitas confirmadas aparecem na agenda.</p>
+    {% if booking %}<p>Sala: <strong>{{ booking.sala }}</strong> · {{ booking.status_label }}</p>{% endif %}
+    <form method="post" class="sheet-form">
+      {% csrf_token %}{{ form.non_field_errors }}
+      <div class="form-grid">{% for field in form.visible_fields %}<div class="form-field{% if field.name == 'observacoes' or field.name == 'titulo' or field.name == 'data' %} full-width{% endif %}">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}</div>
+      <p>Horários de Brasília.</p>
+      <div class="sheet-actions"><button type="submit">{% if booking %}Salvar visita{% else %}Solicitar visita{% endif %}</button><a class="secondary-button" href="{% if booking %}{{ booking.get_absolute_url }}{% else %}{% url 'agenda:visit-list' %}{% endif %}">Voltar</a></div>
+    </form>
+  </div>
+</div>
+{% endblock %}

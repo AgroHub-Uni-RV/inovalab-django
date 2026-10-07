@@ -84,7 +84,8 @@ class RemotePendingRequestsTests(TestCase):
         return {'id': pk, 'sala': room or dict(self.stub.state['sala']), 'titulo': 'Pedido do monólito',
                 'nome_solicitante': 'Pessoa externa', 'quantidade_pessoas': 5, 'status': 'pendente',
                 'inicio': '2026-11-10T09:00:00-03:00', 'fim': '2026-11-10T10:00:00-03:00',
-                'created_at': '2026-10-07T12:00:00Z', **overrides}
+                'created_at': '2026-10-07T12:00:00Z', 'updated_at': '2026-10-07T12:00:00Z',
+                'observacoes': '', 'data': '2026-11-10', 'hora_inicio': '09:00', 'hora_fim': '10:00', **overrides}
 
     def listing_requests(self):
         return [row for row in self.stub.state['requests'] if '/agendamentos/' in row[1]]

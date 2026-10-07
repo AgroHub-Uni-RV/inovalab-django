@@ -1,6 +1,7 @@
 from accounts.tests.agrohub_stub import AccountsStub
 from datetime import datetime, timedelta
 from urllib.parse import parse_qs, urlsplit
+from time import sleep
 from django.utils.timezone import now as current_time
 
 
@@ -10,7 +11,7 @@ class ReservationsStub(AccountsStub):
         self.state.update(reservas=[], sala={'id': 1, 'nome': 'Laboratório InovaLab',
             'slug': 'laboratorio-inovalab', 'site_code': 'inovalab', 'ativa': True,
             'capacidade': None, 'requer_aprovacao': True}, omit_id=False,
-            create_error=None, create_uncertain=False, patch_uncertain=False, create_status=None)
+            create_error=None, create_uncertain=False, patch_uncertain=False, create_status=None, create_delay=0)
 
     def dispatch_extra(self, handler, data):
         path = handler.path.split('?')[0]
@@ -50,11 +51,17 @@ class ReservationsStub(AccountsStub):
                 return True
         if path == '/api/v1/agendamentos/reservas/':
             if handler.command == 'GET':
-                handler.reply(200, {'results': self.state['reservas'], 'next': None, 'count': len(self.state['reservas'])})
+                rows = self.state['reservas']
+                if not self.state['profile']['is_staff']:
+                    rows = [row for row in rows if row.get('owner_id', 42) == self.state['profile']['id']]
+                handler.reply(200, {'results': rows, 'next': None, 'count': len(rows)})
             elif self.state['create_error']:
                 handler.reply(self.state['create_error'], {'non_field_errors': ['Horário indisponível.']})
             else:
+                timestamp = current_time().isoformat()
                 remote = {**data, 'id': len(self.state['reservas'])+101, 'sala': dict(self.state['sala']),
+                          'nome_solicitante': 'Ana Silva', 'observacoes': data.get('observacoes', ''),
+                          'created_at': timestamp, 'updated_at': timestamp,
                           'status': self.state['create_status'] or ('pendente' if self.state['sala']['requer_aprovacao'] else 'confirmada')}
                 self.period(remote)
                 start = datetime.fromisoformat(remote['inicio'])
@@ -66,6 +73,13 @@ class ReservationsStub(AccountsStub):
                     handler.reply(400, {'non_field_errors': ['Esta sala já possui uma reserva nesse horário.']})
                     return True
                 self.state['reservas'].append(remote)
+                if self.state['create_delay']:
+                    sleep(self.state['create_delay'])
+                    try:
+                        handler.reply(201, remote)
+                    except OSError:
+                        pass  # O cliente pode encerrar após o timeout de uma escrita incerta.
+                    return True
                 if self.state['create_uncertain']:
                     handler.reply(503, {})
                 else:
@@ -73,20 +87,30 @@ class ReservationsStub(AccountsStub):
             return True
         remote_id = int(path.split('/')[5])
         remote = next((row for row in self.state['reservas'] if row['id'] == remote_id), None)
+        if remote is not None and not self.state['profile']['is_staff'] and remote.get('owner_id', 42) != self.state['profile']['id']:
+            remote = None
         if remote is None:
             handler.reply(404, {})
         elif handler.command == 'PATCH':
+            if not self.state['profile']['is_staff'] and ('sala' in data or 'status' in data or remote['status'] != 'pendente'):
+                handler.reply(400, {'non_field_errors': ['A alteração não é permitida.']})
+                return True
             remote.update(data)
             remote['sala'] = dict(self.state['sala'])
+            remote['updated_at'] = current_time().isoformat()
             self.period(remote)
             handler.reply(503, {}) if self.state['patch_uncertain'] else handler.reply(200, remote)
         elif path.endswith('/cancelar/'):
             remote['status'] = 'cancelada'
+            remote['updated_at'] = current_time().isoformat()
             handler.reply(200, remote)
         else:
             handler.reply(200, remote)
         return True
 
     def period(self, remote):
+        if 'data' not in remote:
+            start, end = datetime.fromisoformat(remote['inicio']), datetime.fromisoformat(remote['fim'])
+            remote.update(data=start.date().isoformat(), hora_inicio=start.strftime('%H:%M'), hora_fim=end.strftime('%H:%M'))
         remote['inicio'] = f"{remote['data']}T{remote['hora_inicio']}-03:00"
         remote['fim'] = f"{remote['data']}T{remote['hora_fim']}-03:00"

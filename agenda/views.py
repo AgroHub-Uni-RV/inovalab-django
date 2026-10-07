@@ -86,6 +86,8 @@ class BookingListView(AgendaAccessMixin, ListView):
                        visits_unavailable=self.visits_unavailable,
                        category_counts={name: sum(row.situacao == 'confirmado' and row.categoria == name for row in self.object_list)
                                         for name in CATEGORIES})
+        if self.visits_unavailable:
+            context['category_counts']['visita'] = None
         return context
 
 
@@ -324,25 +326,8 @@ class BookingReviewView(AdminAgendaAccessMixin, View):
 
 def confirmed_visits(request):
     if request.user.agrohub_id is None:
-        return [], False
+        return [], True
     try:
         return [row for row in reservations(request) if row.status == 'confirmada'], False
     except AgroHubError:
         return [], True
-
-
-@method_decorator(never_cache, name='dispatch')
-class RemoteBookingDetailView(AgendaAccessMixin, View):
-    def get(self, request, pk):
-        try:
-            booking = next((row for row in reservations(request) if row.pk == pk), None)
-        except AgroHubError:
-            return render(request, 'agenda/error.html', {'message': 'Visitas indisponíveis no AgroHub.'}, status=503)
-        if booking is None:
-            raise Http404
-        return render(request, 'agenda/remote_detail.html', {'booking': booking})
-
-
-class RemoteBookingCreateView(AgendaAccessMixin, View):
-    def get(self, request):
-        return render(request, 'agenda/error.html', {'message': 'O formulário de visitas está sendo conectado ao AgroHub.'}, status=503)

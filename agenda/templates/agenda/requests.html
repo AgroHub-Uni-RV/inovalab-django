@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-heading"><h1>Solicitações de agendamento</h1><a class="secondary-button" href="{% url 'agenda:list' %}">Ver agenda</a></div>
 <p>Reservas cadastradas nas salas do InovaLab no AgroHub.</p>
-<p>Reservas confirmadas ficam em <a href="{% url 'agenda:list' %}">Agendamentos</a>.</p>
+<p>Reservas confirmadas aparecem em <a href="{% url 'agenda:list' %}">Agendamentos</a> por consulta ao AgroHub.</p>
 {% if not provider_error %}<div class="statistics three">
 {% include 'core/stat_card.html' with label='Todas' count=stat_counts.all icon='calendar' %}
 {% include 'core/stat_card.html' with label='Pendentes' count=stat_counts.pendente icon='clock' tone='amber' %}
@@ -31,7 +31,7 @@
   <article class="kanban-card">
     <span class="kanban-icon" aria-hidden="true">{% include 'core/icon.html' with name='calendar' %}</span>
     <div class="kanban-copy">
-      <h3>{{ booking.titulo }}</h3>
+      <h3><a href="{{ booking.get_absolute_url }}">{{ booking.titulo }}</a></h3>
       <p class="task-description">{{ booking.sala }} · {{ booking.quantidade_pessoas }} pessoa{{ booking.quantidade_pessoas|pluralize:'s' }}</p>
       <span class="kanban-id">#{{ booking.id|stringformat:'03d' }}</span>
       <span class="kanban-deadline">{% include 'core/icon.html' with name='clock' %}<span>{{ booking.inicio|date:'d/m/Y H:i' }}<br>até {{ booking.fim|date:'d/m/Y H:i' }}</span></span>

@@ -35,7 +35,9 @@ class AgendaFrontendTests(TestCase):
         self.client.force_login(self.admin)
         response = self.client.get('/agenda/', {'mes': '2026-12', 'q': 'buscável'})
         self.assertEqual([b.pk for b in response.context['object_list']], [booking.pk])
-        self.assertEqual(response.context['category_counts'], {'servico': 1, 'equipamento': 0, 'visita': 0})
+        # A conta técnica sem sessão AgroHub não consultou visitas: contagem desconhecida.
+        self.assertEqual(response.context['category_counts'], {'servico': 1, 'equipamento': 0, 'visita': None})
+        self.assertContains(response, 'Visitas indisponíveis')
         self.assertNotContains(response, 'Cancelado')
 
     def test_multiday_previews_show_full_interval_in_each_occupied_day(self):

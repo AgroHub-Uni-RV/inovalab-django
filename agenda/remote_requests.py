@@ -26,6 +26,8 @@ class RemoteReservation:
     status: str
     sala_id: int
     sala_slug: str
+    observacoes: str
+    atualizado_em: datetime
 
     categoria = 'visita'
     categoria_display = 'Visitas'
@@ -82,6 +84,7 @@ def _instant(value):
 
 
 def _pages(request, route, params, budget):
+    _linked(request)
     page = 1
     while budget[0]:
         budget[0] -= 1
@@ -102,7 +105,7 @@ def _pages(request, route, params, budget):
     raise AgroHubError()
 
 
-def _rooms(request, budget):
+def _room_catalog(request, budget):
     rooms = {}
     for room in _pages(request, 'salas/', {'site_code': 'inovalab', 'ativas': 'false'}, budget):
         if room.get('site_code') != 'inovalab':
@@ -110,8 +113,21 @@ def _rooms(request, budget):
         room_id, slug = room.get('id'), room.get('slug')
         if type(room_id) is not int or room_id < 1 or not isinstance(slug, str) or not re.fullmatch(r'[\w-]{1,220}', slug, re.ASCII):
             raise AgroHubError()
-        rooms[room_id] = (slug, _text(room.get('nome'), 160))
+        _text(room.get('nome'), 160)
+        if type(room.get('ativa')) is not bool:
+            raise AgroHubError()
+        if room_id in rooms and rooms[room_id] != room:
+            raise AgroHubError()
+        rooms[room_id] = room
     return rooms
+
+
+def _rooms(request, budget):
+    return {pk: (row['slug'], row['nome']) for pk, row in _room_catalog(request, budget).items()}
+
+
+def available_rooms(request):
+    return [(row['slug'], row['nome']) for row in _room_catalog(request, [40]).values() if row['ativa']]
 
 
 def _reservation(row, room_id, slug, name):
@@ -126,6 +142,8 @@ def _reservation(row, room_id, slug, name):
         solicitante=_text(row.get('nome_solicitante'), 160, blank=True),
         inicio=start, fim=end, quantidade_pessoas=people, criado_em=_instant(row.get('created_at')),
         status=row['status'], sala_id=room_id, sala_slug=slug,
+        observacoes=_text(row.get('observacoes'), 512*1024, blank=True),
+        atualizado_em=_instant(row.get('updated_at')),
     )
 
 
@@ -159,35 +177,108 @@ def reservations(request, *, query='', month=''):
     return rows
 
 
-def decide_reservation(request, reservation_id, decision):
-    """Aplica uma decisão somente a uma reserva pendente do InovaLab."""
-    if (decision not in ('confirmar', 'cancelar', 'recusar') or type(reservation_id) is not int
-            or not 0 < reservation_id <= 9223372036854775807):
+def _linked(request):
+    if request.user.agrohub_id is None:
+        raise AgroHubError(401)
+
+
+def _valid_id(reservation_id):
+    if type(reservation_id) is not int or not 0 < reservation_id <= 9223372036854775807:
         raise AgroHubError(400)
-    route = f'reservas/{reservation_id}/'
-    row = authenticated_request(request, 'GET', route, namespace='agendamentos')
+
+
+def _validated_reservation(row, rooms, *, reservation_id=None, room_id=None, status=None):
     room = row.get('sala')
-    if (type(row.get('id')) is not int or row['id'] != reservation_id
-            or not isinstance(room, dict) or type(room.get('id')) is not int
-            or not isinstance(room.get('slug'), str)):
+    if (not isinstance(room, dict) or type(room.get('id')) is not int
+            or not isinstance(room.get('slug'), str) or not isinstance(row.get('status'), str)
+            or row['status'] not in RESERVATION_STATUSES):
         raise AgroHubError()
-    rooms = _rooms(request, [40])
     if room['id'] not in rooms or rooms[room['id']][0] != room['slug']:
         raise AgroHubError(403)
-    if not isinstance(row.get('status'), str) or row['status'] not in RESERVATION_STATUSES:
+    if ((reservation_id is not None and (type(row.get('id')) is not int or row['id'] != reservation_id))
+            or (room_id is not None and room['id'] != room_id)
+            or (status is not None and row['status'] != status)):
         raise AgroHubError()
-    if row['status'] != 'pendente':
+    return _reservation(row, room['id'], room['slug'], rooms[room['id']][1])
+
+
+def get_reservation(request, reservation_id):
+    """Lê um detalhe autorizado e valida a sala InovaLab, sem listar reservas."""
+    _linked(request)
+    _valid_id(reservation_id)
+    route = f'reservas/{reservation_id}/'
+    row = authenticated_request(request, 'GET', route, namespace='agendamentos')
+    return _validated_reservation(row, _rooms(request, [40]), reservation_id=reservation_id)
+
+
+def _mutation_result(result, original, *, status=None, preserve_fields=False):
+    # A resposta precisa conservar o alvo validado antes do envio.
+    remote = _validated_reservation(result, {original.sala_id: (original.sala_slug, original.sala)},
+                                    reservation_id=original.id, room_id=original.sala_id, status=status)
+    if preserve_fields and any(getattr(remote, field) != getattr(original, field) for field in
+                               ('inicio', 'fim', 'titulo', 'quantidade_pessoas', 'observacoes', 'solicitante', 'criado_em')):
+        raise AgroHubError()
+    return remote
+
+
+def save_reservation(request, data, *, reservation_id=None):
+    """Cria/edita exclusivamente no provedor; status e sala editada não são enviados."""
+    from agenda.remote_forms import RemoteVisitForm
+    _linked(request)
+    if not isinstance(data, dict):
+        raise AgroHubError(400)
+    fields = {'titulo', 'quantidade_pessoas', 'data', 'hora_inicio', 'hora_fim', 'observacoes'}
+    if reservation_id is None:
+        fields.add('sala')
+    if (set(data) - fields or type(data.get('quantidade_pessoas')) is not int
+            or any(not isinstance(data.get(field, ''), str) for field in fields - {'quantidade_pessoas'})):
+        raise AgroHubError(400)
+    original = get_reservation(request, reservation_id) if reservation_id is not None else None
+    choices = available_rooms(request) if original is None else ()
+    form = RemoteVisitForm(data, rooms=choices, booking=original)
+    if not form.is_valid():
+        raise AgroHubError(400)
+    payload = form.payload()
+    result = authenticated_request(request, 'PATCH' if original else 'POST',
+                                   f'reservas/{reservation_id}/' if original else 'reservas/',
+                                   namespace='agendamentos', data=payload)
+    if original:
+        remote = _mutation_result(result, original, status=original.status)
+    else:
+        rooms = {pk: value for pk, value in _rooms(request, [40]).items() if value[0] == payload['sala']}
+        remote = _validated_reservation(result, rooms)
+        if remote.status not in ('pendente', 'confirmada'):
+            raise AgroHubError()
+    start, end = timezone.localtime(remote.inicio), timezone.localtime(remote.fim)
+    if (remote.titulo != payload['titulo'] or remote.quantidade_pessoas != payload['quantidade_pessoas']
+            or remote.observacoes != payload['observacoes'] or start.date().isoformat() != payload['data']
+            or start.strftime('%H:%M') != payload['hora_inicio'] or end.strftime('%H:%M') != payload['hora_fim']
+            or start.second or start.microsecond or end.second or end.microsecond):
+        raise AgroHubError()
+    return remote
+
+
+def cancel_reservation(request, reservation_id):
+    original = get_reservation(request, reservation_id)
+    if original.status not in ('pendente', 'confirmada') or original.inicio < timezone.now():
         raise AgroHubError(409)
+    result = authenticated_request(request, 'POST', f'reservas/{reservation_id}/cancelar/',
+                                   namespace='agendamentos', data={})
+    return _mutation_result(result, original, status='cancelada', preserve_fields=True)
+
+
+def decide_reservation(request, reservation_id, decision):
+    """Aplica uma decisão somente a uma reserva pendente do InovaLab."""
+    if decision not in ('confirmar', 'cancelar', 'recusar'):
+        raise AgroHubError(400)
+    original = get_reservation(request, reservation_id)
+    if original.status != 'pendente':
+        raise AgroHubError(409)
+    if decision == 'cancelar':
+        return cancel_reservation(request, reservation_id)
     expected_status = {'confirmar': 'confirmada', 'cancelar': 'cancelada', 'recusar': 'recusada'}[decision]
     result = authenticated_request(
-        request, 'POST' if decision == 'cancelar' else 'PATCH',
-        route+'cancelar/' if decision == 'cancelar' else route, namespace='agendamentos',
-        data={} if decision == 'cancelar' else {'status': expected_status},
+        request, 'PATCH', f'reservas/{reservation_id}/', namespace='agendamentos',
+        data={'status': expected_status},
     )
-    updated_room = result.get('sala')
-    if (type(result.get('id')) is not int or result['id'] != reservation_id
-            or result.get('status') != expected_status or not isinstance(updated_room, dict)
-            or type(updated_room.get('id')) is not int or updated_room['id'] != room['id']
-            or updated_room.get('slug') != room['slug']):
-        raise AgroHubError()
-    return _reservation(result, room['id'], room['slug'], rooms[room['id']][1])
+    return _mutation_result(result, original, status=expected_status, preserve_fields=True)

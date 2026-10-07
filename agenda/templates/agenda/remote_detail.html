@@ -1,2 +1,15 @@
 {% extends 'agenda/base.html' %}
-{% block content %}<article class="sheet"><h1>{{ booking.titulo }}</h1><p>{{ booking.sala }} · {{ booking.solicitante }}</p><p>{{ booking.inicio|date:'d/m/Y H:i' }} até {{ booking.fim|date:'d/m/Y H:i' }}</p><p>{{ booking.quantidade_pessoas }} pessoa(s) · {{ booking.status_label }}</p><a href="{% url 'agenda:list' %}">Voltar à agenda</a></article>{% endblock %}
+{% block content_class %}module-page detail-page{% endblock %}
+{% block content %}
+<div class="detail-sheet">
+  <div class="sheet-topbar">{% if may_edit %}<a class="primary-button" href="{% url 'agenda:visit-update' booking.pk %}">Editar visita</a>{% endif %}<span class="sheet-meta">{{ booking.criador_nome }}</span><span class="booking-category">Visitas</span><a class="sheet-close" href="{% url 'agenda:visit-list' %}" aria-label="Voltar às visitas">&times;</a></div>
+  <section class="sheet-content">
+    <h1><span>#{{ booking.pk|stringformat:'03d' }}</span> {{ booking.titulo }}</h1>
+    <p><span class="badge booking-status {{ booking.situacao }}">{{ booking.status_label }}</span>{% if booking.status == 'pendente' %} Aguardando confirmação no AgroHub.{% endif %}</p>
+    <dl class="inline-details"><div><dt>Sala</dt><dd>{{ booking.sala }}</dd></div><div><dt>Solicitante</dt><dd>{{ booking.criador_nome }}</dd></div><div><dt>Quantidade de pessoas</dt><dd>{{ booking.quantidade_pessoas }}</dd></div><div><dt>Início</dt><dd>{{ booking.inicio|date:'d/m/Y H:i' }}</dd></div><div><dt>Término</dt><dd>{{ booking.fim|date:'d/m/Y H:i' }}</dd></div><div><dt>Criado em</dt><dd>{{ booking.criado_em|date:'d/m/Y H:i' }}</dd></div></dl>
+    <section class="description-block"><h2>Observações</h2><p>{{ booking.observacoes|default:'Nenhuma observação informada.'|linebreaksbr }}</p></section>
+    <p>Horários de Brasília.</p>
+    <div class="sheet-actions">{% if may_cancel %}<a class="secondary-button" href="{% url 'agenda:visit-cancel' booking.pk %}">Cancelar visita</a>{% endif %}<a class="secondary-button" href="{% url 'agenda:visit-list' %}">Voltar às visitas</a><a class="secondary-button" href="{% url 'agenda:list' %}">Voltar à agenda</a></div>
+  </section>
+</div>
+{% endblock %}

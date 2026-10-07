@@ -1,12 +1,15 @@
 from django.urls import path
 
-from agenda import views
+from agenda import views, remote_views
 
 app_name = 'agenda'
 urlpatterns = [
     path('', views.BookingListView.as_view(), name='list'),
-    path('visitas/novo/', views.RemoteBookingCreateView.as_view(), name='visit-create'),
-    path('visitas/<int:pk>/', views.RemoteBookingDetailView.as_view(), name='visit-detail'),
+    path('visitas/', remote_views.RemoteBookingListView.as_view(), name='visit-list'),
+    path('visitas/novo/', remote_views.RemoteBookingWriteView.as_view(), name='visit-create'),
+    path('visitas/<int:pk>/', remote_views.RemoteBookingDetailView.as_view(), name='visit-detail'),
+    path('visitas/<int:pk>/editar/', remote_views.RemoteBookingWriteView.as_view(), name='visit-update'),
+    path('visitas/<int:pk>/cancelar/', remote_views.RemoteBookingCancelView.as_view(), name='visit-cancel'),
     path('novo/', views.BookingWriteView.as_view(), name='create'),
     path('solicitacoes/', views.BookingReviewListView.as_view(), name='requests'),
     path('solicitacoes/<int:pk>/decidir/', views.RemoteBookingDecisionView.as_view(), name='remote-decision'),
