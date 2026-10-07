@@ -1,5 +1,7 @@
 # Recusa e confirmações na agenda — 07/10/2026
 
+**Histórico de uma entrega anterior.** A decisão posterior mantém todas as visitas exclusivamente na API, inclusive confirmadas, e remove o espelho local descrito abaixo. O contrato atual está em [Agendas locais e visitas no AgroHub](14-agendas-servicos-equipamentos.md).
+
 O responsável autorizou adicionar Recusar às solicitações pendentes e determinou que reservas confirmadas sejam agendamentos do sistema, sem coluna Confirmadas em Solicitações. A autorização permite persistir as confirmadas localmente; pendentes/canceladas/recusadas sem vínculo anterior continuam sendo consultadas diretamente na API. O repositório do monólito permanece sem alterações.
 
 ## Recusar

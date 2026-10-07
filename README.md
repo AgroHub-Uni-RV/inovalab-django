@@ -1,8 +1,8 @@
 # InovaLab
 
-Solicitações de agendamento em `/agenda/solicitacoes/` consultam as **reservas do InovaLab no AgroHub**, com abas **Todas, Pendentes, Canceladas e Recusadas**, cartões no padrão do Fluxo de tarefas e botões **Confirmar/Recusar/Cancelar** nas pendentes via API. **Confirmadas viram agendamentos em `/agenda/`**, com vínculo remoto sem duplicação. A página exige uma conta administrativa vinculada ao AgroHub; as decisões dependem também das permissões dessa conta no provedor. [Contrato, conciliação e validação](docs/modules/13-recusa-e-confirmacoes-na-agenda.md).
+A agenda local utiliza **AgendaServico** e **AgendaEquipamento**, com uma base abstrata de campos comuns. **Visitas são consultadas e gerenciadas exclusivamente pela API do AgroHub**, inclusive as confirmadas apresentadas em `/agenda/` e no dashboard, sem cópia no banco local. Solicitações em `/agenda/solicitacoes/` mantêm as abas **Todas, Pendentes, Canceladas e Recusadas** e os botões **Confirmar/Recusar/Cancelar** nas pendentes. A sessão e as permissões do provedor controlam essas ações. Ver [modelagem, migração e contrato atual](docs/modules/14-agendas-servicos-equipamentos.md) e o [plano Superpowers](docs/superpowers/plans/2026-10-07-agendas-servicos-equipamentos.md).
 
-Atualização de 07/10/2026: o modelo e cadastro de **Espaços** foram removidos, incluindo telas e API. O catálogo mantém Serviços e Equipamentos; reservas antigas conservam os dados históricos para consulta/cancelamento. Migrações aplicadas localmente. Ver [remoção de espaços e depuração](docs/modules/11-remocao-espacos.md).
+Atualização de 07/10/2026: o modelo e cadastro de **Espaços** foram removidos, incluindo telas e API. O catálogo mantém Serviços e Equipamentos; na separação das agendas, reservas antigas de espaço são preservadas em exportação privada. Ver [histórico da remoção de espaços](docs/modules/11-remocao-espacos.md) e [preservação do legado da agenda](docs/modules/14-agendas-servicos-equipamentos.md).
 
 Sistema Django para demandas do laboratório, tarefas, agenda, materiais e banners, com frontend básico e API para futuras integrações.
 
