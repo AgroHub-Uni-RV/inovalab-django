@@ -14,13 +14,19 @@ class PendingRequestsStub(ReservationsStub):
         super().reset()
         self.state.update(rooms=[dict(self.state['sala'])], listing_error=None,
                           listing_page_size=100, ignore_filters=False, remote_next=None, malformed=None,
-                          action_error=None, action_uncertain=False, action_reply=None, detail_reply=None)
+                          action_error=None, action_uncertain=False, action_reply=None, detail_reply=None,
+                          detail_statuses=[])
 
     def dispatch_extra(self, handler, data):
         if self.state['expired'] or handler.headers.get('Authorization') not in ('Bearer access-1', 'Bearer access-2'):
             return super().dispatch_extra(handler, data)
         path = urlsplit(handler.path).path
         if path.startswith('/api/v1/agendamentos/reservas/') and path != '/api/v1/agendamentos/reservas/':
+            if handler.command == 'GET' and self.state['detail_statuses']:
+                remote_id = int(path.split('/')[5])
+                remote = next((row for row in self.state['reservas'] if row['id'] == remote_id), None)
+                if remote is not None:
+                    remote['status'] = self.state['detail_statuses'].pop(0)
             if handler.command == 'GET' and self.state['detail_reply'] is not None:
                 handler.reply(200, self.state['detail_reply'])
                 return True
@@ -346,6 +352,17 @@ class RemotePendingRequestsTests(TestCase):
             self.stub.state['reservas'] = [self.reservation(status=status)]
             self.assertContains(self.client.post(url, {'decisao': 'cancelar'}), 'não está mais pendente', status_code=409)
         self.assertFalse(self.writes())
+
+    def test_cancel_decision_rechecks_pending_before_writing(self):
+        self.stub.state.update(reservas=[self.reservation()], detail_statuses=['pendente', 'confirmada'])
+        response = self.client.post('/agenda/solicitacoes/101/decidir/', {'decisao': 'cancelar'})
+        self.assertContains(response, 'não está mais pendente', status_code=409)
+        self.assertEqual(self.stub.state['reservas'][0]['status'], 'confirmada')
+        self.assertFalse(self.writes())
+        detail_reads = [row for row in self.listing_requests()
+                        if row[0] == 'GET' and row[1] == '/api/v1/agendamentos/reservas/101/']
+        self.assertEqual(len(detail_reads), 2)
+        self.assertEqual((AgendaServico.objects.count(), AgendaEquipamento.objects.count(), EventoAgendamento.objects.count()), (0, 0, 0))
 
     def test_provider_refusals_and_uncertain_result_do_not_claim_success_or_retry(self):
         url = '/agenda/solicitacoes/101/decidir/'

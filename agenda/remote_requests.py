@@ -258,13 +258,17 @@ def save_reservation(request, data, *, reservation_id=None):
     return remote
 
 
-def cancel_reservation(request, reservation_id):
+def _cancel_reservation(request, reservation_id, *, allowed_statuses):
     original = get_reservation(request, reservation_id)
-    if original.status not in ('pendente', 'confirmada') or original.inicio < timezone.now():
+    if original.status not in allowed_statuses or original.inicio < timezone.now():
         raise AgroHubError(409)
     result = authenticated_request(request, 'POST', f'reservas/{reservation_id}/cancelar/',
                                    namespace='agendamentos', data={})
     return _mutation_result(result, original, status='cancelada', preserve_fields=True)
+
+
+def cancel_reservation(request, reservation_id):
+    return _cancel_reservation(request, reservation_id, allowed_statuses=('pendente', 'confirmada'))
 
 
 def decide_reservation(request, reservation_id, decision):
@@ -275,7 +279,7 @@ def decide_reservation(request, reservation_id, decision):
     if original.status != 'pendente':
         raise AgroHubError(409)
     if decision == 'cancelar':
-        return cancel_reservation(request, reservation_id)
+        return _cancel_reservation(request, reservation_id, allowed_statuses=('pendente',))
     expected_status = {'confirmar': 'confirmada', 'cancelar': 'cancelada', 'recusar': 'recusada'}[decision]
     result = authenticated_request(
         request, 'PATCH', f'reservas/{reservation_id}/', namespace='agendamentos',
