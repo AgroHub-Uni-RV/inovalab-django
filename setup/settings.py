@@ -84,7 +84,7 @@ AGROHUB_MIN_ADVANCE_NOTICE_HOURS = int(os.environ.get('AGROHUB_MIN_ADVANCE_NOTIC
 AGROHUB_PHOTO_ALLOWED_HOSTS = tuple(value.strip() for value in os.environ.get('AGROHUB_PHOTO_ALLOWED_HOSTS', '').split(',') if value.strip())
 LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = '/index/'
-LOGOUT_REDIRECT_URL = 'accounts:login'
+LOGOUT_REDIRECT_URL = 'conteudo:inicio'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

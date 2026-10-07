@@ -63,16 +63,16 @@ from django.core.management import call_command
 call_command('check', deploy=True, fail_level='WARNING')
 from django.test import Client
 client = Client(enforce_csrf_checks=True)
-redirect = client.get('/', HTTP_HOST='inovalab-test.vercel.app')
+redirect = client.get('/entrar/', HTTP_HOST='inovalab-test.vercel.app')
 assert redirect.status_code == 301
-response = client.get('/', HTTP_HOST='inovalab-test.vercel.app', HTTP_X_FORWARDED_PROTO='https')
+response = client.get('/entrar/', HTTP_HOST='inovalab-test.vercel.app', HTTP_X_FORWARDED_PROTO='https')
 assert response.status_code == 200
 assert response['X-Frame-Options'] == 'DENY'
 assert response['X-Content-Type-Options'] == 'nosniff'
 assert 'max-age=31536000' in response['Strict-Transport-Security']
 assert response.cookies['csrftoken']['secure']
-assert client.get('/', HTTP_HOST='host-nao-autorizado.local', HTTP_X_FORWARDED_PROTO='https').status_code == 400
-assert client.post('/', HTTP_HOST='inovalab-test.vercel.app', HTTP_X_FORWARDED_PROTO='https').status_code == 403
+assert client.get('/entrar/', HTTP_HOST='host-nao-autorizado.local', HTTP_X_FORWARDED_PROTO='https').status_code == 400
+assert client.post('/entrar/', HTTP_HOST='inovalab-test.vercel.app', HTTP_X_FORWARDED_PROTO='https').status_code == 403
 '''
         result = subprocess.run([sys.executable, '-c', code], cwd=BASE_DIR,
                                 env=environ, capture_output=True, text=True, timeout=15)

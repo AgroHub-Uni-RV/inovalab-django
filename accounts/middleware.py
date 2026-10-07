@@ -15,7 +15,9 @@ class AgroHubSessionMiddleware:
 
     def __call__(self, request):
         public_paths = {reverse(name) for name in ('accounts:logout', 'accounts:password-reset',
-                                                  'accounts:password-reset-confirm')}
+                                                  'accounts:password-reset-confirm',
+                                                  'conteudo:inicio', 'conteudo:sobre',
+                                                  'conteudo:servicos', 'conteudo:contato')}
         if request.user.is_authenticated and request.user.agrohub_id is not None and request.path not in public_paths:
             try:
                 profile = authenticated_request(request, 'GET', 'me/')

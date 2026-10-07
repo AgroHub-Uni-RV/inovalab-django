@@ -25,7 +25,7 @@ class CatalogWebTests(TestCase):
     def test_anonymous_redirects_to_login_for_all_categories(self):
         for slug, _, _ in CASES:
             path = f'/catalogo/{slug}/'
-            self.assertRedirects(self.client.get(path), f'/?next={path}', fetch_redirect_response=False)
+            self.assertRedirects(self.client.get(path), f'/entrar/?next={path}', fetch_redirect_response=False)
 
     def test_internal_user_can_read_all_categories_without_write_links(self):
         self.client.force_login(self.user)
@@ -118,7 +118,7 @@ class CatalogWebTests(TestCase):
         self.client.force_login(self.admin)
         self.admin.is_active = False
         self.admin.save(update_fields=['is_active'])
-        self.assertRedirects(self.client.get('/catalogo/servicos/'), '/?next=/catalogo/servicos/', fetch_redirect_response=False)
+        self.assertRedirects(self.client.get('/catalogo/servicos/'), '/entrar/?next=/catalogo/servicos/', fetch_redirect_response=False)
 
     def test_home_offers_catalog_without_changing_identity_content(self):
         self.client.force_login(self.user)

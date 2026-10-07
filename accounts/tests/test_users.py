@@ -20,7 +20,7 @@ class UserPageTests(TestCase):
         cls.inactive = User.objects.create_user('inativo', is_active=False)
 
     def test_users_are_exclusive_to_active_technical_admin(self):
-        self.assertRedirects(self.client.get('/usuarios/'), '/?next=/usuarios/', fetch_redirect_response=False)
+        self.assertRedirects(self.client.get('/usuarios/'), '/entrar/?next=/usuarios/', fetch_redirect_response=False)
         self.staff.user_permissions.add(Permission.objects.get(codename='view_user'))
         for actor in (self.common, self.staff, self.business):
             self.client.force_login(actor)

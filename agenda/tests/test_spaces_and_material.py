@@ -28,7 +28,7 @@ class SpacesAndMaterialTests(TestCase):
 
     def setUp(self):
         self.client.force_login(self.admin)
-        start = timezone.now() + timedelta(days=30)
+        start = (timezone.now() + timedelta(days=30)).replace(hour=12, minute=0, second=0, microsecond=0)
         self.data = dict(categoria='servico', objeto=self.service.pk, motivo='Protótipo',
                          inicio=start, fim=start+timedelta(hours=1), material_proprio=False,
                          material_gasto=self.material.pk, material_gasto_gramas='12.125')

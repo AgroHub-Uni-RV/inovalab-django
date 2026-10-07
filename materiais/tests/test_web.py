@@ -21,7 +21,7 @@ class MaterialWebTests(TestCase):
 
     def test_anonymous_redirects_on_all_pages(self):
         for path in ('/materiais/', '/materiais/novo/', self.detail, self.edit):
-            self.assertRedirects(self.client.get(path), f'/?next={path}', fetch_redirect_response=False)
+            self.assertRedirects(self.client.get(path), f'/entrar/?next={path}', fetch_redirect_response=False)
 
     def test_reader_consults_without_write_links(self):
         self.client.force_login(self.user)

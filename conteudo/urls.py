@@ -1,9 +1,14 @@
 from django.urls import path
 
 from conteudo import views
+from conteudo import institucional
 
 app_name = 'conteudo'
 urlpatterns = [
+    path('', institucional.inicio, name='inicio'),
+    path('sobre/', institucional.sobre, name='sobre'),
+    path('servicos/', institucional.servicos, name='servicos'),
+    path('contato/', institucional.contato, name='contato'),
     path('banners/', views.BannerListView.as_view(), name='list'),
     path('banners/novo/', views.banner_form, name='create'),
     path('banners/<int:pk>/', views.BannerDetailView.as_view(), name='detail'),

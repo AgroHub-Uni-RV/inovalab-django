@@ -15,7 +15,7 @@ class WebAccessTests(AccountsProviderMixin, TestCase):
         cls.admin = get_user_model().objects.create_superuser('admin', password=PASSWORD)
 
     def test_anonymous_home_redirects_to_login(self):
-        self.assertRedirects(self.client.get('/perfil/'), '/?next=/perfil/', fetch_redirect_response=False)
+        self.assertRedirects(self.client.get('/perfil/'), '/entrar/?next=/perfil/', fetch_redirect_response=False)
 
     def test_login_and_private_home(self):
         self.assertRedirects(self.client.post('/entrar/', {
@@ -74,13 +74,13 @@ class WebAccessTests(AccountsProviderMixin, TestCase):
         self.assertRedirects(client.post('/sair/', {
             'csrfmiddlewaretoken': client.cookies['csrftoken'].value,
         }), '/')
-        self.assertRedirects(client.get('/perfil/'), '/?next=/perfil/', fetch_redirect_response=False)
+        self.assertRedirects(client.get('/perfil/'), '/entrar/?next=/perfil/', fetch_redirect_response=False)
 
     def test_deactivation_revokes_existing_session(self):
         self.client.force_login(self.ana)
         self.ana.is_active = False
         self.ana.save(update_fields=['is_active'])
-        self.assertRedirects(self.client.get('/perfil/'), '/?next=/perfil/', fetch_redirect_response=False)
+        self.assertRedirects(self.client.get('/perfil/'), '/entrar/?next=/perfil/', fetch_redirect_response=False)
 
     def test_business_admin_cannot_manage_accounts(self):
         self.ana.groups.add(Group.objects.get(name='Administradores'))

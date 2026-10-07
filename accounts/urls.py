@@ -8,7 +8,7 @@ from accounts.remote_views import password_reset, password_reset_confirm, regist
 
 app_name = 'accounts'
 urlpatterns = [
-    path('', AccountLoginView.as_view(), name='login'),
+    path('entrar/', AccountLoginView.as_view(), name='login'),
     path('entrar/', AccountLoginView.as_view(), name='login-alias'),
     path('registro/', register, name='register'),
     path('recuperar-senha/', password_reset, name='password-reset'),

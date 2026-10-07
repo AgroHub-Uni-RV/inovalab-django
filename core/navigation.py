@@ -19,7 +19,7 @@ def panel_navigation(request):
         routes.append(('Usuários', 'accounts:users', 'users'))
     if admin:
         routes.append(('Banners', 'conteudo:list', 'image'))
-    routes.extend([('Páginas', 'conteudo:public-home', 'layers'), ('Estrutura', 'catalogo:servicos-list', 'building')])
+    routes.extend([('Páginas', 'conteudo:inicio', 'layers'), ('Estrutura', 'catalogo:servicos-list', 'building')])
     if admin:
         routes.append(('Integrações', 'integracoes:list', 'link'))
     routes.append(('Perfil', 'accounts:home', 'profile'))
@@ -29,6 +29,8 @@ def panel_navigation(request):
         current = request.path.startswith(href)
         if route == 'core:dashboard':
             current = request.path in ('/index/', '/painel/')
+        elif route == 'conteudo:inicio':
+            current = request.path in ('/', '/sobre/', '/servicos/', '/contato/')
         elif route == 'catalogo:servicos-list':
             current = request.path.startswith('/catalogo/')
         elif route == 'agenda:list':

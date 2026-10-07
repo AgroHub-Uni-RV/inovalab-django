@@ -1,0 +1,216 @@
+{% extends "conteudo/institucional/base.html" %}
+{% load static %}
+
+{% block title %}InovaLab UniRV{% endblock %}
+{% block meta_description %}Laboratório de prototipagem da UniRV. Transformamos criatividade em tecnologia com apoio a estudantes, pesquisa aplicada e parceiros regionais.{% endblock %}
+{% block content_flow_class %}space-y-0{% endblock %}
+
+{% block content %}
+<div class="inova-surface">
+  {# ============================= HERO ============================= #}
+  <section class="inova-hero" aria-labelledby="inova-hero-title">
+    <div class="inova-hero__inner relative z-10">
+      <div class="inova-hero__copy">
+        <h1 id="inova-hero-title" class="inova-hero__title">Ideias que<br /><span class="inova-hero__title-line">viram soluções.</span></h1>
+        <div class="inova-hero__lead">
+          <p>
+            Laboratório de prototipagem da UniRV. <strong>Transformamos criatividade em tecnologia.</strong>
+          </p>
+        </div>
+        <div class="inova-hero__actions">
+          <a href="{% url 'conteudo:sobre' %}" class="inova-btn inova-btn--outline">Conheça o InovaLab</a>
+          <a href="{% url 'agenda:create' %}?categoria=visita" class="inova-btn inova-btn--grad">Agendar visita</a>
+        </div>
+      </div>
+    </div>
+
+  {# ============================= MEDIA (ABSOLUTE) ============================= #}
+    <div class="inova-hero__media" aria-hidden="true">
+      <img
+        {% if hero_banner %}
+        src="{{ hero_banner.image.url }}"
+        alt="{{ hero_banner.alt_text|default:hero_banner.title }}"
+        {% else %}
+        src="{% static 'branding/inovalab/hero-banner.jpg' %}"
+        alt=""
+        {% endif %}
+        class="inova-hero__photo absolute inset-0 h-full w-full object-cover object-left"
+        decoding="async"
+      />
+    </div>
+  </section>
+
+  {# ===================== QUICK ACCESS STRIP ===================== #}
+  <nav class="inova-quicknav" aria-label="Acesso rápido">
+    <div class="inova-quicknav__inner">
+      <a href="{% url 'agenda:create' %}?categoria=visita" class="inova-quicknav__item">
+        <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<path d="M23.625 12.9375V9.9C23.625 8.00982 23.625 7.06473 23.2571 6.34278C22.9336 5.70774 22.4173 5.19143 21.7822 4.86785C21.0603 4.5 20.1152 4.5 18.225 4.5H8.775C6.88482 4.5 5.93973 4.5 5.21778 4.86785C4.58274 5.19143 4.06643 5.70774 3.74285 6.34278C3.375 7.06473 3.375 8.00982 3.375 9.9V19.35C3.375 21.2402 3.375 22.1853 3.74285 22.9072C4.06643 23.5423 4.58274 24.0586 5.21778 24.3821C5.93973 24.75 6.88482 24.75 8.775 24.75H14.0625M23.625 11.25H3.375M18 2.25V6.75M9 2.25V6.75M20.25 23.625V16.875M16.875 20.25H23.625" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+        <span>Agendamento</span>
+      </a>
+      <a href="https://agrohub.unirv.edu.br/InovaLab/regimento/" class="inova-quicknav__item">
+        <svg width="29" height="29" viewBox="0 0 29 29" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<path d="M16.9166 2.74237V7.73344C16.9166 8.41017 16.9166 8.74853 17.0483 9.00701C17.1641 9.23437 17.349 9.41922 17.5763 9.53507C17.8348 9.66677 18.1732 9.66677 18.8499 9.66677H23.841M16.9166 20.5417H9.66659M19.3333 15.7084H9.66659M24.1666 12.0691V20.7834C24.1666 22.8135 24.1666 23.8286 23.7715 24.6041C23.4239 25.2862 22.8694 25.8407 22.1873 26.1883C21.4119 26.5834 20.3968 26.5834 18.3666 26.5834H10.6333C8.60306 26.5834 7.58797 26.5834 6.81254 26.1883C6.13045 25.8407 5.57589 25.2862 5.22835 24.6041C4.83325 23.8286 4.83325 22.8135 4.83325 20.7834V8.21669C4.83325 6.1865 4.83325 5.1714 5.22835 4.39597C5.57589 3.71388 6.13045 3.15933 6.81254 2.81179C7.58797 2.41669 8.60306 2.41669 10.6333 2.41669H14.5141C15.4008 2.41669 15.8441 2.41669 16.2613 2.51685C16.6312 2.60565 16.9848 2.75211 17.3091 2.95087C17.6749 3.17504 17.9884 3.48852 18.6154 4.11547L22.4678 7.96791C23.0948 8.59486 23.4082 8.90833 23.6324 9.27415C23.8312 9.59849 23.9776 9.95209 24.0664 10.322C24.1666 10.7392 24.1666 11.1825 24.1666 12.0691Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+        <span>Regimento</span>
+      </a>
+      <a href="{% url 'conteudo:servicos' %}" class="inova-quicknav__item">
+        <svg width="29" height="29" viewBox="0 0 29 29" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<path d="M14.4999 18.125L10.8749 14.5M14.4999 18.125C16.1878 17.4831 17.807 16.6735 19.3333 15.7083M14.4999 18.125V24.1667C14.4999 24.1667 18.1612 23.5021 19.3333 21.75C20.6383 19.7925 19.3333 15.7083 19.3333 15.7083M10.8749 14.5C11.5179 12.8318 12.3276 11.2328 13.2916 9.7271C14.6995 7.47596 16.66 5.62245 18.9865 4.34288C21.313 3.0633 23.9281 2.40021 26.5833 2.41668C26.5833 5.70335 25.6408 11.4792 19.3333 15.7083M10.8749 14.5H4.83325C4.83325 14.5 5.49784 10.8388 7.24992 9.66668C9.20742 8.36168 13.2916 9.66668 13.2916 9.66668M5.43742 19.9375C3.62492 21.46 3.02075 25.9792 3.02075 25.9792C3.02075 25.9792 7.53992 25.375 9.06242 23.5625C9.92034 22.5475 9.90825 20.9888 8.95367 20.0463C8.484 19.598 7.86532 19.339 7.21636 19.3189C6.5674 19.2988 5.93389 19.5191 5.43742 19.9375Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+        <span>Projetos</span>
+      </a>
+      <a href="https://agrohub.unirv.edu.br/InovaLab/calendario-de-funcionamento/" class="inova-quicknav__item">
+        <svg width="29" height="29" viewBox="0 0 29 29" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<path d="M25.375 12.0834H3.625M19.3333 2.41669V7.25002M9.66667 2.41669V7.25002M12.6875 16.9167L14.5 15.7084V21.75M12.9896 21.75H16.0104M9.425 26.5834H19.575C21.6052 26.5834 22.6203 26.5834 23.3957 26.1883C24.0778 25.8407 24.6324 25.2862 24.9799 24.6041C25.375 23.8286 25.375 22.8135 25.375 20.7834V10.6334C25.375 8.60316 25.375 7.58807 24.9799 6.81264C24.6324 6.13055 24.0778 5.576 23.3957 5.22845C22.6203 4.83335 21.6052 4.83335 19.575 4.83335H9.425C7.39481 4.83335 6.37971 4.83335 5.60428 5.22845C4.9222 5.576 4.36764 6.13055 4.0201 6.81264C3.625 7.58807 3.625 8.60316 3.625 10.6334V20.7834C3.625 22.8135 3.625 23.8286 4.0201 24.6041C4.36764 25.2862 4.9222 25.8407 5.60428 26.1883C6.37971 26.5834 7.39481 26.5834 9.425 26.5834Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+        <span>Calendário de funcionamento</span>
+      </a>
+    </div>
+  </nav>
+
+  {# ======================= O QUE FAZEMOS ======================= #}
+  <section class="inova-section" aria-labelledby="inova-do-title">
+    <div class="inova-container inova-do">
+      <div class="inova-do__intro">
+        <p class="inova-eyebrow">O que fazemos</p>
+        <h2 id="inova-do-title" class="inova-heading">Prototipar, testar e transformar.</h2>
+        <p class="inova-do__text">
+          Apoiamos alunos, professores e parceiros no desenvolvimento de soluções
+          inovadoras com tecnologia, colaboração e criatividade.
+        </p>
+        <a href="{% url 'conteudo:servicos' %}" class="inova-btn inova-btn--grad">Nossos serviços</a>
+      </div>
+      <div class="inova-do__cards">
+        <article class="inova-feature">
+          <span class="inova-feature__icon" aria-hidden="true">
+            <img src="{% static 'branding/inovalab/icon-cube.svg' %}" alt="" width="50" height="50" />
+          </span>
+          <h3>Prototipagem rápida</h3>
+          <p>Transforme ideias em protótipos físicos com impressão 3D, corte a laser entre outros.</p>
+        </article>
+        <article class="inova-feature">
+          <span class="inova-feature__icon" aria-hidden="true">
+            <img src="{% static 'branding/inovalab/icon-nib.svg' %}" alt="" width="46" height="46" />
+          </span>
+          <h3>Inovação e design</h3>
+          <p>Do conceito ao produto: apoiamos o desenvolvimento de soluções inovadoras.</p>
+        </article>
+        <article class="inova-feature">
+          <span class="inova-feature__icon" aria-hidden="true">
+            <img src="{% static 'branding/inovalab/icon-badge.svg' %}" alt="" width="56" height="56" />
+          </span>
+          <h3>Projetos e parcerias</h3>
+          <p>Colaboração entre cursos, empresas e comunidade para gerar impacto real.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {# ======================= NOSSOS NÚMEROS ======================= #}
+  <section class="inova-section inova-section--tight" aria-labelledby="inova-stats-title">
+    <div class="inova-container">
+      <div class="inova-stats">
+        <div class="inova-stats__brand">
+          <span class="inova-stats__badge" aria-hidden="true">
+            <img src="{% static 'branding/inovalab/icon-award.svg' %}" alt="" width="85" height="112" />
+          </span>
+          <h2 id="inova-stats-title">Nossos<br />números</h2>
+        </div>
+        <dl class="inova-stats__grid">
+          {% for stat in inovalab_stats %}
+          <div class="inova-stats__item">
+            <dt>{{ stat.value }}</dt>
+            <dd>{{ stat.label }}</dd>
+          </div>
+          {% endfor %}
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  {# ====================== LOCALIZAÇÃO / AGROHUB ====================== #}
+  <section class="inova-locale" aria-labelledby="inova-locale-title">
+    <img
+      src="{% static 'branding/inovalab/home-location-composite.png' %}"
+      alt=""
+      class="inova-locale__art"
+      width="1916"
+      height="544"
+      loading="eager"
+      decoding="async"
+    />
+    <div class="inova-locale__copy">
+      <h2 id="inova-locale-title" class="inova-locale__title">Inovação nasce<br />da prática<br />que acontece<br />aqui.</h2>
+      <p class="inova-locale__text">
+        O InovaLab está localizado dentro do AgroHub UniRV, o centro de inovação da
+        Universidade de Rio Verde. Um espaço criado para transformar conhecimento em
+        protótipos, pesquisas em soluções e criatividade em impacto para a sociedade.
+      </p>
+      <a href="{% url 'conteudo:contato' %}" class="inova-btn inova-btn--grad inova-locale__cta">
+        Como chegar
+        <span aria-hidden="true">↗</span>
+      </a>
+    </div>
+    <div class="inova-locale__media" aria-hidden="true">
+      <img src="{% static 'branding/inovalab/stripe-locale.svg' %}" alt="" class="inova-locale__stripe" />
+      <img
+        src="{% static 'branding/inovalab/building.jpg' %}"
+        alt=""
+        class="inova-locale__photo"
+        loading="eager"
+        decoding="async"
+      />
+    </div>
+  </section>
+
+  {# ========================= ESTRUTURA ========================= #}
+  <section class="inova-section" aria-labelledby="inova-structure-title">
+    <div class="inova-container inova-structure">
+      <p class="inova-eyebrow inova-eyebrow--center">Estrutura</p>
+      <h2 id="inova-structure-title" class="inova-heading inova-heading--center">Tecnologia que impulsiona ideias</h2>
+      <span class="inova-heading-divider inova-heading-divider--brand" aria-hidden="true"></span>
+
+      <div class="inova-carousel" data-inova-carousel>
+        <button type="button" class="inova-carousel__nav inova-carousel__nav--prev" data-carousel-prev aria-label="Itens anteriores">
+          <span aria-hidden="true">‹</span>
+        </button>
+        <ul class="inova-carousel__track" data-carousel-track tabindex="0" aria-label="Equipamentos do laboratório">
+          {% for item in featured_equipment %}
+          <li class="inova-equip-card">
+            <div class="inova-equip-card__media">
+              {% if item.image %}
+              <img src="{% static item.image %}" alt="{{ item.image_alt|default:item.name }}" width="240" height="144" loading="lazy" decoding="async" />
+              {% else %}
+              <img src="{% static item.icon %}" alt="" class="inova-equip-card__fallback-icon" width="96" height="96" loading="lazy" decoding="async" />
+              {% endif %}
+            </div>
+            <div class="inova-equip-card__body">
+              <h3>{{ item.name }}</h3>
+              <p>{{ item.description }}</p>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        <button type="button" class="inova-carousel__nav inova-carousel__nav--next" data-carousel-next aria-label="Próximos itens">
+          <span aria-hidden="true">›</span>
+        </button>
+      </div>
+
+      <p class="inova-structure__note">
+        Contamos com equipamentos de última geração e acompanhamento especializado em
+        design, produção e escolha de materiais.
+      </p>
+      <div class="inova-structure__cta">
+        <a href="{% url 'conteudo:servicos' %}" class="inova-btn inova-btn--grad">Saiba mais</a>
+      </div>
+    </div>
+  </section>
+
+  {# ========================= CALENDÁRIO DE EVENTOS ========================= #}
+  <section class="inova-section"><div class="inova-container"><h2 class="inova-heading">Calendário de eventos</h2><p>Acompanhe os eventos e seus agendamentos na área interna.</p><a href="{% url 'core:dashboard' %}" class="inova-btn inova-btn--grad">Ver calendário</a></div></section>
+</div>
+
+
+{% endblock %}

@@ -10,13 +10,13 @@ class FrontendRoutesTests(AccountsProviderMixin, TestCase):
     def setUpTestData(cls):
         cls.user = get_user_model().objects.create_user('frontend-user', password=PASSWORD)
 
-    def test_root_is_login_and_index_requires_authentication(self):
-        self.assertContains(self.client.get('/'), 'Entre na sua conta')
-        self.assertRedirects(self.client.get('/index/'), '/?next=/index/', fetch_redirect_response=False)
+    def test_login_is_at_entrar_and_index_requires_authentication(self):
+        self.assertContains(self.client.get('/entrar/'), 'Entre na sua conta')
+        self.assertRedirects(self.client.get('/index/'), '/entrar/?next=/index/', fetch_redirect_response=False)
 
-    def test_login_default_and_authenticated_root_go_to_index(self):
-        self.assertRedirects(self.client.post('/', {'username': self.user.username, 'password': PASSWORD}), '/index/')
-        self.assertRedirects(self.client.get('/'), '/index/')
+    def test_login_default_and_authenticated_login_go_to_index(self):
+        self.assertRedirects(self.client.post('/entrar/', {'username': self.user.username, 'password': PASSWORD}), '/index/')
+        self.assertRedirects(self.client.get('/entrar/'), '/index/')
         self.assertContains(self.client.get('/perfil/'), 'Minha conta')
 
     def test_login_alias_and_safe_next(self):
@@ -40,18 +40,18 @@ class FrontendRoutesTests(AccountsProviderMixin, TestCase):
 
     def test_login_self_returns_normalize_to_index(self):
         self.client.force_login(self.user)
-        for path in ('/', '/entrar/'):
-            for destination in ('/', '/entrar/', '/?next=/', '/entrar/?next=/entrar/',
-                                '?next=/', '#login', 'http://testserver/entrar/'):
+        for path in ('/entrar/',):
+            for destination in ('/entrar/', '/entrar/?next=/entrar/',
+                                '?next=/entrar/', '#login', 'http://testserver/entrar/'):
                 with self.subTest(path=path, destination=destination):
                     self.assertRedirects(self.client.get(path, {'next':destination}), '/index/',
                                          fetch_redirect_response=False)
-        self.assertRedirects(self.client.get('/', {'next':'/materiais/'}), '/materiais/', fetch_redirect_response=False)
+        self.assertRedirects(self.client.get('/entrar/', {'next':'/materiais/'}), '/materiais/', fetch_redirect_response=False)
 
     def test_login_post_self_return_normalizes_to_index(self):
-        for destination in ('/', '/entrar/?next=/entrar/'):
+        for destination in ('/entrar/', '/entrar/?next=/entrar/'):
             self.client.logout()
-            self.assertRedirects(self.client.post('/', {'username':self.user.username,
+            self.assertRedirects(self.client.post('/entrar/', {'username':self.user.username,
                                 'password':PASSWORD, 'next':destination}), '/index/')
 
     def test_catalog_menu_remains_current_for_all_categories(self):

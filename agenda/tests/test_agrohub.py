@@ -35,7 +35,7 @@ class VisitAgroHubTests(TestCase):
             clock.start()
             self.addCleanup(clock.stop)
         self.stub.reset()
-        response = self.client.post('/', {'username': 'agro-ana', 'password': PASSWORD})
+        response = self.client.post('/entrar/', {'username': 'agro-ana', 'password': PASSWORD})
         self.assertEqual(response.status_code, 302)
         self.user = get_user_model().objects.get(agrohub_id=42)
 
@@ -450,7 +450,7 @@ class VisitAgroHubTests(TestCase):
         self.assertEqual(guarded.post(f'/api/v1/agendamentos/{booking.pk}/agrohub/', {'versao': 1}, content_type='application/json').status_code, 403)
 
     def test_historical_visit_without_link_is_not_exported_on_review(self):
-        start = (timezone.now()+timedelta(days=40)).replace(second=0, microsecond=0)
+        start = (timezone.now()+timedelta(days=40)).replace(hour=12, minute=0, second=0, microsecond=0)
         booking = save_booking(actor=self.user, data={'categoria': 'visita', 'inicio': start, 'fim': start+timedelta(hours=1)})
         booking.reserva_agrohub.delete()
         self.admin()
@@ -498,7 +498,7 @@ class VisitAgroHubTests(TestCase):
         self.user.agrohub_id = 43
         self.user.save(update_fields=['agrohub_id'])
         self.client.post('/sair/')
-        self.client.post('/', {'username': 'agro-ana', 'password': PASSWORD})
+        self.client.post('/entrar/', {'username': 'agro-ana', 'password': PASSWORD})
         self.assertEqual(self.client.get(f'/agenda/{booking.pk}/agrohub/').status_code, 404)
         self.assertEqual(self.client.post(f'/api/v1/agendamentos/{booking.pk}/agrohub/', {'versao': 1}, content_type='application/json').status_code, 404)
 

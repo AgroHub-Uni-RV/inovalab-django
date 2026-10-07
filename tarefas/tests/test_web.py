@@ -11,7 +11,7 @@ from tarefas.tests.helpers import TaskFixtures
 class TaskWebTests(TaskFixtures, TestCase):
     def test_anonymous_redirects_to_login(self):
         for path in ('/tarefas/', '/tarefas/nova/', f'/tarefas/{self.mine.pk}/'):
-            self.assertRedirects(self.client.get(path), f'/?next={path}', fetch_redirect_response=False)
+            self.assertRedirects(self.client.get(path), f'/entrar/?next={path}', fetch_redirect_response=False)
 
     def test_owner_board_counts_and_detail_only_include_own_tasks(self):
         self.client.force_login(self.owner)

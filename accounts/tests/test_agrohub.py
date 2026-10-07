@@ -27,7 +27,7 @@ class AgroHubAccountsTests(TestCase):
         self.stub.reset()
 
     def login(self, client=None, **extra):
-        return (client or self.client).post('/', {'username': 'agro-ana', 'password': PASSWORD, **extra})
+        return (client or self.client).post('/entrar/', {'username': 'agro-ana', 'password': PASSWORD, **extra})
 
     def test_login_uses_authoritative_me_identity_and_never_remote_privileges(self):
         response = self.login()
@@ -50,7 +50,7 @@ class AgroHubAccountsTests(TestCase):
 
     def test_local_password_does_not_authenticate_when_api_rejects(self):
         get_user_model().objects.create_superuser('local-admin', password=PASSWORD)
-        response = self.client.post('/', {'username': 'local-admin', 'password': PASSWORD})
+        response = self.client.post('/entrar/', {'username': 'local-admin', 'password': PASSWORD})
         self.assertEqual(response.status_code, 200)
         self.assertNotIn('_auth_user_id', self.client.session)
 
@@ -131,7 +131,7 @@ class AgroHubAccountsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         response = self.client.post('/recuperar-senha/confirmar/', {'uid': 'NDI', 'token': 'test-reset-token',
             'new_password': PASSWORD, 'new_password_confirm': PASSWORD})
-        self.assertRedirects(response, '/')
+        self.assertRedirects(response, '/entrar/')
         writes = [row for row in self.stub.state['requests'] if row[0] == 'POST']
         self.assertEqual(writes[0][2], {'email': 'ana@example.test'})
         self.assertEqual(writes[1][2], {'uid': 'NDI', 'token': 'test-reset-token',
@@ -161,7 +161,7 @@ class AgroHubAccountsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotIn('_auth_user_id', self.client.session)
         strict = Client(enforce_csrf_checks=True)
-        for path in ('/', '/registro/', '/recuperar-senha/', '/recuperar-senha/confirmar/'):
+        for path in ('/entrar/', '/registro/', '/recuperar-senha/', '/recuperar-senha/confirmar/'):
             self.assertEqual(strict.post(path, {'email': 'ana@example.test'}).status_code, 403)
 
     def test_logout_removes_provider_tokens(self):
@@ -194,8 +194,8 @@ class AgroHubAccountsTests(TestCase):
         self.assertEqual(response['Referrer-Policy'], 'no-referrer')
         self.assertNotContains(self.client.get(response.url), 'secret-reset-token')
         confirmed = self.client.post(response.url, {'new_password': PASSWORD, 'new_password_confirm': PASSWORD})
-        self.assertRedirects(confirmed, '/', fetch_redirect_response=False)
-        self.assertContains(self.client.get('/'), 'Senha atualizada. Entre com a nova senha do AgroHub.')
+        self.assertRedirects(confirmed, '/entrar/', fetch_redirect_response=False)
+        self.assertContains(self.client.get('/entrar/'), 'Senha atualizada. Entre com a nova senha do AgroHub.')
         payload = self.stub.state['requests'][-1][2]
         self.assertEqual(payload['token'], 'secret-reset-token')
 
@@ -267,4 +267,4 @@ class AgroHubAccountsTests(TestCase):
     def test_sessions_from_previous_local_backend_are_no_longer_accepted(self):
         local = get_user_model().objects.create_user('old-account', password=PASSWORD)
         self.client.force_login(local, backend='django.contrib.auth.backends.ModelBackend')
-        self.assertRedirects(self.client.get('/index/'), '/?next=/index/', fetch_redirect_response=False)
+        self.assertRedirects(self.client.get('/index/'), '/entrar/?next=/index/', fetch_redirect_response=False)
