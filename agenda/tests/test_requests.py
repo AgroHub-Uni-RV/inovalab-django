@@ -121,12 +121,13 @@ class BookingRequestTests(BookingRequestFixtures, TestCase):
         booking.refresh_from_db()
         self.assertEqual((booking.situacao, booking.versao), ('pendente', 2))
 
-    def test_normal_user_cannot_edit_cancel_or_assign_protected_fields(self):
+    def test_normal_user_can_cancel_own_but_cannot_edit_or_assign_protected_fields(self):
         booking = self.create()
         with self.assertRaises(PermissionDenied):
             services.save_booking(actor=self.user, category=booking.categoria, booking_id=booking.pk, expected_version=1, data={'motivo': 'Editar'})
-        with self.assertRaises(PermissionDenied):
-            services.cancel_booking(actor=self.user, category=booking.categoria, booking_id=booking.pk, expected_version=1)
+        services.cancel_booking(actor=self.user, category=booking.categoria, booking_id=booking.pk, expected_version=1)
+        booking.refresh_from_db()
+        self.assertIsNotNone(booking.cancelado_em)
         for field in ('situacao', 'criado_por', 'avaliado_por', 'avaliado_em'):
             with self.assertRaises(ValidationError):
                 self.create(**{field: 'confirmado'})
@@ -188,7 +189,7 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         response = self.client.get(response.url)
         self.assertContains(response, 'Pendente')
         self.assertNotContains(response, 'Editar agendamento')
-        self.assertNotContains(response, 'Cancelar agendamento')
+        self.assertContains(response, 'Cancelar agendamento')
         self.assertNotContains(response, '/avaliar/')
         self.assertEqual(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/historico/').status_code, 200)
         self.assertContains(self.client.get('/agenda/'), '/agenda/novo/')
@@ -231,8 +232,8 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         self.assertEqual(self.client.get('/agenda/solicitacoes/').status_code, 403)
         url = f'/agenda/{booking.categoria}/{booking.pk}/avaliar/'
         self.assertEqual(self.client.post(url, {'versao': 1, 'decisao': 'aprovar'}).status_code, 403)
-        for suffix in ('editar/', 'cancelar/'):
-            self.assertEqual(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/{suffix}').status_code, 403)
+        self.assertEqual(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/editar/').status_code, 403)
+        self.assertContains(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/cancelar/'), 'Confirmar cancelamento')
         self.client.force_login(self.admin)
         response = self.client.get('/agenda/solicitacoes/')
         self.assertEqual([row.pk for row in response.context['object_list']], [booking.pk])
@@ -280,8 +281,9 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual((response.data['situacao'], response.data['criado_por']), ('pendente', self.user.pk))
         url = f'/api/v1/agendamentos/{response.data["categoria"]}/{response.data["id"]}/'
-        for method in (api.patch, api.put, api.delete):
+        for method in (api.patch, api.put):
             self.assertEqual(method(url, {'versao': 1}, format='json').status_code, 403)
+        self.assertEqual(api.delete(url, {'versao': 1}, format='json').status_code, 204)
         for field in ('situacao', 'avaliado_por', 'avaliado_em', 'criado_por'):
             self.assertEqual(api.post('/api/v1/agendamentos/', {**self.data, field: 'confirmado'}, format='json').status_code, 400)
         space_id = 42

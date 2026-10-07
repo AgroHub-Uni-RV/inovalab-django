@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.shortcuts import render
+from django.http import Http404
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -11,8 +13,10 @@ from django.views.generic import ListView
 
 from accounts.policies import can_access_panel
 from agenda.models import CATEGORIES
+from agenda.forms import CancelForm
 from agenda.policies import can_view_own_bookings
 from agenda.selectors import month_bounds, own_booking, own_bookings
+from agenda.services import BookingConflict, cancel_booking
 
 
 PERSONAL_STATUSES = {'pendente': 'Pendente', 'confirmado': 'Confirmado',
@@ -109,3 +113,39 @@ class MyBookingDetailView(OwnBookingAccessMixin, View):
         return render(request, 'agenda/my_detail.html', {
             **personal_context(request), 'booking': PersonalBooking(booking), 'events': events,
         })
+
+
+@method_decorator(never_cache, name='dispatch')
+class MyBookingCancelView(OwnBookingAccessMixin, View):
+    http_method_names = ['get', 'post', 'head', 'options']
+
+    def get_booking(self, request, category, pk):
+        booking = own_booking(request.user, category, pk)
+        if booking.cancelado_em:
+            raise Http404
+        return booking
+
+    def render_form(self, request, booking, form, *, status=200):
+        return render(request, 'agenda/my_cancel.html', {
+            **personal_context(request), 'booking': PersonalBooking(booking), 'form': form,
+        }, status=status)
+
+    def get(self, request, category, pk):
+        booking = self.get_booking(request, category, pk)
+        return self.render_form(request, booking, CancelForm(initial={'versao': booking.versao}))
+
+    def post(self, request, category, pk):
+        booking = self.get_booking(request, category, pk)
+        form = CancelForm(request.POST)
+        status = 400
+        if form.is_valid():
+            try:
+                cancel_booking(actor=request.user, category=category, booking_id=pk,
+                               expected_version=form.cleaned_data['versao'])
+            except BookingConflict as error:
+                form.add_error(None, str(error))
+                status = 409
+            else:
+                messages.success(request, 'Agendamento cancelado. Horário liberado e histórico preservado.')
+                return redirect('agenda:mine')
+        return self.render_form(request, booking, form, status=status)

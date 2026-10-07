@@ -9,8 +9,8 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from accounts.policies import is_business_admin
-from agenda.policies import can_access_agenda
-from agenda.selectors import filter_bookings, visible_bookings, visible_booking
+from agenda.policies import can_access_agenda, can_create_booking, can_cancel_booking
+from agenda.selectors import filter_bookings, visible_bookings, visible_booking, own_booking
 from agenda.serializers import BookingSerializer, VisitSerializer, CancelSerializer, EventSerializer
 from agenda.services import BookingConflict, cancel_booking
 
@@ -19,9 +19,14 @@ class AgendaPermission(BasePermission):
     message = 'Esta ação exige uma conta ativa com permissão para acessar a agenda.'
 
     def has_permission(self, request, view):
-        if view.action in ('update', 'partial_update', 'destroy'):
+        if view.action in ('create', 'destroy'):
+            return can_create_booking(request.user)
+        if view.action in ('update', 'partial_update'):
             return is_business_admin(request.user)
         return can_access_agenda(request.user)
+
+    def has_object_permission(self, request, view, obj):
+        return view.action != 'destroy' or can_cancel_booking(request.user, obj)
 
 
 class BookingPagination(PageNumberPagination):
@@ -51,7 +56,8 @@ class BookingViewSet(ModelViewSet):
         return queryset
 
     def get_object(self):
-        booking = visible_booking(self.request.user, self.kwargs['category'], int(self.kwargs['pk']))
+        selector = own_booking if self.action == 'destroy' and not is_business_admin(self.request.user) else visible_booking
+        booking = selector(self.request.user, self.kwargs['category'], int(self.kwargs['pk']))
         self.check_object_permissions(self.request, booking)
         return booking
 

@@ -28,7 +28,8 @@ class AccountLoginView(LoginView):
         if not can_access_panel(self.request.user):
             target = self.get_redirect_url()
             if target and (urlsplit(target).path.startswith('/agenda/meus/')
-                           or urlsplit(target).path == '/agenda/visitas/'):
+                           or urlsplit(target).path in (reverse('agenda:visit-list'),
+                                                       reverse('agenda:create'), reverse('agenda:visit-create'))):
                 return target
             return reverse('conteudo:inicio')
         destination = super().get_success_url()

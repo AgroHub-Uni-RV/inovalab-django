@@ -46,8 +46,8 @@ class BookingWebTests(TestCase):
         self.assertEqual(self.client.get('/agenda/novo/').status_code, 200)
         for suffix in ('', 'historico/'):
             self.assertEqual(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/{suffix}').status_code, 404)
-        for suffix in ('editar/', 'cancelar/'):
-            self.assertEqual(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/{suffix}').status_code, 403)
+        self.assertEqual(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/editar/').status_code, 403)
+        self.assertEqual(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/cancelar/').status_code, 404)
         self.assertEqual(self.client.post('/agenda/novo/', self.data).status_code, 302)
 
     def test_admin_can_create_each_category_edit_view_history_and_cancel(self):

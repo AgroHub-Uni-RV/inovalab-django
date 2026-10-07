@@ -4,6 +4,7 @@ from agenda import views, visit_views, personal
 
 app_name = 'agenda'
 urlpatterns = [
+    path('meus/<str:category>/<int:pk>/cancelar/', personal.MyBookingCancelView.as_view(), name='my-cancel'),
     path('', views.BookingListView.as_view(), name='list'),
     path('meus/', personal.MyBookingsListView.as_view(), name='mine'),
     path('meus/visitas/<int:pk>/', personal.MyBookingDetailView.as_view(), name='my-visit-detail'),

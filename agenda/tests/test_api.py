@@ -69,7 +69,7 @@ class BookingAPITests(TestCase):
             if actor:
                 self.client.force_login(actor)
             self.assertEqual(self.client.patch(f'{self.url}{booking["categoria"]}/{booking["id"]}/', {'versao': 1}, format='json').status_code, 403)
-            self.assertEqual(self.client.delete(f'{self.url}{booking["categoria"]}/{booking["id"]}/', {'versao': 1}, format='json').status_code, 403)
+            self.assertEqual(self.client.delete(f'{self.url}{booking["categoria"]}/{booking["id"]}/', {'versao': 1}, format='json').status_code, 404 if actor else 403)
 
     def test_overlap_and_stale_version_are_409_without_partial_update(self):
         booking = self.create()

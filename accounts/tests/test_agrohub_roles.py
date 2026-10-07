@@ -6,6 +6,7 @@ from django.test import TestCase, override_settings
 
 from accounts.policies import is_business_admin
 from accounts.tests.agrohub_stub import AccountsStub, PASSWORD
+from agenda.models import AgendaVisita
 from catalogo.models import Servico
 
 
@@ -53,9 +54,10 @@ class AgroHubRolesTests(TestCase):
         self.assertEqual(self.client.get('/catalogo/servicos/novo/').status_code, 403)
         self.assertEqual(self.client.get('/integracoes/').status_code, 403)
 
-    def test_regular_user_login_returns_home_and_all_internal_routes_are_forbidden(self):
-        self.assertRedirects(self.login(['student'], next='/agenda/novo/'), '/')
-        for path in ('/index/', '/painel/', '/agenda/', '/agenda/novo/', '/catalogo/servicos/',
+    def test_regular_user_can_return_to_booking_creation_without_access_to_other_internal_routes(self):
+        self.assertRedirects(self.login(['student'], next='/agenda/novo/'), '/agenda/novo/')
+        self.assertContains(self.client.get('/agenda/visitas/novo/'), 'Agendar visita')
+        for path in ('/index/', '/painel/', '/agenda/', '/catalogo/servicos/',
                      '/tarefas/', '/materiais/', '/banners/', '/integracoes/', '/usuarios/'):
             with self.subTest(path=path):
                 response = self.client.get(path)
@@ -73,6 +75,22 @@ class AgroHubRolesTests(TestCase):
         response = self.client.post('/api/v1/servicos/', {'nome': 'Não autorizado'})
         self.assertEqual(response.status_code, 403)
         self.assertFalse(Servico.objects.filter(nome='Não autorizado').exists())
+
+    def test_regular_linked_account_can_request_and_cancel_own_booking_with_synced_roles(self):
+        self.assertRedirects(self.login(['student'], next='/agenda/visitas/novo/'), '/agenda/visitas/novo/')
+        response = self.client.post('/agenda/visitas/novo/', {
+            'quantidade_pessoas': '2', 'data': '2099-12-10', 'hora_inicio': '09:00', 'hora_termino': '10:00',
+        }, HTTP_X_BOOKING_MODAL='1')
+        self.assertEqual(response.status_code, 201)
+        booking = AgendaVisita.objects.get()
+        self.assertEqual((booking.situacao, booking.criado_por.agrohub_roles), ('pendente', ['student']))
+        self.assertContains(self.client.get(response.json()['detail_url']), 'Cancelar agendamento')
+        self.stub.state['profile']['roles'] = ['partner']
+        self.assertRedirects(self.client.post(f'/agenda/meus/visita/{booking.pk}/cancelar/', {'versao': 1}), '/agenda/meus/')
+        booking.refresh_from_db()
+        self.assertIsNotNone(booking.cancelado_em)
+        self.assertEqual(booking.eventos.get(acao='cancelar').ator_id, booking.criado_por_id)
+        self.assertEqual(self.client.get('/agenda/solicitacoes/').status_code, 403)
 
     def test_regular_user_keeps_own_profile_and_public_pages_without_internal_navigation(self):
         self.login(['partner'])

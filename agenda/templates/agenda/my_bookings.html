@@ -2,8 +2,8 @@
 {% block title %}Meus agendamentos{% endblock %}
 {% block content_class %}module-page agenda-page{% endblock %}
 {% block content %}
-<section class="module-page personal-bookings-page">
-  <div class="page-heading"><h1>Meus agendamentos</h1>{% if can_access_panel %}<div class="page-heading-actions"><a class="secondary-button" href="{% url 'agenda:list' %}">Voltar à agenda</a><a class="primary-button" href="{% url 'agenda:create' %}">Novo agendamento {% include 'core/icon.html' with name='plus' %}</a></div>{% endif %}</div>
+<section class="module-page personal-bookings-page"{% if not can_access_panel %} data-page-content{% endif %}>
+  <div class="page-heading"><h1>Meus agendamentos</h1><div class="page-heading-actions">{% if can_access_panel %}<a class="secondary-button" href="{% url 'agenda:list' %}">Voltar à agenda</a>{% endif %}<a class="primary-button" href="{% url 'agenda:create' %}">Novo agendamento {% include 'core/icon.html' with name='plus' %}</a></div></div>
   <p>Consulte seus serviços, equipamentos e visitas e abra os detalhes de cada agendamento.</p>
   <form method="get" class="filter-bar">
     <div class="filter-field search-field"><label for="my-query">Pesquisar agendamento</label><input id="my-query" name="q" value="{{ query }}" maxlength="150" placeholder="Nome, motivo, observações ou número"></div>

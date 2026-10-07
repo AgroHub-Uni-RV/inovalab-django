@@ -16,7 +16,8 @@
     <section class="description-block"><h2>Observações</h2><p>{{ booking.observacoes|default:'Nenhuma observação informada.'|linebreaksbr }}</p></section>
     {% if booking.pedido_integracao %}<dl class="inline-details"><div><dt>Origem externa</dt><dd>{{ booking.pedido_integracao.cliente.nome }}</dd></div><div><dt>Pedido externo</dt><dd>{{ booking.pedido_integracao.id_externo }}</dd></div><div><dt>Requerente externo</dt><dd>{{ booking.pedido_integracao.requerente_id }}</dd></div></dl>{% endif %}
     <p>Horários de Brasília.</p>
-    {% if is_business_admin and not booking.recebido_agrohub %}{% if booking.situacao == 'pendente' and booking.categoria != 'espaco' %}{% include 'agenda/review_actions.html' %}{% endif %}<div class="sheet-actions"><a class="secondary-button" href="{% url 'agenda:cancel' booking.categoria booking.pk %}">Cancelar agendamento</a></div>{% endif %}
+    {% if is_business_admin and not booking.recebido_agrohub and booking.situacao == 'pendente' and booking.categoria != 'espaco' %}{% include 'agenda/review_actions.html' %}{% endif %}
+    {% if can_cancel_booking %}<div class="sheet-actions"><a class="secondary-button" href="{% url 'agenda:cancel' booking.categoria booking.pk %}">Cancelar agendamento</a></div>{% endif %}
   </section><aside class="sheet-sidebar"><h2>Histórico</h2>{% for event in events %}<article class="agenda-event"><h3>{{ event.get_acao_display }}</h3><p>{{ event.ator_nome }}</p><p>{{ event.instante|date:'d/m/Y H:i:s' }}</p></article>{% empty %}<p>Nenhum evento.</p>{% endfor %}<a class="history-link" href="{% url 'agenda:history' booking.categoria booking.pk %}">Histórico completo</a></aside></div>
 </div>
 {% endblock %}

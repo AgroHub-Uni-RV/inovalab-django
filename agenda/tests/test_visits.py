@@ -123,15 +123,16 @@ class LocalVisitTests(TestCase):
             self.assertEqual([row.pk for row in response.context['object_list']], [booking.pk])
             self.assertNotContains(response, 'value="aprovar"')
 
-    def test_other_owner_cannot_read_or_act_and_staff_cannot_edit_or_cancel(self):
+    def test_other_owner_cannot_read_or_act_and_staff_can_only_cancel_own_booking(self):
         booking = self.create(actor=self.staff)
         self.client.force_login(self.other)
         self.assertEqual(self.client.get(booking.get_absolute_url()).status_code, 404)
         self.assertEqual(self.client.get(f'/agenda/meus/visitas/{booking.pk}/').status_code, 404)
         self.client.force_login(self.staff)
         self.assertContains(self.client.get(f'/agenda/meus/visitas/{booking.pk}/'), 'Trazer material')
-        for suffix in ('editar/', 'cancelar/', 'avaliar/'):
+        for suffix in ('editar/', 'avaliar/'):
             self.assertEqual(self.client.post(f'/agenda/visita/{booking.pk}/{suffix}', self.payload()).status_code, 403)
+        self.assertRedirects(self.client.post(f'/agenda/visita/{booking.pk}/cancelar/', {'versao': 1}), '/agenda/meus/')
 
     def test_database_rejects_nonpositive_people_and_period_and_event_with_two_agendas(self):
         base = {key: value for key, value in self.data.items() if key != 'categoria'}
@@ -242,5 +243,5 @@ class VisitsAccountsBoundaryTests(TestCase):
         self.assertEqual(response.context['paginator'].count, 1)
         self.assertNotContains(response, 'SEGREDO')
         self.assertContains(self.client.get(f'/agenda/meus/visitas/{booking.pk}/'), 'Minha visita')
-        self.assertEqual(self.client.get('/agenda/novo/').status_code, 403)
+        self.assertEqual(self.client.get('/agenda/novo/').status_code, 200)
         self.assertFalse(any('/agendamentos/' in row[1] for row in self.stub.state['requests']))

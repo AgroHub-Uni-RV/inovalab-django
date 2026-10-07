@@ -2,7 +2,7 @@
 {% block content_class %}module-page detail-page{% endblock %}
 {% block content %}
 <div class="detail-sheet"{% if not booking_modal %} data-booking-create-page{% endif %}>
-  <div class="sheet-topbar">{% if not booking_modal %}<a class="secondary-button" href="{% url 'agenda:list' %}">Voltar à agenda</a>{% endif %}<span class="sheet-meta">{% include 'core/icon.html' with name='calendar' %}Agendamento</span></div>
+  <div class="sheet-topbar">{% if not booking_modal %}{% if can_access_panel %}<a class="secondary-button" href="{% url 'agenda:list' %}">Voltar à agenda</a>{% else %}<a class="secondary-button" href="{% url 'agenda:mine' %}">Meus agendamentos</a>{% endif %}{% endif %}<span class="sheet-meta">{% include 'core/icon.html' with name='calendar' %}Agendamento</span></div>
   <div class="sheet-content">
     <h1>Novo agendamento</h1>
     <p>Escolha o que você deseja agendar para preencher o formulário.</p>

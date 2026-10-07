@@ -40,7 +40,7 @@ class PersonalLocalBookingsTests(TestCase):
             self.assertContains(detail, 'Observações próprias')
             self.assertNotContains(detail, 'Editar agendamento')
         self.assertEqual(self.client.get('/agenda/').status_code, 403)
-        self.assertEqual(self.client.get('/agenda/novo/').status_code, 403)
+        self.assertContains(self.client.get('/agenda/novo/'), 'Novo agendamento')
 
     def test_admin_personal_list_and_details_do_not_include_other_owners(self):
         own = self.booking(self.admin)

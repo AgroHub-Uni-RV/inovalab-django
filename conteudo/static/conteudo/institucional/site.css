@@ -52,6 +52,9 @@
 .inova-contact-form [name=website] { display:none; }
 .institutional-page .inova-carousel__nav span { font-size:28px; line-height:1; }
 .institutional-page .inova-hero__title { font-size:var(--font-display); }
+.institutional-page .inova-hero { aspect-ratio:auto; min-height:23.96vw; }
+.institutional-page .inova-hero__inner { min-width:0; max-width:100%; }
+.institutional-page .inova-hero__title-line { white-space:normal; }
 .institutional-page .inova-container { max-width:1120px; }
 .institutional-page .inova-hero__inner { padding-left:max(2rem,calc(50vw - 32.125rem)); }
 .institutional-page .inova-about-hero, .institutional-page .inova-contact-hero, .institutional-page .inova-services-hero { min-height:clamp(13rem,20.3vw,24rem); }
@@ -98,6 +101,7 @@
   .institutional-footer .institutional-header-inner { grid-template-columns:1fr; gap:var(--space-8); }
   .institutional-page .inova-page-title { font-size:var(--font-title); }
   .institutional-page .inova-hero__title { font-size:var(--font-title); }
+  .institutional-page .inova-hero__inner { padding-inline:var(--space-5); }
   .institutional-page .inova-hero__photo { object-position:right center; }
   .institutional-page .inova-contact-heading, .institutional-page .inova-about-intro h2, .institutional-page .inova-services-offer__intro h2 { font-size:var(--font-title); }
 }

@@ -81,14 +81,16 @@ class BookingModalTests(TestCase):
         self.assertEqual(AgendaVisita.objects.count(), 2)
         self.assertEqual(EventoAgendamento.objects.count(), 2)
 
-    def test_modal_header_does_not_bypass_auth_roles_csrf_or_allow_spoofed_fields(self):
+    def test_modal_allows_normal_users_but_requires_auth_csrf_and_rejects_spoofed_fields(self):
         self.client.logout()
         response = self.client.get('/agenda/novo/', **self.headers)
         self.assertEqual(response.status_code, 302)
         self.assertIn('/entrar/', response.url)
         self.client.force_login(self.outside)
-        self.assertEqual(self.client.get('/agenda/novo/', **self.headers).status_code, 403)
-        self.assertEqual(self.client.post('/agenda/visitas/novo/', self.payload('visita'), **self.headers).status_code, 403)
+        self.assertEqual(self.client.get('/agenda/novo/', **self.headers).status_code, 200)
+        response = self.client.post('/agenda/visitas/novo/', self.payload('visita'), **self.headers)
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(response.json()['detail_url'].startswith('/agenda/meus/'))
         strict = Client(enforce_csrf_checks=True)
         strict.force_login(self.admin)
         self.assertEqual(strict.post('/agenda/visitas/novo/', self.payload('visita'), **self.headers).status_code, 403)
@@ -98,6 +100,7 @@ class BookingModalTests(TestCase):
         invalid = strict.post('/agenda/visitas/novo/', data, **self.headers)
         self.assertTrue(invalid.context['form'].errors)
         data.pop('criado_por')
+        data['data'] = '2099-11-02'
         self.assertEqual(strict.post('/agenda/visitas/novo/', data, **self.headers).status_code, 201)
 
     def test_single_modal_available_on_internal_pages_and_institutional_entry(self):

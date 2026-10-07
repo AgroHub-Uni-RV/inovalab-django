@@ -2,7 +2,7 @@
 {% block content_class %}module-page detail-page{% endblock %}
 {% block content %}
 <div class="detail-sheet"{% if not booking and not booking_modal %} data-booking-create-page{% endif %}>
-  <div class="sheet-topbar">{% if not booking %}<a class="secondary-button" data-booking-step href="{% url 'agenda:create' %}">Alterar tipo de agendamento</a>{% endif %}{% if not booking_modal %}<a class="secondary-button" href="{% url 'agenda:list' %}">Voltar à agenda</a>{% endif %}<span class="sheet-meta">{% include 'core/icon.html' with name='calendar' %}{{ form.category_label }}</span></div>
+  <div class="sheet-topbar">{% if not booking %}<a class="secondary-button" data-booking-step href="{% url 'agenda:create' %}">Alterar tipo de agendamento</a>{% endif %}{% if not booking_modal %}{% if can_access_panel %}<a class="secondary-button" href="{% url 'agenda:list' %}">Voltar à agenda</a>{% else %}<a class="secondary-button" href="{% url 'agenda:mine' %}">Meus agendamentos</a>{% endif %}{% endif %}<span class="sheet-meta">{% include 'core/icon.html' with name='calendar' %}{{ form.category_label }}</span></div>
   <div class="sheet-content">
     <h1>{% if booking %}Editar agendamento #{{ booking.pk }}{% elif form.category == 'equipamento' %}Agendar equipamento{% elif form.category == 'servico' %}Agendar serviço{% else %}Novo agendamento{% endif %}</h1>
     {% if not is_business_admin %}<p>O pedido será enviado para avaliação. Aguarde a confirmação de um administrador para ter o horário reservado.</p>{% endif %}

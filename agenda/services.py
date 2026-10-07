@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from accounts.policies import is_business_admin
 from agenda.models import BOOKING_MODELS, AgendaVisita, EventoAgendamento
-from agenda.policies import can_access_agenda
+from agenda.policies import can_access_agenda, can_create_booking, can_cancel_booking
 from catalogo.models import Equipamento, Servico
 from materiais.models import Material
 
@@ -127,7 +127,7 @@ def _persist_existing(booking, version):
 
 @_busy_as_conflict
 def save_booking(*, actor, data, category=None, booking_id=None, expected_version=None):
-    if not can_access_agenda(actor):
+    if not can_create_booking(actor):
         raise PermissionDenied('Entre com uma conta ativa para acessar a agenda.')
     if booking_id is not None:
         _require_admin(actor)
@@ -304,11 +304,20 @@ def review_booking(*, actor, category, booking_id, expected_version, decision):
 
 @_busy_as_conflict
 def cancel_booking(*, actor, category, booking_id, expected_version):
-    _require_admin(actor)
-    booking = _load(booking_id, expected_version, category)
+    if not can_create_booking(actor):
+        raise PermissionDenied('Entre com uma conta ativa para cancelar agendamentos.')
+
+    def load_owned_booking():
+        booking = get_object_or_404(booking_model(category), pk=booking_id, cancelado_em__isnull=True)
+        if not can_cancel_booking(actor, booking):
+            raise PermissionDenied('Você pode cancelar somente seus próprios agendamentos.')
+        _check_version(booking, expected_version)
+        return booking
+
+    booking = load_owned_booking()
     with transaction.atomic():
         _lock_targets(_target(booking))
-        booking = _load(booking_id, expected_version, category)
+        booking = load_owned_booking()
         before = _snapshot(booking)
         booking.cancelado_em = timezone.now()
         _persist_existing(booking, expected_version)

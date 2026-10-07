@@ -4,11 +4,11 @@ from django.views import View
 from accounts.policies import is_business_admin
 from agenda.modal import booking_saved, render_booking
 from agenda.services import BookingConflict, VISIT_FIELDS, save_booking
-from agenda.views import AgendaAccessMixin
+from agenda.views import BookingWriteAccessMixin
 from agenda.visit_forms import VisitForm
 
 
-class VisitWriteView(AgendaAccessMixin, View):
+class VisitWriteView(BookingWriteAccessMixin, View):
     def get_booking(self):
         if 'pk' not in self.kwargs:
             return None

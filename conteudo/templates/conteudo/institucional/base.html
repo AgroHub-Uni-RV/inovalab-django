@@ -10,7 +10,7 @@
   <link rel="preload" href="{% static 'core/assets/Montserrat.ttf' %}" as="font" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="{% static 'conteudo/institucional/monolito.css' %}">
   <link rel="stylesheet" href="{% static 'core/ui.css' %}">
-  {% if can_access_panel %}<link rel="stylesheet" href="{% static 'core/modulos.css' %}">{% endif %}
+  {% if user.is_authenticated and user.is_active %}<link rel="stylesheet" href="{% static 'core/modulos.css' %}">{% endif %}
   <link rel="stylesheet" href="{% static 'conteudo/institucional/site.css' %}">
   <script src="{% static 'conteudo/institucional/site.js' %}" defer></script>
   {% block extra_head %}{% endblock %}

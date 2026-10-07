@@ -12,7 +12,7 @@ from accounts.policies import is_business_admin
 from agenda.forms import BookingForm, CancelForm, ReviewForm
 from agenda.modal import booking_saved, render_booking
 from agenda.models import BOOKING_STATUSES, CATEGORIES
-from agenda.policies import can_access_agenda
+from agenda.policies import can_access_agenda, can_create_booking, can_cancel_booking
 from agenda.selectors import calendar_weeks, filter_bookings, month_bounds, visible_bookings, visible_booking
 from agenda.services import PUBLIC_FIELDS, SERVICE_FIELDS, BookingConflict, cancel_booking, review_booking, save_booking
 from accounts.photos import profile_photo_response
@@ -36,6 +36,15 @@ class AdminAgendaAccessMixin(AgendaAccessMixin):
         if request.user.is_authenticated and not is_business_admin(request.user):
             raise PermissionDenied('Somente administradores do laboratório podem gerenciar a agenda.')
         return super().dispatch(request, *args, **kwargs)
+
+
+class BookingWriteAccessMixin(AgendaAccessMixin):
+    def dispatch(self, request, *args, **kwargs):
+        if 'pk' in kwargs:
+            return super().dispatch(request, *args, **kwargs)
+        if request.user.is_authenticated and not can_create_booking(request.user):
+            raise PermissionDenied('Entre com uma conta ativa para criar agendamentos.')
+        return LoginRequiredMixin.dispatch(self, request, *args, **kwargs)
 
 
 class BookingListView(AgendaAccessMixin, ListView):
@@ -87,7 +96,8 @@ class BookingDetailView(AgendaAccessMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         return {**super().get_context_data(**kwargs), 'events': self.object.eventos.all()[:5],
-                'creator_name': self.object.criador_nome}
+                'creator_name': self.object.criador_nome,
+                'can_cancel_booking': can_cancel_booking(self.request.user, self.object)}
 
 
 @method_decorator(never_cache, name='dispatch')
@@ -99,7 +109,7 @@ class BookingCreatorPhotoView(AgendaAccessMixin, View):
         return profile_photo_response(booking.criado_por)
 
 
-class BookingWriteView(AgendaAccessMixin, View):
+class BookingWriteView(BookingWriteAccessMixin, View):
     def get_booking(self):
         if 'pk' in self.kwargs and not is_business_admin(self.request.user):
             raise PermissionDenied('Somente administradores do laboratório podem editar agendamentos.')
@@ -161,7 +171,7 @@ class BookingWriteView(AgendaAccessMixin, View):
         return render_booking(request, 'agenda/form.html', {'form': form, 'booking': booking}, status=response_status)
 
 
-class BookingCancelView(AdminAgendaAccessMixin, View):
+class BookingCancelView(AgendaAccessMixin, View):
     def get(self, request, pk, category):
         booking = self.get_object()
         return render(request, 'agenda/cancel.html', {'booking': booking, 'form': CancelForm(initial={'versao': booking.versao})})
@@ -178,7 +188,7 @@ class BookingCancelView(AdminAgendaAccessMixin, View):
                 message, response_status = str(error), 409
             else:
                 messages.success(request, 'Agendamento cancelado. Horário liberado e histórico preservado.')
-                return redirect('agenda:list')
+                return redirect('agenda:list' if is_business_admin(request.user) else 'agenda:mine')
         return render(request, 'agenda/error.html', {'message': message, 'booking': booking}, status=response_status)
 
 
