@@ -1,8 +1,9 @@
 from datetime import timedelta
+from urllib.parse import parse_qs, urlsplit
 from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.db import connection
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from inovalab_app.models import AgendaServico, Servico
@@ -18,6 +19,15 @@ class NativeHostTests(TestCase):
         self.assertFalse(hasattr(self.user, 'agrohub_roles'))
         self.assertNotIn('accounts_user', connection.introspection.table_names())
         self.assertEqual(AgendaServico._meta.get_field('criado_por').related_model, get_user_model())
+
+    @override_settings(LOGIN_URL='/entrar/?tenant=inovalab')
+    def test_login_query_keeps_return_path_under_prefix(self):
+        target = reverse('core:dashboard') + '?mes=10'
+        response = self.client.get(target)
+        self.assertEqual(response.status_code, 302)
+        query = parse_qs(urlsplit(response.url).query)
+        self.assertEqual(query['tenant'], ['inovalab'])
+        self.assertEqual(query['next'], [target])
 
     def test_pages_render_and_navigation_respects_the_prefix(self):
         self.client.force_login(self.user)

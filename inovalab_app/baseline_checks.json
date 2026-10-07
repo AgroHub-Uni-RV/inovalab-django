@@ -1,4 +1,8 @@
 {
+  "sqlite_django52": {
+    "agendaservico_material_valido": "CHECK (((material_gasto_gramas IS NULL AND material_proprio IS NULL) OR (material_gasto_gramas IS NULL AND material_proprio AND material_proprio IS NOT NULL) OR (material_gasto_gramas > '0' AND material_gasto_gramas IS NOT NULL AND NOT material_proprio AND material_proprio IS NOT NULL)))",
+    "agendaservico_tipo_material_valido": "CHECK ((material_gasto_id IS NULL OR (NOT material_proprio AND material_proprio IS NOT NULL)))"
+  },
   "sqlite": {
     "servico_status_valido": "CHECK (status IN ('disponivel', 'indisponivel'))",
     "equipamento_status_valido": "CHECK (status IN ('disponivel', 'ocupado', 'indisponivel'))",

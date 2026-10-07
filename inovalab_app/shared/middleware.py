@@ -1,6 +1,6 @@
-from urllib.parse import urlencode
+from django.contrib.auth.views import redirect_to_login
 from django.http import JsonResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import render
 from inovalab_app.adapters.host import can_access_panel, get_adapter
 from inovalab_app.agenda.policies import can_create_booking, can_view_own_bookings
 
@@ -45,7 +45,7 @@ class InovalabAccessMiddleware:
         if api:
             response = JsonResponse({'detail': 'Acesso restrito à equipe e aos administradores do AgroHub.'}, status=403)
         elif not request.user.is_authenticated:
-            return redirect(get_adapter().identity_context(request)['login_url']+'?'+urlencode({'next': request.get_full_path()}))
+            return redirect_to_login(request.get_full_path(), get_adapter().identity_context(request)['login_url'])
         else:
             response = render(request, 'inovalab_app/shared/access_denied.html', status=403)
         response['Cache-Control'] = 'no-store'

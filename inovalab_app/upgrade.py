@@ -61,7 +61,8 @@ def validate_existing_schema(connection):
     missing = expected_tables - actual_tables
     if missing:
         raise UpgradeError('Tabelas ausentes: '+', '.join(sorted(missing)))
-    if ('inovalab_app', '0001_initial') not in applied:
+    adopted = ('inovalab_app', '0001_initial') in applied
+    if not adopted:
         pending = [(app, name) for app, name in LEGACY_LEAVES.items() if (app, name) not in applied]
         if pending:
             raise UpgradeError('Atualize primeiro as migrações da versão anterior: '+', '.join(f'{app}.{name}' for app, name in pending))
@@ -70,7 +71,8 @@ def validate_existing_schema(connection):
     if retired:
         raise UpgradeError('Tabelas legadas ainda presentes: '+', '.join(sorted(retired)))
     with connection.cursor() as cursor:
-        baseline_checks = json.loads(files('inovalab_app').joinpath('baseline_checks.json').read_text(encoding='utf-8')).get(connection.vendor)
+        baselines = json.loads(files('inovalab_app').joinpath('baseline_checks.json').read_text(encoding='utf-8'))
+        baseline_checks = baselines.get(connection.vendor)
         if baseline_checks is None:
             raise UpgradeError('A consolidação suporta somente SQLite e PostgreSQL.')
         for model in models_to_check:
@@ -117,8 +119,14 @@ def validate_existing_schema(connection):
                 kind = 'check' if isinstance(constraint, models.CheckConstraint) else 'unique'
                 if not entry or not entry.get(kind):
                     raise UpgradeError(f'{table}: restrição ausente: {constraint.name}.')
-                if kind == 'check' and definitions.get(constraint.name) != baseline_checks.get(constraint.name):
-                    raise UpgradeError(f'{table}: definição divergente: {constraint.name}.')
+                if kind == 'check':
+                    accepted = {baseline_checks.get(constraint.name)}
+                    # Newly installed SQLite databases may use Django 5.2's boolean
+                    # syntax. Legacy adoption must match the frozen 6.1 schema.
+                    if adopted and connection.vendor == 'sqlite':
+                        accepted.add(baselines['sqlite_django52'].get(constraint.name, baseline_checks.get(constraint.name)))
+                    if definitions.get(constraint.name) not in accepted:
+                        raise UpgradeError(f'{table}: definição divergente: {constraint.name}.')
             for index in model._meta.indexes:
                 entry = constraints.get(index.name)
                 expected = [model._meta.get_field(name.lstrip('-')).column for name in index.fields]

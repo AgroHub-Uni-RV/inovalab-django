@@ -5,13 +5,38 @@ from django.core.management import call_command
 from django.db import connection
 from django.db.migrations.recorder import MigrationRecorder
 from django.test import TestCase
-from inovalab_app.upgrade import validate_existing_schema, UpgradeError
+from inovalab_app.upgrade import validate_existing_schema, UpgradeError, LEGACY_LEAVES
 from inovalab_app import schema_checks
 
 
 class SchemaValidationTests(TestCase):
+    def test_installed_sqlite_schema_accepts_django52_boolean_checks(self):
+        if connection.vendor != 'sqlite':
+            self.skipTest('Representação específica de booleanos no SQLite.')
+        original = schema_checks.check_definitions
+        def definitions(*args):
+            return {name: value.replace('material_proprio = 1', 'material_proprio').replace('material_proprio = 0', 'NOT material_proprio')
+                    for name, value in original(*args).items()}
+        with patch.object(schema_checks, 'check_definitions', side_effect=definitions):
+            self.assertTrue(validate_existing_schema(connection))
+
     def test_complete_current_schema_is_valid(self):
         self.assertTrue(validate_existing_schema(connection))
+
+    def test_legacy_adoption_requires_original_boolean_checks(self):
+        if connection.vendor != 'sqlite':
+            self.skipTest('Representação específica de booleanos no SQLite.')
+        recorder = MigrationRecorder(connection)
+        recorder.record_unapplied('inovalab_app', '0001_initial')
+        for app, name in LEGACY_LEAVES.items():
+            recorder.record_applied(app, name)
+        original = schema_checks.check_definitions
+        def definitions(*args):
+            return {name: value.replace('material_proprio = 1', 'material_proprio').replace('material_proprio = 0', 'NOT material_proprio')
+                    for name, value in original(*args).items()}
+        with patch.object(schema_checks, 'check_definitions', side_effect=definitions):
+            with self.assertRaisesMessage(UpgradeError, 'definição divergente'):
+                validate_existing_schema(connection)
 
     def test_missing_table_blocks_adoption(self):
         original = connection.introspection.table_names
