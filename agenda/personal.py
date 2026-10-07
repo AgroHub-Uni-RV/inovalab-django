@@ -14,7 +14,7 @@ from django.views.generic import ListView
 from accounts.policies import can_access_panel
 from agenda.models import CATEGORIES
 from agenda.forms import CancelForm
-from agenda.policies import can_view_own_bookings
+from agenda.policies import ADMIN_CANCEL_MESSAGE, can_view_own_bookings, can_cancel_booking
 from agenda.selectors import month_bounds, own_booking, own_bookings
 from agenda.services import BookingConflict, cancel_booking
 
@@ -112,6 +112,7 @@ class MyBookingDetailView(OwnBookingAccessMixin, View):
         events = booking.eventos.all()
         return render(request, 'agenda/my_detail.html', {
             **personal_context(request), 'booking': PersonalBooking(booking), 'events': events,
+            'can_cancel_booking': can_cancel_booking(request.user, booking),
         })
 
 
@@ -123,6 +124,8 @@ class MyBookingCancelView(OwnBookingAccessMixin, View):
         booking = own_booking(request.user, category, pk)
         if booking.cancelado_em:
             raise Http404
+        if not can_cancel_booking(request.user, booking):
+            raise PermissionDenied(ADMIN_CANCEL_MESSAGE)
         return booking
 
     def render_form(self, request, booking, form, *, status=200):

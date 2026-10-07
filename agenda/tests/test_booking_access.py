@@ -149,7 +149,8 @@ class NormalBookingAccessTests(TestCase):
                 save_booking(actor=self.user, category=category, booking_id=booking.pk, expected_version=1, data={})
             with self.assertRaises(PermissionDenied):
                 review_booking(actor=self.user, category=category, booking_id=booking.pk, expected_version=1, decision='aprovar')
-            cancel_booking(actor=self.admin, category=category, booking_id=booking.pk, expected_version=1)
+            review_booking(actor=self.admin, category=category, booking_id=booking.pk, expected_version=1, decision='aprovar')
+            cancel_booking(actor=self.admin, category=category, booking_id=booking.pk, expected_version=2)
             booking.refresh_from_db()
             self.assertIsNotNone(booking.cancelado_em)
 
@@ -184,3 +185,52 @@ class NormalBookingAccessTests(TestCase):
         self.assertEqual(self.client.post(url, {}).status_code, 403)
         self.client.logout()
         self.assertEqual(self.client.get(url).status_code, 302)
+
+    def test_admin_cannot_cancel_pending_or_rejected_even_when_the_booking_is_their_own(self):
+        api = APIClient()
+        api.force_login(self.admin)
+        self.client.force_login(self.admin)
+        for category, model in BOOKING_MODELS.items():
+            for status in ('pendente', 'rejeitado'):
+                for owner in (self.user, self.admin):
+                    with self.subTest(category=category, status=status, owner=owner.username):
+                        booking = self.create(category)
+                        model.objects.filter(pk=booking.pk).update(situacao=status, criado_por=owner)
+                        booking.refresh_from_db()
+                        url = f'/agenda/{category}/{booking.pk}/'
+                        self.assertNotContains(self.client.get(url), 'Cancelar agendamento')
+                        self.assertEqual(self.client.get(url + 'cancelar/').status_code, 403)
+                        self.assertEqual(self.client.post(url + 'cancelar/', {'versao': 1}).status_code, 403)
+                        if owner == self.admin:
+                            personal_url = f'/agenda/meus/{category}/{booking.pk}/'
+                            self.assertNotContains(self.client.get(personal_url), 'Cancelar agendamento')
+                            self.assertEqual(self.client.get(personal_url + 'cancelar/').status_code, 403)
+                            self.assertEqual(self.client.post(personal_url + 'cancelar/', {'versao': 1}).status_code, 403)
+                        response = api.delete(f'/api/v1/agendamentos/{category}/{booking.pk}/', {'versao': 1}, format='json')
+                        self.assertEqual(response.status_code, 403)
+                        self.assertIn('confirmados', response.json()['detail'])
+                        with self.assertRaisesMessage(PermissionDenied, 'somente agendamentos confirmados'):
+                            cancel_booking(actor=self.admin, category=category, booking_id=booking.pk, expected_version=1)
+                        booking.refresh_from_db()
+                        self.assertEqual((booking.versao, booking.cancelado_em, booking.eventos.count()), (1, None, 1))
+
+    def test_requests_offer_admin_cancel_only_for_confirmed_cards(self):
+        bookings = []
+        for category, model in BOOKING_MODELS.items():
+            for status in ('pendente', 'rejeitado', 'confirmado'):
+                booking = self.create(category)
+                model.objects.filter(pk=booking.pk).update(situacao=status)
+                bookings.append((booking, status))
+        self.client.force_login(self.admin)
+        response = self.client.get('/agenda/solicitacoes/')
+        for booking, status in bookings:
+            url = f'/agenda/{booking.categoria}/{booking.pk}/cancelar/'
+            if status == 'confirmado':
+                self.assertContains(response, url)
+                self.assertContains(self.client.get(booking.get_absolute_url()), 'Cancelar agendamento')
+                self.assertRedirects(self.client.post(url, {'versao': 1}), '/agenda/')
+                booking.refresh_from_db()
+                self.assertEqual(booking.versao, 2)
+                self.assertIsNotNone(booking.cancelado_em)
+            else:
+                self.assertNotContains(response, url)

@@ -117,7 +117,7 @@ class LocalVisitTests(TestCase):
         rejected = self.create(actor=self.staff)
         review_booking(actor=self.admin, category='visita', booking_id=rejected.pk, expected_version=1, decision='rejeitar')
         cancelled = self.create(actor=self.staff)
-        cancel_booking(actor=self.admin, category='visita', booking_id=cancelled.pk, expected_version=1)
+        cancel_booking(actor=self.staff, category='visita', booking_id=cancelled.pk, expected_version=1)
         for status, booking in (('recusada', rejected), ('cancelada', cancelled)):
             response = self.client.get('/agenda/solicitacoes/', {'status': status})
             self.assertEqual([row.pk for row in response.context['object_list']], [booking.pk])

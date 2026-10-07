@@ -43,7 +43,8 @@
         {% csrf_token %}<input type="hidden" name="versao" value="{{ booking.versao }}">
         <button type="submit" name="decisao" value="aprovar">Confirmar</button>
         <button type="submit" name="decisao" value="rejeitar" class="secondary-button">Recusar</button>
-      </form>
+      </form>{% endif %}
+      {% if booking.situacao == 'confirmado' %}
       <form method="post" action="{% url 'agenda:cancel' booking.categoria booking.pk %}" class="booking-review-actions">
         {% csrf_token %}<input type="hidden" name="versao" value="{{ booking.versao }}">
         <button type="submit" class="secondary-button">Cancelar</button>

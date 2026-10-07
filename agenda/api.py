@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from accounts.policies import is_business_admin
-from agenda.policies import can_access_agenda, can_create_booking, can_cancel_booking
+from agenda.policies import ADMIN_CANCEL_MESSAGE, can_access_agenda, can_create_booking, can_cancel_booking
 from agenda.selectors import filter_bookings, visible_bookings, visible_booking, own_booking
 from agenda.serializers import BookingSerializer, VisitSerializer, CancelSerializer, EventSerializer
 from agenda.services import BookingConflict, cancel_booking
@@ -26,6 +26,8 @@ class AgendaPermission(BasePermission):
         return can_access_agenda(request.user)
 
     def has_object_permission(self, request, view, obj):
+        if view.action == 'destroy' and is_business_admin(request.user):
+            self.message = ADMIN_CANCEL_MESSAGE
         return view.action != 'destroy' or can_cancel_booking(request.user, obj)
 
 

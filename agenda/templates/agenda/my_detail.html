@@ -13,7 +13,7 @@
     {% if booking.categoria == 'servico' %}<dl class="inline-details"><div><dt>Equipamentos</dt><dd>{% for equipment in booking.equipamentos.all %}{{ equipment.nome }}{% if not forloop.last %}, {% endif %}{% empty %}Nenhum informado{% endfor %}</dd></div><div><dt>Tem material próprio?</dt><dd>{{ booking.material_proprio|yesno:'Sim,Não,Não informado' }}</dd></div>{% if booking.material_proprio == False %}<div><dt>Material utilizado</dt><dd>{{ booking.material_gasto.nome|default:'Não informado' }}</dd></div><div><dt>Material gasto</dt><dd>{{ booking.material_gasto_gramas }} g</dd></div>{% endif %}</dl>{% endif %}
     <section class="description-block"><h2>Observações</h2><p>{{ booking.observacoes|default:'Nenhuma observação informada.'|linebreaksbr }}</p></section>
     {% if booking.cancelado_em %}<p>Cancelado em {{ booking.cancelado_em|date:'d/m/Y H:i' }}.</p>{% endif %}
-    {% if not booking.cancelado_em %}<div class="sheet-actions"><a class="secondary-button" href="{% url 'agenda:my-cancel' booking.categoria booking.pk %}">Cancelar agendamento</a></div>{% endif %}
+    {% if can_cancel_booking %}<div class="sheet-actions"><a class="secondary-button" href="{% url 'agenda:my-cancel' booking.categoria booking.pk %}">Cancelar agendamento</a></div>{% endif %}
     {% if events %}<section class="description-block"><h2>Histórico</h2>{% for event in events %}<article class="agenda-event"><h3>{{ event.get_acao_display }}</h3><p>{{ event.ator_nome }} · {{ event.instante|date:'d/m/Y H:i:s' }}</p></article>{% endfor %}</section>{% endif %}
     <p>Horários de Brasília.</p>
   </div>

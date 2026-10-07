@@ -19,7 +19,7 @@ class SplitAgendaTests(TestCase):
         self.admin.groups.add(Group.objects.get(name='Administradores'))
         self.service = Servico.objects.first()
         self.equipment = Equipamento.objects.create(nome='Máquina split')
-        base = dict(pk=77, motivo='Original', criado_por=self.admin,
+        base = dict(pk=77, motivo='Original', criado_por=self.admin, situacao='confirmado',
                     inicio=datetime.fromisoformat('2026-11-01T14:00:00-03:00'),
                     fim=datetime.fromisoformat('2026-11-01T15:00:00-03:00'))
         self.service_booking = models.AgendaServico.objects.create(servico=self.service, **base)

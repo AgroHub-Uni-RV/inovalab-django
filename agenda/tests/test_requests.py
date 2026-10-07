@@ -336,7 +336,10 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
                          {(row.categoria, row.pk) for row in (service, equipment, visit)})
         self.assertEqual(response.context['stat_counts'],
                          {'all': 4, 'pendente': 0, 'confirmada': 3, 'cancelada': 1, 'recusada': 0})
-        self.assertNotContains(response, 'booking-review-actions')
+        self.assertContains(response, 'booking-review-actions', count=3)
+        self.assertContains(response, '>Cancelar</button>', count=3)
+        self.assertNotContains(response, 'value="aprovar"')
+        self.assertNotContains(response, 'value="rejeitar"')
         self.assertContains(response, 'aria-current="page">Confirmadas</a>')
         cancelled_page = self.client.get('/agenda/solicitacoes/', {'status': 'cancelada'})
         self.assertEqual([row.pk for row in cancelled_page.context['object_list']], [cancelled.pk])

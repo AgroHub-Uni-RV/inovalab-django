@@ -12,7 +12,7 @@ from accounts.policies import is_business_admin
 from agenda.forms import BookingForm, CancelForm, ReviewForm
 from agenda.modal import booking_saved, render_booking
 from agenda.models import BOOKING_STATUSES, CATEGORIES
-from agenda.policies import can_access_agenda, can_create_booking, can_cancel_booking
+from agenda.policies import ADMIN_CANCEL_MESSAGE, can_access_agenda, can_create_booking, can_cancel_booking
 from agenda.selectors import calendar_weeks, filter_bookings, month_bounds, visible_bookings, visible_booking
 from agenda.services import PUBLIC_FIELDS, SERVICE_FIELDS, BookingConflict, cancel_booking, review_booking, save_booking
 from accounts.photos import profile_photo_response
@@ -172,6 +172,12 @@ class BookingWriteView(BookingWriteAccessMixin, View):
 
 
 class BookingCancelView(AgendaAccessMixin, View):
+    def get_object(self, queryset=None):
+        booking = super().get_object(queryset)
+        if not can_cancel_booking(self.request.user, booking):
+            raise PermissionDenied(ADMIN_CANCEL_MESSAGE)
+        return booking
+
     def get(self, request, pk, category):
         booking = self.get_object()
         return render(request, 'agenda/cancel.html', {'booking': booking, 'form': CancelForm(initial={'versao': booking.versao})})

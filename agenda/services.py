@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from accounts.policies import is_business_admin
 from agenda.models import BOOKING_MODELS, AgendaVisita, EventoAgendamento
-from agenda.policies import can_access_agenda, can_create_booking, can_cancel_booking
+from agenda.policies import ADMIN_CANCEL_MESSAGE, can_access_agenda, can_create_booking, can_cancel_booking
 from catalogo.models import Equipamento, Servico
 from materiais.models import Material
 
@@ -310,7 +310,8 @@ def cancel_booking(*, actor, category, booking_id, expected_version):
     def load_owned_booking():
         booking = get_object_or_404(booking_model(category), pk=booking_id, cancelado_em__isnull=True)
         if not can_cancel_booking(actor, booking):
-            raise PermissionDenied('Você pode cancelar somente seus próprios agendamentos.')
+            raise PermissionDenied(ADMIN_CANCEL_MESSAGE if is_business_admin(actor) else
+                                   'Você pode cancelar somente seus próprios agendamentos.')
         _check_version(booking, expected_version)
         return booking
 
