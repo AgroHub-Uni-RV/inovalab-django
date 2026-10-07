@@ -4,7 +4,7 @@ Entrega de 06/10/2026: criar uma visita no formulário ou na API interna registr
 
 ## Fluxo entregue
 
-O formulário conserva somente dia, hora de início e hora de término. O servidor resolve a sala ID 1 em `GET agendamentos/salas/?site_code=inovalab` e exige sala ativa nesse site e capacidade para uma pessoa. A consulta real confirmou `Laboratório InovaLab`, slug `laboratorio-inovalab`, ativa e com aprovação. O POST `agendamentos/reservas/` usa esse slug, data/horas de Brasília em **HH:MM**, título automático, quantidade 1 e referência UUID técnica nas observações externas. Não envia status na criação: a API o define pela configuração da sala. O usuário não escolhe a sala nem edita esses campos automáticos.
+O formulário de visita exige dia, hora de início, hora de término e **quantidade de pessoas**, inteira e no mínimo 1. O servidor resolve a sala ID 1 em `GET agendamentos/salas/?site_code=inovalab` e exige sala ativa nesse site e capacidade para a quantidade informada, quando houver limite de capacidade. A consulta real confirmou `Laboratório InovaLab`, slug `laboratorio-inovalab`, ativa e com aprovação. O POST `agendamentos/reservas/` usa esse slug, data/horas de Brasília em **HH:MM**, título automático, quantidade escolhida e nome do criador nas observações externas, junto à referência UUID técnica. Não envia status na criação: a API o define pela configuração da sala. O usuário não escolhe a sala nem edita o título ou as observações automáticas.
 
 O Bearer é da sessão AgroHub do criador. Nenhum token/senha é armazenado no vínculo da visita; a renovação verifica o mesmo ID de usuário. Permissões locais continuam locais e não dispensam as permissões do AgroHub.
 
@@ -73,6 +73,28 @@ Novas reservas externas exigem início futuro e antecedência configurada em `AG
 Uma nova tentativa de falha conhecida reconstrói o payload em HH:MM a partir da visita, mantendo UUID e ID existentes. Registros com segundos ou período passado precisam ser corrigidos pelo responsável; não são modificados automaticamente. Operações incertas mantêm o payload original para conciliação somente leitura. Mutações aceitas seguidas de erro na consulta de confirmação também ficam incertas, inclusive se essa consulta retornar 401/403/404, impedindo repetição de PATCH/cancelamento.
 
 A integração permanece por HTTP. Não foram importados `prepare_reservation()`/`save_reservation()` nem alterados banco compartilhado, monólito ou regras de administradores nesta etapa.
+
+## Quantidade de pessoas e identificação do criador
+
+A solicitação seguinte acrescentou `Agendamento.quantidade_pessoas`, exclusiva de visitas. O formulário exige preenchimento, iniciando em 1; criação pela API interna aceita omissão com padrão 1 para manter os consumidores anteriores. Atualizações sem o campo preservam o valor atual; recursos rejeitam o campo, e a conversão de visita em recurso limpa a quantidade com auditoria. Quantidade é exibida no detalhe e enviada em criação/edição ao AgroHub. A capacidade da sala é conferida antes de salvar e antes do envio, e a API conserva a validação final.
+
+As observações remotas usam o formato:
+
+```text
+Registrado por: Nome Sobrenome
+inovalab-visita:UUID
+```
+
+O nome vem da conta que criou a visita, inclusive quando outro administrador a edita. Sem nome completo, é usado o login. Não existe campo de observações livre no formulário de visita. A referência continua sendo uma linha exata e única, compatível com as reservas antigas que continham somente o UUID. A confirmação após envio verifica observações e quantidade contra o payload persistido; divergências ficam incertas e não disparam outra criação. A conciliação de envio incerto conserva o nome originalmente enviado mesmo se o perfil mudar.
+
+A migração `0010_quantidade_pessoas_visitas` atribui 1 às visitas existentes, que era o valor enviado anteriormente, e mantém recursos com `null`. Não altera referências ou payloads de operações em andamento/incertas e não reenvia reservas históricas. Aplicada somente ao SQLite local nesta entrega; executar `venv/Scripts/python.exe manage.py migrate --noinput` ao implantar. Contrato de recebimento por integradores externos permanece na versão anterior, com padrão compatível de 1 para visitas.
+
+Validação desta ampliação:
+
+- `venv/Scripts/python.exe manage.py test --noinput`: **536 testes passaram** (66,424 s). O recorte de visitas, integração e migração passou com **68 testes** (19,034 s), incluindo quantidade inválida, capacidade, autoria em edição administrativa, fallback de login, migração, divergência de observações/quantidade remotas e conciliação sem novo POST.
+- `manage.py check`, `makemigrations --check --dry-run` e `git diff --check`: sem problemas. Migração 0010 aplicada ao SQLite local.
+- Chrome com API simulada: formulário iniciou em 1, bloqueou 11 pessoas para sala de capacidade 10, registrou 8 e editou para 6 mantendo reserva #101. Detalhe mostrou a quantidade; troca de categoria incluiu/removeu o campo. Desktop 1200 px com sidebar expandida e celular 360 px sem transbordamento; sem exceções JavaScript.
+- Revisão independente aprovada. Resta a depuração com conta e sala reais; o monólito permaneceu somente leitura e nenhuma reserva fictícia foi enviada à API real.
 
 Validação desta correção:
 
