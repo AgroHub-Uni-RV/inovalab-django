@@ -1,5 +1,7 @@
 # Frontend dos módulos e página Usuários
 
+> Atualização de 06/10/2026: início institucional em `/` e login em `/entrar/`. Este guia registra a entrega anterior; consulte [páginas institucionais](15-paginas-institucionais.md) para as rotas atuais.
+
 Entrega visual iniciada em 05/10/2026, na branch `feat/frontend-completo`. Aplica os PNGs de `Referencias/` às páginas existentes: Usuários, Tarefas, Agenda, Materiais, Banners, Catálogo, Integrações, perfil, formulários, detalhes, confirmações, históricos e páginas públicas. Os sete módulos de domínio mantêm seus contratos de API, modelos e regras de escrita.
 
 ## Entrada e contas

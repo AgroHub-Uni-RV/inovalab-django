@@ -190,3 +190,7 @@ As escolhas da agenda sobre cancelamento lógico/histórico, ocupado manual, dat
 ## 10. Evolução sugerida, fora do escopo confirmado
 
 Após validar o núcleo: comentários e anexos em tarefas, checklist, prioridade, notificações, indicadores de atraso, histórico de estoque e associação entre demanda e reserva. Cada recurso precisa de requisitos e permissões próprios; “mais completo que Trello” não autoriza assumir todos eles como obrigatórios.
+
+## Atualização de páginas institucionais — 06/10/2026
+
+O responsável aprovou portar as páginas públicas do InovaLab do monólito: início em `/`, Sobre em `/sobre/`, Contato em `/contato/`, com a página de Serviços da referência em `/servicos/`. O login passa a `/entrar/`. A navbar contém Início antes de Sobre, Serviços e Contato; Home é exibido como Início. As páginas institucionais mantêm o cabeçalho público para autenticados, com acesso à área interna. O contato registra a mensagem pelo endpoint público do AgroHub, com `site_code=inovalab`; confirma somente o recebimento, preservando dados em erro. Esta entrega não conecta o LabMaker: este sistema já reúne as funcionalidades dos dois apps. [Contrato e verificação](docs/frontend/15-paginas-institucionais.md).
