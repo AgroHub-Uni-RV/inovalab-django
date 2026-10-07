@@ -62,6 +62,14 @@
 .high-contrast .inova-surface { --inova-canvas:#000; --inova-card:#000; --inova-blue:#fff; --inova-brand:#fff; --inova-brand-deep:#000; --inova-blue-strong:#fff; --inova-ink:#fff; --inova-muted:#fff; --inova-lime:#ff0; --inova-green:#ff0; --inova-green-text:#ff0; --inova-action:linear-gradient(#ff0,#ff0); }
 .high-contrast .institutional-header *, .high-contrast .institutional-footer *, .high-contrast .inova-surface section, .high-contrast .inova-surface article { background-color:#000 !important; color:#fff !important; }
 .high-contrast a, .high-contrast button { outline:1px solid #fff; }
+.institutional-visually-hidden { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.inova-events-section [hidden] { display:none !important; }
+.inova-events-nav span, .inova-events-calendar__month-btn span { font-size:1.75rem; line-height:1; }
+.inova-event-card__placeholder { display:grid; place-items:center; height:9rem; background:#dfe8f6; color:#5a6788; }
+.institutional-page .inova-events-calendar__weekdays span:first-child { color:#9aa6c4; }
+.institutional-page .inova-events-calendar__day.is-selected { background:var(--inova-blue); outline:3px solid var(--inova-blue); outline-offset:2px; }
+.high-contrast .inova-events-calendar, .high-contrast .inova-events-empty, .high-contrast .inova-event-card__placeholder { background:#000; color:#fff; }
+.high-contrast .inova-events-calendar__day.is-event { background:#fff; color:#000; }
 @media(max-width:1000px) {
   .institutional-contacts { display:none; }
   .institutional-utility .institutional-header-inner { justify-content:center; gap:var(--space-4); padding-block:var(--space-3); }

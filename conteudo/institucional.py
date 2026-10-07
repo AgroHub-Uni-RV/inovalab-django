@@ -8,6 +8,7 @@ from accounts.agrohub.client import AgroHubClient, AgroHubError
 from conteudo.contact_forms import ContactForm
 from conteudo.institutional_content import ABOUT_TIMELINE, EQUIPMENT, INOVALAB_STATS, SERVICES, TEAM_MEMBERS
 from conteudo.selectors import published_banners
+from conteudo.public_events import public_events_context
 
 
 def _page(request, template, local, **extra):
@@ -25,7 +26,7 @@ def _page(request, template, local, **extra):
 @never_cache
 @require_safe
 def inicio(request):
-    return _page(request, 'home', 'home')
+    return _page(request, 'home', 'home', **public_events_context())
 
 
 @never_cache

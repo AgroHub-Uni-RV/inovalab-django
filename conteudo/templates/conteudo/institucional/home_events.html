@@ -1,0 +1,55 @@
+{{ events_calendar_payload|json_script:"inova-events-calendar-payload" }}
+<section id="calendario-de-eventos" class="inova-events-section" aria-labelledby="calendario-eventos-heading" data-events-calendar>
+  <div class="inova-events-section__inner">
+    <div class="inova-section-heading inova-section-heading--events">
+      <h2 id="calendario-eventos-heading">Calendário de eventos</h2>
+      <span class="inova-heading-divider inova-heading-divider--brand" aria-hidden="true"></span>
+    </div>
+    <p class="inova-events-section__intro">Acompanhe mentorias, workshops, capacitações e eventos que fortalecem o ecossistema de inovação dentro do AgroHub UniRV.</p>
+    <div class="inova-events-board" role="region" aria-label="Calendário e lista de eventos">
+      <button type="button" class="inova-events-nav inova-events-nav--prev focus-ring" data-events-prev disabled aria-label="Eventos anteriores"><span aria-hidden="true">‹</span></button>
+      <div class="inova-events-board__main">
+        <div class="inova-events-calendar" aria-label="Calendário mensal">
+          <div class="inova-events-calendar__header">
+            <button type="button" class="inova-events-calendar__month-btn focus-ring" data-month-step="-1" disabled aria-label="Mês anterior"><span aria-hidden="true">‹</span></button>
+            <p class="inova-events-calendar__month" data-events-month aria-live="polite">{{ calendar_month_label }}<span class="institutional-visually-hidden"> {{ calendar_initial_year }}</span></p>
+            <button type="button" class="inova-events-calendar__month-btn focus-ring" data-month-step="1" disabled aria-label="Próximo mês"><span aria-hidden="true">›</span></button>
+          </div>
+          <div class="inova-events-calendar__weekdays" aria-hidden="true">{% for label in calendar_weekday_labels %}<span>{{ label }}</span>{% endfor %}</div>
+          <div class="inova-events-calendar__grid" role="group" aria-label="Calendário de {{ calendar_month_label }} de {{ calendar_initial_year }}" data-events-grid>
+            {% for cell in calendar_cells %}<button type="button" class="inova-events-calendar__day focus-ring{% if cell.outside %} is-outside{% endif %}{% if cell.has_event %} is-event{% endif %}" data-event-date="{{ cell.date_iso }}" disabled aria-pressed="false" aria-label="{{ cell.label }}">{{ cell.day }}</button>{% endfor %}
+          </div>
+        </div>
+        <div class="inova-events-cards" aria-live="polite">
+          {% if events_failed %}
+            <p class="inova-events-empty">Não foi possível carregar os eventos do AgroHub. Tente novamente em instantes.</p>
+          {% else %}
+            <p class="inova-events-empty" data-events-empty{% if event_cards %} hidden{% endif %}>Nenhum evento publicado para este período.</p>
+          {% endif %}
+          {% for event in event_cards %}
+            <article class="inova-event-card inova-event-card--{{ event.category }}" data-event-card data-event-date="{{ event.date_iso }}"{% if forloop.counter > 2 %} hidden{% endif %}>
+              <div class="inova-event-card__media">
+                {% if event.image_url %}<img src="{{ event.image_url }}" alt="{{ event.title }}" width="443" height="145" loading="lazy" decoding="async">{% else %}<div class="inova-event-card__placeholder" aria-hidden="true">Evento</div>{% endif %}
+                <span class="inova-event-card__tag">{{ event.category_label }}</span>
+              </div>
+              <div class="inova-event-card__body">
+                <div class="inova-event-card__heading">
+                  <p class="inova-event-card__date"><span class="inova-event-card__day">{{ event.day }}</span><span class="inova-event-card__month">{{ event.month_abbrev }}</span></p>
+                  <h3 class="inova-event-card__title">{{ event.title }}</h3>
+                </div>
+                <ul class="inova-event-card__meta">
+                  <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.25" stroke="currentColor" stroke-width="1.75"/><path d="M12 8v4.25L14.5 14" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg><span>{{ event.time_label }}</span></li>
+                  {% if event.location %}<li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10Z" stroke="currentColor" stroke-width="1.75"/><circle cx="12" cy="11" r="2.25" stroke="currentColor" stroke-width="1.75"/></svg><span>{{ event.location }}</span></li>{% endif %}
+                </ul>
+                {% if event.summary %}<p class="inova-event-card__summary">{{ event.summary }}</p>{% endif %}
+                {% if event.detail_url %}<a class="inova-event-card__cta" href="{{ event.detail_url }}">Saiba mais <span aria-hidden="true">↗</span></a>{% endif %}
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      </div>
+      <button type="button" class="inova-events-nav inova-events-nav--next focus-ring" data-events-next disabled aria-label="Próximos eventos"><span aria-hidden="true">›</span></button>
+    </div>
+    <noscript><p class="inova-events-empty">Ative o JavaScript para navegar entre os meses e consultar os demais eventos.</p></noscript>
+  </div>
+</section>

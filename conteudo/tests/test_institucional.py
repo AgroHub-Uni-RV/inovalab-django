@@ -11,6 +11,9 @@ from conteudo.models import Banner
 
 @override_settings(AGROHUB_API_BASE_URL='https://agrohub.example/api/v1/')
 class InstitutionalPagesTests(TestCase):
+    def setUp(self):
+        self.enterContext(patch('conteudo.public_events.load_events', return_value=([], False)))
+
     def test_root_is_public_and_internal_area_redirects_to_new_login(self):
         response = self.client.get('/')
         self.assertContains(response, 'Ideias que')
