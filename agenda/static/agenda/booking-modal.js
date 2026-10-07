@@ -239,8 +239,12 @@
   if (initial) {
     standalone = true;
     initial.querySelectorAll('.sheet-topbar a:not([data-booking-step])').forEach(link => link.remove());
+    // Ao mover a ficha, preserve o mesmo contêiner de estilos dos fragmentos.
+    const content = document.createElement('div');
+    content.className = 'module-page detail-page';
+    content.append(initial);
     dialog.showModal();
     document.body.classList.add('booking-modal-open');
-    render(initial);
+    render(content);
   }
 })();

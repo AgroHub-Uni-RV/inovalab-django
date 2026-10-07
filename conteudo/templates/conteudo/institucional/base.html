@@ -59,7 +59,7 @@
       <a href="{% url 'conteudo:contato' %}"{% if local == 'contato' %} aria-current="page"{% endif %}>Contato</a>
     </nav>
   </header>
-  <main id="main-content" tabindex="-1">
+  <main id="main-content" class="{% block content_class %}{% endblock %}" tabindex="-1">
     {% if messages %}<div class="institutional-messages" aria-live="polite">{% for message in messages %}<p class="institutional-message">{{ message }}</p>{% endfor %}</div>{% endif %}
     {% block content %}{% endblock %}
   </main>

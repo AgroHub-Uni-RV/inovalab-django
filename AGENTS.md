@@ -1,5 +1,7 @@
 # Orientações do projeto
 
+- A solicitação seguinte de 07/10/2026 corrige a aparência do modal aberto após o login pelo banner Agendar visita. Ao mover a ficha da página para o diálogo, preservar o contêiner `module-page detail-page` usado pelos fragmentos. A estrutura institucional respeita `content_class` e os módulos públicos recebem as cores compartilhadas, incluindo formulários sem JavaScript. Preservar o retorno após login, abertura automática, categoria de visita, rascunhos, CSRF e gravação local. Ver `docs/modules/19-criacao-agendamentos-modal.md`.
+
 - A solicitação seguinte de 07/10/2026 remove Meus agendamentos da sidebar. Os acessos no perfil, cabeçalho da agenda e início institucional permanecem disponíveis; Agendamentos representa todas as rotas do módulo na seleção da sidebar.
 
 - A solicitação seguinte de 07/10/2026 redireciona o administrador após cancelar um agendamento para `/agenda/solicitacoes/`, tanto no fluxo interno quanto no pessoal. Usuários comuns continuam retornando a Meus agendamentos, pois Solicitações é administrativa. Preservar a restrição de cancelamento administrativo somente de confirmados.

@@ -39,3 +39,13 @@ Resultado: **556 testes Django passaram**, incluindo seis testes do contrato do 
 A verificação no Chromium local utilizou banco SQLite isolado em `.private/`, usuários fictícios e eventos simulados, sem modificar registros reais. Foram verificados criação/sucesso das três categorias, erros e preservação de dados, atualização da lista, URL constante, campos de material, retorno à seleção, celular em 360 px, desktop em 1366 px, entrada institucional, solicitação pendente da equipe, foco/Tab/Escape, retorno do foco, sidebar expandida, falhas de GET/POST, bloqueio de fechamento durante envio e redirecionamento de anônimo ao login. Capturas privadas foram revisadas; ajustes no espaço dos cards do celular e no ciclo de foco foram validados novamente. O servidor temporário foi encerrado após a verificação.
 
 Na depuração, conferir com dados reais, contas sincronizadas e outros navegadores/dispositivos. As integrações reais não foram chamadas na verificação visual.
+
+## Correção do modal após o login
+
+A solicitação seguinte de 07/10/2026 corrige o formulário aberto automaticamente depois de autenticar pelo banner Agendar visita. O script movia somente a ficha para o diálogo, perdendo o ancestral `module-page`: campos ficavam sem bordas e o botão de confirmar perdia o fundo. A ficha agora é movida dentro do mesmo contêiner `module-page detail-page` usado pelos fragmentos carregados por AJAX.
+
+O conteúdo institucional também respeita o bloco `content_class` já usado pelas páginas da agenda, e os módulos institucionais recebem as cores compartilhadas. Assim, os formulários completos mantêm a apresentação quando JavaScript está desativado. O retorno de login e a abertura automática da visita permanecem iguais; a ficha é movida sem recarregar ou substituir seus dados e token CSRF.
+
+No Chromium, o fluxo real de login foi testado contra o servidor controlado de Accounts, com banco isolado, para papéis de usuário comum, equipe e administrador. Foram conferidos contêiner, bordas/cores/tipografia, ausência de transbordamento, equivalência entre abertura automática e pelo banner, desktop de 1366 px, celular de 360 px, rascunhos na troca de categoria, erros, salvamento, fechamento e alternativa sem JavaScript.
+
+Resultado desta correção: **569 testes Django aprovados**. Configuração, ausência de migrations, sintaxe JavaScript e `git diff --check` sem problemas. A criação/cancelamento pessoal das três categorias e o banner responsivo também foram conferidos novamente no navegador. Depuração com o provedor real e outros navegadores permanece com o responsável.
