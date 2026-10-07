@@ -53,10 +53,17 @@ Execução em PowerShell (crie `venv` com `python -m venv venv` se necessário):
 
 ```powershell
 & .\venv\Scripts\python.exe -m pip install -r requirements.txt
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 & .\venv\Scripts\python.exe manage.py migrate
 & .\venv\Scripts\python.exe manage.py createsuperuser
 & .\venv\Scripts\python.exe manage.py runserver
 ```
+
+Antes das migrações, configure `DJANGO_SECRET_KEY` no `.env` com uma chave
+aleatória local. Mantenha `DJANGO_DEBUG=true` e `DATABASE_URL` vazio para usar
+SQLite no desenvolvimento. O `python-dotenv`, incluído nas dependências,
+carrega esse arquivo automaticamente; o `.env` está ignorado pelo Git.
+Copie o exemplo somente se ainda não houver um `.env`, para preservar sua configuração.
 
 Abra [o login local](http://127.0.0.1:8000/), entre com o superusuário e use **Administrar contas** no perfil para abrir `/usuarios/`. **Configurar usuários** abre a manutenção técnica no Django Admin. Não há credenciais padrão. O grupo `Administradores` identifica o papel de negócio e não concede gestão técnica de contas.
 
