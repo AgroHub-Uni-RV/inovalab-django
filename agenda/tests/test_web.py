@@ -64,7 +64,7 @@ class BookingWebTests(TestCase):
             self.assertRedirects(response, f'/agenda/{booking.categoria}/{booking.pk}/')
             self.assertContains(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/historico/'), 'Corrigido')
             self.assertContains(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/cancelar/'), 'Confirmar cancelamento')
-            self.assertRedirects(self.client.post(f'/agenda/{booking.categoria}/{booking.pk}/cancelar/', {'versao': 2}), '/agenda/')
+            self.assertRedirects(self.client.post(f'/agenda/{booking.categoria}/{booking.pk}/cancelar/', {'versao': 2}), '/agenda/solicitacoes/')
             self.assertEqual(self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/').status_code, 404)
             self.assertEqual(type(booking).objects.get(pk=booking.pk).eventos.count(), 3)
 

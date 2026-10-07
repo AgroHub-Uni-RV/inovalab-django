@@ -11,7 +11,7 @@ from django.views import View
 from django.views.decorators.cache import never_cache
 from django.views.generic import ListView
 
-from accounts.policies import can_access_panel
+from accounts.policies import can_access_panel, is_business_admin
 from agenda.models import CATEGORIES
 from agenda.forms import CancelForm
 from agenda.policies import ADMIN_CANCEL_MESSAGE, can_view_own_bookings, can_cancel_booking
@@ -150,5 +150,5 @@ class MyBookingCancelView(OwnBookingAccessMixin, View):
                 status = 409
             else:
                 messages.success(request, 'Agendamento cancelado. Horário liberado e histórico preservado.')
-                return redirect('agenda:mine')
+                return redirect('agenda:requests' if is_business_admin(request.user) else 'agenda:mine')
         return self.render_form(request, booking, form, status=status)

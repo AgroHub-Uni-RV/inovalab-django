@@ -194,7 +194,7 @@ class BookingCancelView(AgendaAccessMixin, View):
                 message, response_status = str(error), 409
             else:
                 messages.success(request, 'Agendamento cancelado. Horário liberado e histórico preservado.')
-                return redirect('agenda:list' if is_business_admin(request.user) else 'agenda:mine')
+                return redirect('agenda:requests' if is_business_admin(request.user) else 'agenda:mine')
         return render(request, 'agenda/error.html', {'message': message, 'booking': booking}, status=response_status)
 
 

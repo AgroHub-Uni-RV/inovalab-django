@@ -228,7 +228,7 @@ class NormalBookingAccessTests(TestCase):
             if status == 'confirmado':
                 self.assertContains(response, url)
                 self.assertContains(self.client.get(booking.get_absolute_url()), 'Cancelar agendamento')
-                self.assertRedirects(self.client.post(url, {'versao': 1}), '/agenda/')
+                self.assertRedirects(self.client.post(url, {'versao': 1}), '/agenda/solicitacoes/')
                 booking.refresh_from_db()
                 self.assertEqual(booking.versao, 2)
                 self.assertIsNotNone(booking.cancelado_em)

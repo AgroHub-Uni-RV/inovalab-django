@@ -10,6 +10,7 @@ Solicitação de 07/10/2026: administradores podem cancelar somente agendamentos
 - Em Solicitações, Confirmar e Recusar permanecem nos pendentes; Cancelar aparece apenas nos confirmados. Recusados e cancelados não oferecem ações de cancelamento.
 - A API de sessão verifica a permissão no objeto; o serviço verifica novamente a regra ao carregar o registro, antes e depois do bloqueio transacional. URLs diretas e requisições manuais não contornam a restrição.
 - Cancelamentos autorizados mantêm CSRF, controle de versão, liberação do horário e histórico. Pendentes e recusados bloqueados permanecem intactos.
+- A solicitação seguinte redireciona o administrador após cancelar para `/agenda/solicitacoes/`, inclusive quando cancela pela área pessoal. Usuários comuns continuam retornando para `/agenda/meus/`.
 
 ## Verificação
 
