@@ -21,7 +21,7 @@ Foram copiados os templates `home.html`, `about.html`, `programs.html` e `contac
 
 `conteudo/static/conteudo/institucional/monolito.css` é o CSS compilado original, carregado exclusivamente nesta base institucional. `site.css` adapta o cabeçalho, a responsividade e a escala compartilhada de `core/ui.css`; as medidas de fonte equivalentes usam rem para permitir A-/A+. Montserrat e logos utilizam os assets existentes daqui. O JavaScript dos carrosséis e dos controles de contraste/fonte funciona sem Alpine ou dependências novas.
 
-Agendar visita abre `/agenda/novo/?categoria=visita`, passando pelo login quando necessário e preservando o retorno. Serviços aponta ao agendamento existente. Regimento e Calendário de funcionamento continuam apontando às páginas públicas correspondentes do monólito. Não foram importados cadastros, fluxos de produção ou dependências do LabMaker.
+Agendar visita abre `/agenda/novo/?categoria=visita`, passando pelo login quando necessário e preservando o retorno. Serviços aponta ao agendamento existente. A atualização de 07/10/2026 porta Regimento e Calendário de funcionamento para rotas locais e restringe os agendamentos a equipe/admin: consulte [páginas públicas e papéis do AgroHub](16-regimento-calendario-e-papeis-agrohub.md). Não foram importados cadastros, fluxos de produção ou dependências do LabMaker.
 
 ## Calendário público de eventos
 

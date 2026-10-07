@@ -8,7 +8,7 @@ Base padrão: `https://agrohub.unirv.edu.br/api/v1/`. Cada rota remota abaixo é
 
 | Tela InovaLab | Operação Accounts | Campos |
 | --- | --- | --- |
-| `/` e `/entrar/` | POST `login/`, GET `me/` | username (usuário ou e-mail), password |
+| `/entrar/` | POST `login/`, GET `me/` | username (usuário ou e-mail), password |
 | `/registro/` | POST `register/`, GET `me/` | username, email, password, password_confirm; first_name, last_name, cpf e telefone opcionais |
 | `/perfil/` | PATCH `me/`, GET `me/` | first_name, last_name, cpf, telefone |
 | `/perfil/foto/` | PUT `me/picture/`, GET `me/` | multipart `profile_picture` |
@@ -23,9 +23,9 @@ Fotos PNG/JPEG/WebP têm limite de 5 MB e 16 milhões de pixels; são convertida
 
 ## Sessões e privilégios
 
-Login e cadastro validam `access`/`refresh` e consultam `me/` como identidade autoritativa. O ID retornado vincula a conta em `User.agrohub_id`, que é único. Nome ou e-mail coincidentes com uma conta local **não** associam identidades; nesse caso, a nova conta recebe outro identificador local. Contas novas têm senha local inutilizável e nenhum privilégio administrativo. Os `roles`, `is_staff` e `is_superuser` do retorno remoto não concedem permissões no InovaLab.
+Login e cadastro validam `access`/`refresh` e consultam `me/` como identidade autoritativa. O ID retornado vincula a conta em `User.agrohub_id`, que é único. Nome ou e-mail coincidentes com uma conta local **não** associam identidades; nesse caso, a nova conta recebe outro identificador local. Contas novas têm senha local inutilizável. Na atualização autorizada de 07/10/2026, `roles` passa a definir permissões: `admin` concede administração do laboratório, `staff` concede acesso de usuário interno da equipe e demais contas ficam nas páginas públicas e no próprio perfil. O contrato da API não expõe `is_staff`/`is_superuser`; esses indicadores técnicos não são promovidos pela sincronização.
 
-Privilégios continuam locais: grupo `Administradores` para gestão do laboratório, superusuário ativo para gestão técnica de contas. Uma conta AgroHub vinculada e aprovada pode receber esses privilégios pelos mecanismos administrativos existentes. No primeiro acesso de uma instalação sem administrador vinculado, o responsável deve selecionar e promover a conta por seu **ID AgroHub verificado**, usando o shell administrativo; não executar `createsuperuser` esperando que a senha local autentique.
+Para contas vinculadas, grupos e flags locais não substituem `roles`. Os papéis são revalidados antes de cada requisição privada; não há concessão administrativa local que contorne a revogação no AgroHub. A gestão técnica global continua exigindo superusuário ativo e, para contas vinculadas, também o papel `admin`. Não executar `createsuperuser` esperando que a senha local autentique. [Contrato de autorização e validações de 07/10/2026](../frontend/16-regimento-calendario-e-papeis-agrohub.md).
 
 Contas antigas sem vínculo permanecem no banco, com seus relacionamentos e histórico, mas não entram por senha local. Uma migração de identidades antigas requer conferência explícita pelo responsável; esta entrega não associa usuários automaticamente nem transfere tarefas ou reservas entre IDs.
 

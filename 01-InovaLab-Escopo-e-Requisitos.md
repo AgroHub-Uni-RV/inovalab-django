@@ -194,3 +194,9 @@ Após validar o núcleo: comentários e anexos em tarefas, checklist, prioridade
 ## Atualização de páginas institucionais — 06/10/2026
 
 O responsável aprovou portar as páginas públicas do InovaLab do monólito: início em `/`, Sobre em `/sobre/`, Contato em `/contato/`, com a página de Serviços da referência em `/servicos/`. O login passa a `/entrar/`. A navbar contém Início antes de Sobre, Serviços e Contato; Home é exibido como Início. As páginas institucionais mantêm o cabeçalho público para autenticados, com acesso à área interna. O contato registra a mensagem pelo endpoint público do AgroHub, com `site_code=inovalab`; confirma somente o recebimento, preservando dados em erro. Esta entrega não conecta o LabMaker: este sistema já reúne as funcionalidades dos dois apps. [Contrato e verificação](docs/frontend/15-paginas-institucionais.md).
+
+## Atualização de páginas públicas e autorização — 07/10/2026
+
+Regimento e Calendário de funcionamento são portados do InovaLab do monólito e publicados em `/regimento/` e `/calendario-de-funcionamento/`. O calendário mantém as datas institucionais de 2026/2, separado dos eventos da API Ecosystem.
+
+O responsável restringiu o Dashboard e todas as funções internas, inclusive criação e acompanhamento de agendamentos, aos administradores e à equipe. O campo `roles` de Accounts `/me/` é a fonte: `admin` torna a conta administradora do laboratório; `staff` torna a conta usuária interna; os demais usuários conservam somente páginas públicas e o próprio perfil. A autenticação permanece exclusivamente no AgroHub. A sincronização verifica promoção e revogação antes de cada requisição privada, sem promover flags técnicas locais. Esta decisão substitui o acesso interno anterior de qualquer usuário autenticado. A gestão técnica global continua protegida adicionalmente para superusuários ativos. [Contrato e verificação](docs/frontend/16-regimento-calendario-e-papeis-agrohub.md).
