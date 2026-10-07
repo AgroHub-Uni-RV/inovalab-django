@@ -20,9 +20,10 @@
   <a href="{% querystring status='' page=None %}"{% if not selected_status %} aria-current="page"{% endif %}>Todas</a>
   <a href="{% querystring status='pendente' page=None %}"{% if selected_status == 'pendente' %} aria-current="page"{% endif %}>Pendentes</a>
   <a href="{% querystring status='cancelada' page=None %}"{% if selected_status == 'cancelada' %} aria-current="page"{% endif %}>Canceladas</a>
+  <a href="{% querystring status='recusada' page=None %}"{% if selected_status == 'recusada' %} aria-current="page"{% endif %}>Recusadas</a>
 </nav>
 {% if provider_error %}<p role="alert">{{ provider_error }}</p>{% else %}
-{% if not object_list %}<p class="empty-notice">{% if selected_status == 'pendente' %}Nenhuma reserva pendente{% elif selected_status == 'cancelada' %}Nenhuma reserva cancelada{% else %}Nenhuma reserva{% endif %} no AgroHub para estes filtros.</p>{% endif %}
+{% if not object_list %}<p class="empty-notice">{% if selected_status == 'pendente' %}Nenhuma reserva pendente{% elif selected_status == 'cancelada' %}Nenhuma reserva cancelada{% elif selected_status == 'recusada' %}Nenhuma reserva recusada{% else %}Nenhuma reserva{% endif %} no AgroHub para estes filtros.</p>{% endif %}
 <div class="task-board{% if selected_status %} task-board-filtered{% endif %}">
 {% for column in columns %}{% if not selected_status or selected_status == column.status %}
 <section class="task-column {{ column.tone }}" aria-label="{{ column.label }}"><h2>{{ column.label }} <span class="sr-only">({{ column.count }})</span></h2>

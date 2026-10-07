@@ -264,7 +264,7 @@ class BookingReviewListView(AdminAgendaAccessMixin, ListView):
         self.query = self.request.GET.get('q', '').strip()[:150]
         self.month = self.request.GET.get('mes', '')
         self.selected_status = self.request.GET.get('status', '')
-        if self.selected_status not in ('', 'pendente', 'cancelada'):
+        if self.selected_status not in ('', 'pendente', 'cancelada', 'recusada'):
             self.selected_status = ''
         self.reservations = []
         if self.month:
@@ -322,7 +322,7 @@ class RemoteBookingDecisionView(AdminAgendaAccessMixin, View):
         allowed = {'csrfmiddlewaretoken', 'decisao', 'q', 'mes', 'status'}
         if (decision not in ('confirmar', 'cancelar', 'recusar') or set(request.POST) - allowed
                 or any(len(request.POST.getlist(key)) != 1 for key in request.POST)
-                or request.POST.get('status', '') not in ('', 'pendente', 'cancelada')):
+                or request.POST.get('status', '') not in ('', 'pendente', 'cancelada', 'recusada')):
             return self.error(request, 'Confira a ação e os campos enviados.', 400)
         if request.user.agrohub_id is None:
             return self.error(request, 'Entre com uma conta administrativa vinculada ao AgroHub.', 403)

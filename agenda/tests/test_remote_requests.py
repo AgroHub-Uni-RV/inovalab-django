@@ -387,6 +387,14 @@ class RemotePendingRequestsTests(TestCase):
         self.assertEqual(self.writes(), [('PATCH', '/api/v1/agendamentos/reservas/101/', {'status': 'recusada'}, 'Bearer access-1')])
         self.assertEqual(response.context['stat_counts']['recusada'], 1)
         self.assertNotContains(response, 'value="recusar"')
+        refused = self.client.get('/agenda/solicitacoes/', {'status': 'recusada', 'q': 'Pedido', 'mes': '2026-11'})
+        self.assertEqual(refused.context['selected_status'], 'recusada')
+        self.assertEqual([row.id for row in refused.context['object_list']], [101])
+        self.assertContains(refused, 'aria-label="Recusadas"><h2>Recusadas')
+        self.assertNotContains(refused, 'aria-label="Pendentes"><h2>Pendentes')
+        self.assertContains(refused, 'name="status" value="recusada"')
+        self.assertContains(self.client.get('/agenda/solicitacoes/', {'status': 'recusada', 'q': 'Sem resultado'}),
+                            'Nenhuma reserva recusada no AgroHub')
         self.assertFalse(Agendamento.objects.exists())
 
     def test_confirmed_import_is_idempotent_visible_in_calendar_and_preserves_identity(self):

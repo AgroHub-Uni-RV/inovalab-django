@@ -1,5 +1,7 @@
 # Orientações do projeto
 
+- A solicitação seguinte de 07/10/2026 adiciona Recusadas às module-tabs de Solicitações, com filtro `status=recusada`, preservando busca/mês/paginação e a apresentação do Fluxo de tarefas.
+
 - A solicitação mais recente de 07/10/2026 autoriza Recusar nas pendentes via PATCH com status recusada. Confirmadas saem de Solicitações e devem virar agendamentos locais, com vínculo único origem/ID remoto e conciliação das alterações do provedor, reaproveitando vínculos já enviados pelo sistema. Essa autorização substitui a restrição anterior de não criar cópias para as confirmadas. Reservas recebidas são representadas como visitas, com título/sala/solicitante remotos preservados; alterações permanecem no sistema de origem para evitar reenvio/duplicação. Não modificar o repositório do monólito. Ver `docs/modules/13-recusa-e-confirmacoes-na-agenda.md`.
 
 - As solicitações anteriores de 07/10/2026 organizam `/agenda/solicitacoes/` em abas Todas/Pendentes/Canceladas, com cartões, contadores e navegação do Fluxo de tarefas. Confirmar/Recusar/Cancelar aparecem somente nas pendentes e usam a sessão do administrador, POST com CSRF e os endpoints da API, verificando sala InovaLab/status pendente antes do envio. Todas agora inclui pendentes/canceladas/recusadas; confirmadas ficam em Agendamentos. Ver histórico em `docs/modules/12-solicitacoes-remotas-agrohub.md`.

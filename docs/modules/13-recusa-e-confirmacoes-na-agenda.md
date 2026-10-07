@@ -20,7 +20,7 @@ Só há sucesso após validar ID/sala/status e os campos completos da resposta. 
 
 ## Agendamentos confirmados
 
-Solicitações mantém abas Todas/Pendentes/Canceladas e colunas Pendentes/Canceladas/Recusadas. Todas e seus contadores excluem confirmadas. Há um link para Agendamentos explicando onde consultar as confirmadas.
+Solicitações mantém abas Todas/Pendentes/Canceladas/Recusadas e colunas Pendentes/Canceladas/Recusadas. A solicitação posterior acrescenta a aba Recusadas com `status=recusada`, preservando busca/mês/paginação e mensagem própria de resultado vazio. Todas e seus contadores excluem confirmadas. Há um link para Agendamentos explicando onde consultar as confirmadas.
 
 A leitura autenticada por administrador em `/agenda/solicitacoes/` ou `/agenda/` consulta todas as reservas das salas InovaLab e concilia o resultado completo antes de aplicar os filtros de tela. Assim, uma confirmação anterior não depende de estar no mês, busca, aba ou página selecionados para entrar na agenda. Depois do PATCH de confirmação, a resposta validada é conciliada imediatamente, antes da mensagem de sucesso.
 
@@ -55,6 +55,8 @@ git diff --check
 As verificações cobrem recusa por PATCH, ausência de coluna Confirmadas, conversão imediata e de confirmações anteriores, idempotência, título/solicitante/período/pessoas, calendário, busca, edição/cancelamento local bloqueados para recebidas, atualização/cancelamento remoto, reaproveitamento de saída, preservação de operações pendentes, ausência de importação parcial e conflitos entre salas distintas. Mantêm os testes anteriores de papéis, CSRF, origem, paginação, falhas e resultados inconclusivos.
 
 **606 testes da suíte completa passaram**, incluindo os novos cenários. `manage.py check`, `makemigrations --check --dry-run` e `git diff --check` passaram.
+
+Na entrega da aba Recusadas, a consulta real a `/agenda/solicitacoes/?status=recusada` retornou **200**, com a aba ativa e somente a coluna Recusadas, sem erro. O teste de recusa também verifica o filtro, a preservação da aba e o resultado vazio dessa tela. Os **606 testes passaram novamente**, e check/migrações/diff passaram sem mudanças de banco.
 
 HTTP real: `/agenda/solicitacoes/` retornou **200**, com **4 botões Recusar**, sem coluna Confirmadas ou erro. Uma reserva anteriormente confirmada gerou **um vínculo recebido**; `/agenda/?mes=` retornou **200** e manteve esse mesmo vínculo, sem duplicação. Essa verificação consultou a API e registrou a confirmação localmente; não executou decisões em reservas reais.
 
