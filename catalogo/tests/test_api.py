@@ -3,7 +3,7 @@ from django.contrib.auth.models import Group
 from django.test import Client, TestCase
 
 from accounts.tests.test_identity import PASSWORD
-from catalogo.models import Espaco, Servico
+from catalogo.models import Servico
 from catalogo.tests.test_web import CASES
 
 
@@ -80,17 +80,14 @@ class CatalogApiTests(TestCase):
 
     def test_invalid_patch_does_not_persist_partial_data(self):
         self.client.force_login(self.admin)
-        entry = self.entries['espacos']
-        for value in (0, -1, 2147483648, 1.5):
-            with self.subTest(value=value):
-                response = self.client.patch(f'/api/v1/espacos/{entry.pk}/', {
-                    'nome': 'Não salvar', 'capacidade_maxima_de_pessoas': value,
-                }, content_type='application/json')
-                self.assertEqual(response.status_code, 400)
-                self.assertIn('capacidade_maxima_de_pessoas', response.json())
-                entry.refresh_from_db()
-                self.assertEqual(entry.nome, 'Sala')
-                self.assertEqual(entry.capacidade_maxima_de_pessoas, 10)
+        entry = self.entries['equipamentos']
+        response = self.client.patch(f'/api/v1/equipamentos/{entry.pk}/', {
+            'nome': 'Não salvar', 'status': 'inexistente',
+        }, content_type='application/json')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('status', response.json())
+        entry.refresh_from_db()
+        self.assertEqual((entry.nome, entry.status), ('Impressora', 'ocupado'))
 
     def test_invalid_name_and_status_are_rejected(self):
         self.client.force_login(self.admin)
@@ -113,8 +110,8 @@ class CatalogApiTests(TestCase):
 
     def test_put_requires_required_fields(self):
         self.client.force_login(self.admin)
-        entry = self.entries['espacos']
-        response = self.client.put(f'/api/v1/espacos/{entry.pk}/', {'status': 'indisponivel'}, content_type='application/json')
+        entry = self.entries['equipamentos']
+        response = self.client.put(f'/api/v1/equipamentos/{entry.pk}/', {'status': 'indisponivel'}, content_type='application/json')
         self.assertEqual(response.status_code, 400)
         self.assertIn('nome', response.json())
 
@@ -153,11 +150,11 @@ class CatalogApiTests(TestCase):
 
     def test_missing_id_returns_404(self):
         self.client.force_login(self.user)
-        self.assertEqual(self.client.get('/api/v1/espacos/999999/').status_code, 404)
+        self.assertEqual(self.client.get('/api/v1/equipamentos/999999/').status_code, 404)
 
     def test_superuser_without_group_can_write(self):
         admin = get_user_model().objects.create_superuser('tecnico', password=PASSWORD)
         self.client.force_login(admin)
-        self.assertEqual(self.client.post('/api/v1/espacos/', {
-            'nome': 'Superusuário', 'capacidade_maxima_de_pessoas': 1,
+        self.assertEqual(self.client.post('/api/v1/equipamentos/', {
+            'nome': 'Superusuário',
         }, content_type='application/json').status_code, 201)

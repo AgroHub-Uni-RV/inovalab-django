@@ -1,3 +1,0 @@
-<div class="space-picker-scroll"><div class="space-picker"{% if widget.attrs.id %} id="{{ widget.attrs.id }}"{% endif %}>
-{% for group, options, index in widget.optgroups %}{% for option in options %}{% include option.template_name with widget=option %}{% endfor %}{% empty %}<p>Nenhum espaço disponível.</p>{% endfor %}
-</div></div>

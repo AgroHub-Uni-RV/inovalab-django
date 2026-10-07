@@ -70,7 +70,7 @@ class BookingListView(AgendaAccessMixin, ListView):
                 | Q(criado_por__first_name__icontains=self.query) | Q(criado_por__last_name__icontains=self.query)
                 | Q(motivo__icontains=self.query)
                 | Q(servico__nome__icontains=self.query) | Q(equipamento__nome__icontains=self.query)
-                | Q(espaco__nome__icontains=self.query))
+                | Q(espaco_legado_nome__icontains=self.query))
         return queryset
 
     def get_context_data(self, **kwargs):
@@ -139,7 +139,7 @@ class BookingWriteView(AgendaAccessMixin, View):
         if 'pk' in self.kwargs and not is_business_admin(self.request.user):
             raise PermissionDenied('Somente administradores do laboratório podem editar agendamentos.')
         booking = get_object_or_404(self.get_queryset(), pk=self.kwargs['pk']) if 'pk' in self.kwargs else None
-        if booking and booking.espaco_id is not None:
+        if booking and booking.categoria == 'espaco':
             raise PermissionDenied('Reservas de espaços são legado: consulte ou cancele o registro.')
         return booking
 

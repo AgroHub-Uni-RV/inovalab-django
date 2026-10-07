@@ -1,12 +1,10 @@
-from decimal import Decimal
-
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser, Group
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import DataError, IntegrityError, transaction
+from django.db import IntegrityError, transaction
 from django.test import TestCase
 
-from catalogo.models import Equipamento, Espaco, Servico
+from catalogo.models import Equipamento, Servico
 from catalogo.services import save_entry
 
 
@@ -19,8 +17,7 @@ class CatalogModelTests(TestCase):
 
     def test_business_admin_without_staff_can_create_all_models(self):
         for model, data in ((Servico, {'nome': '  Serviço  '}),
-                            (Equipamento, {'nome': 'Equipamento'}),
-                            (Espaco, {'nome': 'Sala', 'capacidade_maxima_de_pessoas': 10})):
+                            (Equipamento, {'nome': 'Equipamento'})):
             with self.subTest(model=model):
                 entry = save_entry(actor=self.admin, model=model, data=data)
                 self.assertEqual(entry.status, 'disponivel')
@@ -47,55 +44,22 @@ class CatalogModelTests(TestCase):
     def test_status_choices_differ_between_services_and_resources(self):
         with self.assertRaises(ValidationError):
             save_entry(actor=self.admin, model=Servico, data={'nome': 'Serviço', 'status': 'ocupado'})
-        for model, data in ((Equipamento, {'nome': 'Impressora'}),
-                            (Espaco, {'nome': 'Sala', 'capacidade_maxima_de_pessoas': 3})):
+        for model, data in ((Equipamento, {'nome': 'Impressora'}),):
             save_entry(actor=self.admin, model=model, data={**data, 'status': 'ocupado'})
             with self.assertRaises(ValidationError):
                 save_entry(actor=self.admin, model=model, data={**data, 'status': 'inexistente'})
 
-    def test_capacity_bounds_are_validated_and_constrained_in_database(self):
-        for value in (0, -1, 2147483648):
-            with self.subTest(value=value), self.assertRaises(ValidationError):
-                save_entry(actor=self.admin, model=Espaco, data={
-                    'nome': 'Sala inválida', 'capacidade_maxima_de_pessoas': value,
-                })
-            # PostgreSQL rejeita overflow como DataError; SQLite usa a constraint.
-            with self.subTest(database=value), self.assertRaises((DataError, IntegrityError)), transaction.atomic():
-                Espaco.objects.create(nome='Sala inválida', capacidade_maxima_de_pessoas=value)
-        for value in (1, 2147483647):
-            Espaco(nome='Sala', capacidade_maxima_de_pessoas=value).full_clean()
-
     def test_invalid_update_does_not_persist_any_field(self):
-        entry = save_entry(actor=self.admin, model=Espaco, data={
-            'nome': 'Original', 'capacidade_maxima_de_pessoas': 10,
+        entry = save_entry(actor=self.admin, model=Equipamento, data={
+            'nome': 'Original', 'status': 'disponivel',
         })
         with self.assertRaises(ValidationError):
-            save_entry(actor=self.admin, model=Espaco, instance=entry, data={
-                'nome': 'Alterado', 'capacidade_maxima_de_pessoas': 0,
+            save_entry(actor=self.admin, model=Equipamento, instance=entry, data={
+                'nome': 'Alterado', 'status': 'inexistente',
             })
         entry.refresh_from_db()
         self.assertEqual(entry.nome, 'Original')
-        self.assertEqual(entry.capacidade_maxima_de_pessoas, 10)
-
-    def test_capacity_original_value_is_validated_before_integer_coercion(self):
-        entry = save_entry(actor=self.admin, model=Espaco, data={
-            'nome': 'Original', 'capacidade_maxima_de_pessoas': 10,
-        })
-        for value in (1.5, Decimal('1.5'), True, False, float('inf'), float('nan')):
-            with self.subTest(value=value, operation='create'), self.assertRaises(ValidationError):
-                save_entry(actor=self.admin, model=Espaco, data={
-                    'nome': 'Não criar', 'capacidade_maxima_de_pessoas': value,
-                })
-            with self.subTest(value=value, operation='update'), self.assertRaises(ValidationError):
-                save_entry(actor=self.admin, model=Espaco, instance=entry, data={
-                    'nome': 'Não editar', 'capacidade_maxima_de_pessoas': value,
-                })
-            with self.subTest(value=value, operation='model'), self.assertRaises(ValidationError):
-                Espaco(nome='Não criar', capacidade_maxima_de_pessoas=value).full_clean()
-            entry.refresh_from_db()
-            self.assertEqual(entry.nome, 'Original')
-            self.assertEqual(entry.capacidade_maxima_de_pessoas, 10)
-        self.assertEqual(Espaco.objects.count(), 10)
+        self.assertEqual(entry.status, 'disponivel')
 
     def test_private_seed_key_cannot_be_changed_by_write_operation(self):
         entry = Servico.objects.first()

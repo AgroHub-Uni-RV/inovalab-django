@@ -1,5 +1,7 @@
 # Módulo 2 — Catálogo
 
+**Atualização de 07/10/2026:** o cadastro/modelo de espaços foi removido. O catálogo atual tem somente Serviços e Equipamentos; telas e API `/espacos/` deixaram de existir. As descrições de espaços abaixo registram entregas anteriores. Ver [remoção de espaços](11-remocao-espacos.md).
+
 Entrega de 01/10/2026: serviços, equipamentos e espaços, com listas, detalhes, cadastro/edição, API autenticada e onze serviços iniciais do PDF. Frontend simples; as páginas anteriores de identidade foram preservadas e ganharam um link **Catálogo**.
 
 ## Executar

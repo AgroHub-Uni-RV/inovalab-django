@@ -1,5 +1,7 @@
 # Módulo 5 — Recebimento de reservas externas
 
+**Atualização de 07/10/2026:** espaços foram removidos do catálogo/modelos. Reenvios idempotentes anteriores continuam funcionando com os recibos originais; novos pedidos de espaços continuam rejeitados. Ver [remoção de espaços](11-remocao-espacos.md).
+
 Entrega local em 02/10/2026, com [plano simples](../superpowers/plans/2026-10-02-integracoes.md). O responsável escolheu preparar a API no InovaLab com credencial própria e proteção contra pedidos duplicados. Este módulo prepara o recebimento; não conecta nem modifica uma instalação real do AgroHub. Aguardar depuração antes de materiais.
 
 ## Administração

@@ -12,16 +12,15 @@ from django.utils import timezone
 from accounts.policies import is_business_admin
 from agenda.models import Agendamento, ControleAgendaVisitas, EventoAgendamento
 from agenda.policies import can_access_agenda
-from catalogo.models import Equipamento, Espaco, Servico
+from catalogo.models import Equipamento, Servico
 from materiais.models import Material
 
 
 CATEGORY_MODELS = {'servico': Servico, 'equipamento': Equipamento}
-LEGACY_CATEGORY_MODELS = {**CATEGORY_MODELS, 'espaco': Espaco}
 BASE_FIELDS = {'categoria', 'objeto', 'motivo', 'inicio', 'fim'}
 SERVICE_FIELDS = {'equipamentos', 'material_proprio', 'material_gasto', 'material_gasto_gramas'}
 PUBLIC_FIELDS = BASE_FIELDS | SERVICE_FIELDS | {'observacoes', 'quantidade_pessoas'}
-STORED_FIELDS = ('servico_id', 'equipamento_id', 'espaco_id', 'visita', 'quantidade_pessoas', 'motivo', 'observacoes', 'inicio', 'fim', 'cancelado_em',
+STORED_FIELDS = ('servico_id', 'equipamento_id', 'espaco_legado_id', 'espaco_legado_nome', 'visita', 'quantidade_pessoas', 'motivo', 'observacoes', 'inicio', 'fim', 'cancelado_em',
                  'material_proprio', 'material_gasto_id', 'material_gasto_gramas',
                  'situacao', 'avaliado_por_id', 'avaliado_em')
 
@@ -76,7 +75,10 @@ def _lock_targets(*targets):
                 # Também funciona após flush em testes: escreva antes de ler.
                 ControleAgendaVisitas.objects.get_or_create(pk=1)
                 ControleAgendaVisitas.objects.filter(pk=1).update(id=F('id'))
-        elif not LEGACY_CATEGORY_MODELS[category].objects.filter(pk=pk).update(status=F('status')):
+        elif category == 'espaco':
+            # Reservas antigas não dependem mais de um cadastro de espaço.
+            Agendamento.objects.filter(espaco_legado_id=pk).update(espaco_legado_id=F('espaco_legado_id'))
+        elif not CATEGORY_MODELS[category].objects.filter(pk=pk).update(status=F('status')):
             raise ValidationError({'objeto': 'Selecione um cadastro válido.'})
 
 
@@ -135,7 +137,7 @@ def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=
     )
     old_equipment_ids = set(booking.equipamentos.values_list('pk', flat=True)) if booking.pk else set()
     old_target = _target(booking) if booking_id is not None else None
-    if booking.espaco_id is not None:
+    if booking.categoria == 'espaco':
         raise ValidationError({'categoria': 'Reservas de espaços são legado: consulte ou cancele o registro.'})
     category = data.get('categoria', booking.categoria)
     if category != 'visita' and 'quantidade_pessoas' in data:
@@ -153,7 +155,7 @@ def _save_booking(*, actor, actor_name, data, booking_id=None, expected_version=
         if category != 'visita' and (type(pk) is not int or pk < 1):
             raise ValidationError({'objeto': 'Informe um ID inteiro positivo.'})
         booking.visita = category == 'visita'
-        for name in LEGACY_CATEGORY_MODELS:
+        for name in CATEGORY_MODELS:
             setattr(booking, name + '_id', pk if name == category else None)
         if booking.visita:
             booking.motivo = booking.observacoes = ''
@@ -257,7 +259,7 @@ def review_booking(*, actor, booking_id, expected_version, decision, agrohub_req
             raise BookingConflict('pedido_avaliado', 'Esta solicitação já foi avaliada.')
         before = _snapshot(booking)
         if decision == 'aprovar':
-            if booking.espaco_id is not None:
+            if booking.categoria == 'espaco':
                 raise ValidationError({'categoria': 'Reservas de espaços são legado e não podem ser aprovadas.'})
             resource = CATEGORY_MODELS[booking.categoria].objects.get(pk=booking.objeto_id) if not booking.visita else None
             if resource is not None and resource.status == 'indisponivel':

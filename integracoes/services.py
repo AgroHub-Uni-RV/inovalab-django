@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from accounts.policies import is_business_admin
-from agenda.services import BASE_FIELDS, LEGACY_CATEGORY_MODELS, BookingConflict, _busy_as_conflict, _save_booking
+from agenda.services import BASE_FIELDS, CATEGORY_MODELS, BookingConflict, _busy_as_conflict, _save_booking
 from integracoes.credentials import CredentialRejected, IntegrationPrincipal, issue_token
 from integracoes.models import ClienteIntegracao, PedidoIntegracao
 
@@ -112,7 +112,7 @@ def normalize_request(data):
         else:
             normalized[name] = value.strip()
     # Espaço é reconhecido somente para reenvios idempotentes anteriores.
-    if not isinstance(data['categoria'], str) or data['categoria'] not in (*LEGACY_CATEGORY_MODELS, 'visita'):
+    if not isinstance(data['categoria'], str) or data['categoria'] not in (*CATEGORY_MODELS, 'visita', 'espaco'):
         errors['categoria'] = 'Selecione uma categoria válida.'
     if 'objeto' in data and (type(data['objeto']) is not int or data['objeto'] < 1):
         errors['objeto'] = 'Informe um ID inteiro positivo.'

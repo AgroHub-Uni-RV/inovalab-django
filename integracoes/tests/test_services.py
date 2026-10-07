@@ -9,7 +9,7 @@ from django.test import TestCase
 
 from agenda.models import Agendamento, EventoAgendamento
 from agenda.services import BookingConflict, cancel_booking, save_booking
-from catalogo.models import Equipamento, Espaco, Servico
+from catalogo.models import Equipamento, Servico
 from integracoes.credentials import CredentialRejected, authenticate_token
 from integracoes.models import ClienteIntegracao, PedidoIntegracao
 from integracoes.selectors import visible_clients
@@ -24,7 +24,6 @@ class IntegrationServiceTests(TestCase):
         cls.user = get_user_model().objects.create_user('staff', is_staff=True)
         cls.service = Servico.objects.first()
         cls.equipment = Equipamento.objects.create(nome='Impressora')
-        cls.space = Espaco.objects.create(nome='Sala', capacidade_maxima_de_pessoas=8)
 
     def setUp(self):
         self.client, self.token = create_client(actor=self.admin, name='AgroHub')

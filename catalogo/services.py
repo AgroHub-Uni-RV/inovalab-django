@@ -4,13 +4,12 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 
 from accounts.policies import is_business_admin
-from catalogo.models import Equipamento, Espaco, Servico
+from catalogo.models import Equipamento, Servico
 
 
 PUBLIC_FIELDS = {
     Servico: ('nome', 'descricao', 'status'),
     Equipamento: ('nome', 'descricao', 'foto', 'status'),
-    Espaco: ('nome', 'capacidade_maxima_de_pessoas', 'somente_administradores', 'status'),
 }
 
 

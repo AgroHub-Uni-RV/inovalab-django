@@ -1,5 +1,7 @@
 # Orientações do projeto
 
+- Em 07/10/2026, a solicitação posterior remove o modelo `Espaco`, seu cadastro, telas/API e carga inicial. Catálogo mantém Serviços e Equipamentos; agenda mantém Serviços, Equipamentos e Visitas. Reservas antigas preservam ID/nome como dados históricos sem FK para espaço, além de eventos e recibos. Consultar `docs/modules/11-remocao-espacos.md`.
+
 - Fazer commits em português por alteração importante, no formato `feat (docs): adiciona documentação da arquitetura do sistema.`.
 - Desenvolver um módulo por vez. Concluir a entrega e aguardar o responsável depurar e autorizar o avanço antes de iniciar outro módulo.
 - Preservar login e página de identidade. A solicitação de 05/10/2026 inicia melhorias visuais pelas imagens de referência, em entregas fracionadas. Reproduzir o frontend com as funcionalidades atuais; novos recursos terão etapas próprias. A solicitação posterior autoriza incluir a logo do InovaLab fornecida em `Referencias/logo.png`; logos institucionais ainda não fornecidas permanecem com espaços reservados.

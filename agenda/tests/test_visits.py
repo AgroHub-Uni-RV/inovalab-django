@@ -9,7 +9,7 @@ from rest_framework.test import APIClient
 
 from agenda.models import Agendamento, EventoAgendamento
 from agenda.services import BookingConflict, cancel_booking, review_booking, save_booking
-from catalogo.models import Equipamento, Espaco
+from catalogo.models import Equipamento
 from integracoes.services import create_client
 from integracoes.models import PedidoIntegracao
 
@@ -19,7 +19,6 @@ class VisitTests(TestCase):
     def setUpTestData(cls):
         cls.admin = get_user_model().objects.create_superuser('gestor')
         cls.user = get_user_model().objects.create_user('visitante', is_staff=True)
-        cls.space = Espaco.objects.create(nome='Sala antiga')
         cls.equipment = Equipamento.objects.create(nome='Impressora')
         cls.start = datetime.fromisoformat('2026-11-01T14:00:00-03:00')
         cls.end = datetime.fromisoformat('2026-11-01T15:00:00-03:00')
@@ -49,7 +48,7 @@ class VisitTests(TestCase):
         self.assertNotContains(self.client.get(response.url), '<h2>Observações</h2>')
 
     def test_visit_rejects_catalog_and_text_fields_without_writes(self):
-        for name, value in [('objeto', self.space.pk), ('motivo', 'Texto'), ('observacoes', ''),
+        for name, value in [('objeto', 42), ('motivo', 'Texto'), ('observacoes', ''),
                             ('equipamentos', []), ('material_proprio', None)]:
             with self.subTest(field=name), self.assertRaises(ValidationError):
                 save_booking(actor=self.admin, data=self.data(**{name: value}))
@@ -112,15 +111,15 @@ class VisitTests(TestCase):
 
     def test_no_new_space_reservation_even_for_admin(self):
         with self.assertRaises(ValidationError):
-            save_booking(actor=self.admin, data=self.data(categoria='espaco', objeto=self.space.pk, motivo='Sala'))
+            save_booking(actor=self.admin, data=self.data(categoria='espaco', objeto=42, motivo='Sala'))
         api = APIClient()
         api.force_login(self.admin)
-        response = api.post('/api/v1/agendamentos/', self.data(categoria='espaco', objeto=self.space.pk, motivo='Sala'), format='json')
+        response = api.post('/api/v1/agendamentos/', self.data(categoria='espaco', objeto=42, motivo='Sala'), format='json')
         self.assertEqual(response.status_code, 400)
         self.assertFalse(Agendamento.objects.exists())
 
     def test_legacy_space_remains_readable_and_cancelable_but_cannot_be_renewed(self):
-        booking = Agendamento.objects.create(espaco=self.space, motivo='Antigo', inicio=self.start,
+        booking = Agendamento.objects.create(espaco_legado_id=42, espaco_legado_nome='Sala antiga', motivo='Antigo', inicio=self.start,
             fim=self.end, criado_por=self.admin)
         EventoAgendamento.objects.create(agendamento=booking, ator=self.admin, ator_nome='gestor', acao='criar')
         self.client.force_login(self.admin)
@@ -129,11 +128,18 @@ class VisitTests(TestCase):
         self.assertNotContains(response, 'Editar agendamento')
         listing = self.client.get('/agenda/?mes=2026-11')
         self.assertNotContains(listing, f'href="/agenda/{booking.pk}/editar/"')
+        self.assertContains(self.client.get('/agenda/?mes=2026-11&q=Sala+antiga'), 'Sala antiga')
+        api = APIClient()
+        api.force_login(self.admin)
+        payload = api.get(f'/api/v1/agendamentos/{booking.pk}/').data
+        self.assertEqual((payload['categoria'], payload['objeto'], payload['objeto_nome']),
+                         ('espaco', 42, 'Sala antiga'))
+        self.assertEqual(self.client.get(f'/agenda/{booking.pk}/editar/').status_code, 403)
         with self.assertRaises(ValidationError):
             save_booking(actor=self.admin, booking_id=booking.pk, expected_version=1, data={'motivo': 'Novo'})
         cancel_booking(actor=self.admin, booking_id=booking.pk, expected_version=1)
         booking.refresh_from_db()
-        self.assertEqual((booking.espaco_id, booking.eventos.count()), (self.space.pk, 2))
+        self.assertEqual((booking.espaco_legado_id, booking.eventos.count()), (42, 2))
 
     def test_api_visit_create_patch_filter_and_no_extra_fields(self):
         api = APIClient()
@@ -161,14 +167,14 @@ class VisitTests(TestCase):
         self.assertEqual(response.status_code, 201, response.data)
         self.assertEqual(api.post(url, data, format='json').status_code, 200)
         denied = api.post(url, {**data, 'id_externo': 'sala-1', 'categoria': 'espaco',
-                               'objeto': self.space.pk, 'motivo': 'Sala'}, format='json')
+                               'objeto': 42, 'motivo': 'Sala'}, format='json')
         self.assertEqual(denied.status_code, 400)
         self.assertEqual(Agendamento.objects.count(), 1)
 
     def test_external_legacy_space_replay_returns_original_without_new_reservation(self):
         client, token = create_client(actor=self.admin, name='Legado AgroHub')
-        booking = Agendamento.objects.create(espaco=self.space, motivo='Antigo', inicio=self.start, fim=self.end)
-        canonical = {'categoria': 'espaco', 'objeto': self.space.pk, 'motivo': 'Antigo',
+        booking = Agendamento.objects.create(espaco_legado_id=42, espaco_legado_nome='Sala antiga', motivo='Antigo', inicio=self.start, fim=self.end)
+        canonical = {'categoria': 'espaco', 'objeto': 42, 'motivo': 'Antigo',
                      'id_externo': 'antigo-1', 'requerente_id': 'pessoa-1', 'requerente': 'Ana',
                      'inicio': '2026-11-01T17:00:00+00:00', 'fim': '2026-11-01T18:00:00+00:00'}
         digest = hashlib.sha256(json.dumps(canonical, sort_keys=True, separators=(',', ':'),

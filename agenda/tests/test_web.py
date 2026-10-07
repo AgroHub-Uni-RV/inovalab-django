@@ -6,7 +6,7 @@ from django.test import Client, TestCase
 
 from agenda.models import Agendamento
 from agenda.services import cancel_booking, save_booking
-from catalogo.models import Equipamento, Espaco, Servico
+from catalogo.models import Equipamento, Servico
 
 
 class BookingWebTests(TestCase):
@@ -17,7 +17,6 @@ class BookingWebTests(TestCase):
         cls.user = get_user_model().objects.create_user('comum', is_staff=True)
         cls.service = Servico.objects.first()
         cls.equipment = Equipamento.objects.create(nome='Impressora')
-        cls.space = Espaco.objects.create(nome='Sala', capacidade_maxima_de_pessoas=5)
 
     def setUp(self):
         self.client.force_login(self.admin)

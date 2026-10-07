@@ -11,7 +11,7 @@ from rest_framework.test import APIClient
 from agenda import services
 from agenda.models import Agendamento
 from agenda.selectors import calendar_weeks, visible_bookings
-from catalogo.models import Equipamento, Espaco, Servico
+from catalogo.models import Equipamento, Servico
 from materiais.models import Material
 from conteudo.tests.helpers import image_upload
 
@@ -140,8 +140,8 @@ class BookingRequestTests(BookingRequestFixtures, TestCase):
                 self.create(actor=actor)
 
     def test_spaces_cannot_be_reserved_by_any_role(self):
-        for space in Espaco.objects.filter(somente_administradores=True):
-            fields = {'categoria': 'espaco', 'objeto': space.pk, 'material_proprio': None}
+        for space_id in (1, 42):
+            fields = {'categoria': 'espaco', 'objeto': space_id, 'material_proprio': None}
             for actor in (self.user, self.admin):
                 with self.subTest(actor=actor), self.assertRaises(ValidationError):
                     self.create(actor=actor, **fields)
@@ -258,12 +258,12 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         self.assertContains(self.client.get('/agenda/'), 'Rejeitado')
 
     def test_forged_space_submission_is_rejected_for_both_roles(self):
-        space = Espaco.objects.filter(somente_administradores=True).first()
+        space_id = 42
         for actor in (self.admin, self.user):
             self.client.force_login(actor)
             response = self.client.get('/agenda/novo/')
             self.assertNotContains(response, '<option value="espaco"')
-            data = self.web_data(categoria='espaco', objeto=space.pk)
+            data = self.web_data(categoria='espaco', objeto=space_id)
             data.pop('material_proprio')
             response = self.client.post('/agenda/novo/', data)
             self.assertEqual(response.status_code, 200)
@@ -281,9 +281,9 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
             self.assertEqual(method(url, {'versao': 1}, format='json').status_code, 403)
         for field in ('situacao', 'avaliado_por', 'avaliado_em', 'criado_por'):
             self.assertEqual(api.post('/api/v1/agendamentos/', {**self.data, field: 'confirmado'}, format='json').status_code, 400)
-        space = Espaco.objects.filter(somente_administradores=True).first()
+        space_id = 42
         self.assertEqual(api.post('/api/v1/agendamentos/', {**self.data, 'categoria': 'espaco',
-            'objeto': space.pk, 'material_proprio': None}, format='json').status_code, 400)
+            'objeto': space_id, 'material_proprio': None}, format='json').status_code, 400)
 
     def test_navigation_is_role_scoped_and_only_review_entry_is_current(self):
         self.client.force_login(self.user)

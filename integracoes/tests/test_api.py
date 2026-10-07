@@ -5,7 +5,7 @@ from rest_framework.test import APIClient
 
 from agenda.models import Agendamento
 from agenda.services import cancel_booking, save_booking
-from catalogo.models import Equipamento, Espaco, Servico
+from catalogo.models import Equipamento, Servico
 from integracoes.models import PedidoIntegracao
 from integracoes.services import create_client, rotate_credential, update_client
 
@@ -17,7 +17,6 @@ class IntegrationAPITests(TestCase):
         cls.admin.groups.add(Group.objects.get(name='Administradores'))
         cls.service = Servico.objects.first()
         cls.equipment = Equipamento.objects.create(nome='Impressora')
-        cls.space = Espaco.objects.create(nome='Sala', capacidade_maxima_de_pessoas=8)
 
     def setUp(self):
         self.client = APIClient(enforce_csrf_checks=True)
@@ -34,9 +33,9 @@ class IntegrationAPITests(TestCase):
     def test_external_catalog_no_longer_offers_spaces(self):
         response = self.client.get('/api/v1/integracoes/catalogo/', {'categoria': 'espaco'})
         self.assertEqual(response.status_code, 400)
-        for room in Espaco.objects.all():
-            with self.subTest(room=room.nome):
-                self.assertEqual(self.post(categoria='espaco', objeto=room.pk).status_code, 400)
+        for room_id in (1, 42):
+            with self.subTest(room=room_id):
+                self.assertEqual(self.post(categoria='espaco', objeto=room_id).status_code, 400)
         self.assertFalse(Agendamento.objects.exists())
         self.assertFalse(PedidoIntegracao.objects.exists())
 
@@ -44,19 +43,13 @@ class IntegrationAPITests(TestCase):
         self.client.credentials()
         self.client.force_login(self.admin)
         self.client.get('/agenda/novo/')
-        for room in Espaco.objects.filter(somente_administradores=True):
+        for room_id in (1, 42):
             data = {key: value for key, value in self.data.items()
                     if key not in ('id_externo', 'requerente_id', 'requerente')}
             response = self.client.post('/api/v1/agendamentos/',
-                {**data, 'categoria': 'espaco', 'objeto': room.pk}, format='json',
+                {**data, 'categoria': 'espaco', 'objeto': room_id}, format='json',
                 HTTP_X_CSRFTOKEN=self.client.cookies['csrftoken'].value)
             self.assertEqual(response.status_code, 400, response.data)
-
-    def test_custom_space_cannot_be_reserved_regardless_of_restriction(self):
-        for restricted in (True, False):
-            self.space.somente_administradores = restricted
-            self.space.save()
-            self.assertEqual(self.post(categoria='espaco', objeto=self.space.pk).status_code, 400)
 
     def test_real_bearer_without_session_or_csrf_creates_and_replays(self):
         response = self.post()

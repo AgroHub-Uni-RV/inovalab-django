@@ -1,5 +1,7 @@
 # InovaLab
 
+Atualização de 07/10/2026: o modelo e cadastro de **Espaços** foram removidos, incluindo telas e API. O catálogo mantém Serviços e Equipamentos; reservas antigas conservam os dados históricos para consulta/cancelamento. Migrações aplicadas localmente. Ver [remoção de espaços e depuração](docs/modules/11-remocao-espacos.md).
+
 Sistema Django para demandas do laboratório, tarefas, agenda, materiais e banners, com frontend básico e API para futuras integrações.
 
 O deploy no projeto **inovalab-test** usa o preset Django da Vercel e executa

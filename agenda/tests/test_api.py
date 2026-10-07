@@ -7,7 +7,7 @@ from rest_framework.test import APIClient
 
 from agenda.models import Agendamento
 from agenda.services import save_booking
-from catalogo.models import Equipamento, Espaco, Servico
+from catalogo.models import Equipamento, Servico
 
 
 class BookingAPITests(TestCase):
@@ -18,7 +18,6 @@ class BookingAPITests(TestCase):
         cls.user = get_user_model().objects.create_user('comum', is_staff=True)
         cls.service = Servico.objects.first()
         cls.equipment = Equipamento.objects.create(nome='Impressora')
-        cls.space = Espaco.objects.create(nome='Sala', capacidade_maxima_de_pessoas=5)
 
     def setUp(self):
         self.client = APIClient()
@@ -87,7 +86,8 @@ class BookingAPITests(TestCase):
         for version in (True, 1.5, '1', 0, None):
             with self.subTest(version=version):
                 self.assertEqual(self.client.post(self.url, {**self.data, 'versao': version}, format='json').status_code, 400)
-        for field in ('servico', 'equipamento', 'espaco', 'criado_por', 'id', 'cancelado_em', 'objeto_nome'):
+        for field in ('servico', 'equipamento', 'espaco', 'espaco_legado_id', 'espaco_legado_nome',
+                      'criado_por', 'id', 'cancelado_em', 'objeto_nome'):
             self.assertEqual(self.client.post(self.url, {**self.data, field: 1}, format='json').status_code, 400)
         for value in (True, '1', 1.5, None, 0, 999999):
             self.assertEqual(self.client.post(self.url, {**self.data, 'objeto': value}, format='json').status_code, 400)

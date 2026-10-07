@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError as ModelValidationError
 from rest_framework import serializers
 
-from catalogo.models import Equipamento, Espaco, Servico
+from catalogo.models import Equipamento, Servico
 from catalogo.services import save_entry
 
 
@@ -41,11 +41,4 @@ class EquipamentoSerializer(CatalogSerializer):
     class Meta:
         model = Equipamento
         fields = ['id', 'nome', 'descricao', 'foto', 'status']
-        read_only_fields = ['id']
-
-
-class EspacoSerializer(CatalogSerializer):
-    class Meta:
-        model = Espaco
-        fields = ['id', 'nome', 'capacidade_maxima_de_pessoas', 'somente_administradores', 'status']
         read_only_fields = ['id']

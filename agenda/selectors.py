@@ -14,7 +14,7 @@ from agenda.policies import can_access_agenda
 
 def visible_bookings(actor):
     queryset = Agendamento.objects.filter(cancelado_em__isnull=True).select_related(
-        'servico', 'equipamento', 'espaco', 'criado_por', 'material_gasto', 'avaliado_por',
+        'servico', 'equipamento', 'criado_por', 'material_gasto', 'avaliado_por',
     ).prefetch_related(Prefetch('eventos', queryset=EventoAgendamento.objects.filter(acao='criar'),
                                to_attr='eventos_de_criacao'))
     if not can_access_agenda(actor):

@@ -1,8 +1,8 @@
 from django.urls import path
 from django.views.generic import RedirectView
 
-from catalogo.forms import EquipamentoForm, EspacoForm, ServicoForm
-from catalogo.models import Equipamento, Espaco, Servico
+from catalogo.forms import EquipamentoForm, ServicoForm
+from catalogo.models import Equipamento, Servico
 from catalogo.views import CatalogCreateView, CatalogDetailView, CatalogListView, CatalogUpdateView, EquipmentPhotoView
 
 
@@ -13,7 +13,6 @@ urlpatterns.append(path('equipamentos/foto/', EquipmentPhotoView.as_view(), name
 for category, model, form in (
     ('servicos', Servico, ServicoForm),
     ('equipamentos', Equipamento, EquipamentoForm),
-    ('espacos', Espaco, EspacoForm),
 ):
     context = {'model': model, 'category': category}
     urlpatterns.extend([

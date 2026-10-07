@@ -4,9 +4,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import JSONRenderer
 from rest_framework.viewsets import ModelViewSet
 
-from catalogo.models import Equipamento, Espaco, Servico
+from catalogo.models import Equipamento, Servico
 from catalogo.permissions import CanMaintainCatalog
-from catalogo.serializers import EquipamentoSerializer, EspacoSerializer, ServicoSerializer
+from catalogo.serializers import EquipamentoSerializer, ServicoSerializer
 
 
 class CatalogPagination(PageNumberPagination):
@@ -29,8 +29,3 @@ class ServicoViewSet(CatalogViewSet):
 class EquipamentoViewSet(CatalogViewSet):
     queryset = Equipamento.objects.all()
     serializer_class = EquipamentoSerializer
-
-
-class EspacoViewSet(CatalogViewSet):
-    queryset = Espaco.objects.all()
-    serializer_class = EspacoSerializer

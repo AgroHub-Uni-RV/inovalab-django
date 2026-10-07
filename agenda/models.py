@@ -15,7 +15,8 @@ BOOKING_STATUSES = {'pendente': 'Pendente', 'confirmado': 'Confirmado', 'rejeita
 class Agendamento(models.Model):
     servico = models.ForeignKey('catalogo.Servico', on_delete=models.PROTECT, null=True, blank=True)
     equipamento = models.ForeignKey('catalogo.Equipamento', on_delete=models.PROTECT, null=True, blank=True)
-    espaco = models.ForeignKey('catalogo.Espaco', on_delete=models.PROTECT, null=True, blank=True)
+    espaco_legado_id = models.PositiveBigIntegerField(null=True, blank=True, editable=False)
+    espaco_legado_nome = models.CharField(max_length=150, blank=True, default='', editable=False)
     visita = models.BooleanField(default=False)
     quantidade_pessoas = models.PositiveIntegerField('quantidade de pessoas', null=True, blank=True,
                                                      validators=[MinValueValidator(1)])
@@ -45,10 +46,10 @@ class Agendamento(models.Model):
         constraints = [
             models.CheckConstraint(condition=(
                 models.Q(visita=False) & (
-                    models.Q(servico__isnull=False, equipamento__isnull=True, espaco__isnull=True)
-                    | models.Q(servico__isnull=True, equipamento__isnull=False, espaco__isnull=True)
-                    | models.Q(servico__isnull=True, equipamento__isnull=True, espaco__isnull=False)
-                ) | models.Q(visita=True, servico__isnull=True, equipamento__isnull=True, espaco__isnull=True)
+                    models.Q(servico__isnull=False, equipamento__isnull=True, espaco_legado_id__isnull=True)
+                    | models.Q(servico__isnull=True, equipamento__isnull=False, espaco_legado_id__isnull=True)
+                    | models.Q(servico__isnull=True, equipamento__isnull=True, espaco_legado_id__isnull=False)
+                ) | models.Q(visita=True, servico__isnull=True, equipamento__isnull=True, espaco_legado_id__isnull=True)
             ), name='agenda_exatamente_um_alvo'),
             models.CheckConstraint(condition=(
                 models.Q(visita=True, quantidade_pessoas__isnull=False, quantidade_pessoas__gte=1)
@@ -78,15 +79,21 @@ class Agendamento(models.Model):
     def categoria(self):
         if self.visita:
             return 'visita'
-        return next((name for name in ('servico', 'equipamento', 'espaco')
+        if self.espaco_legado_id is not None:
+            return 'espaco'
+        return next((name for name in ('servico', 'equipamento')
                      if getattr(self, name + '_id') is not None), None)
 
     @property
     def objeto_id(self):
+        if self.categoria == 'espaco':
+            return self.espaco_legado_id
         return getattr(self, self.categoria + '_id') if self.categoria and not self.visita else None
 
     @property
     def objeto_nome(self):
+        if self.categoria == 'espaco':
+            return self.espaco_legado_nome
         return 'Visita' if self.visita else getattr(self, self.categoria).nome if self.categoria else ''
 
     @property

@@ -1,5 +1,7 @@
 # Máquinas e espaços iniciais — 06/10/2026
 
+**Atualização de 07/10/2026:** espaços foram removidos do sistema. O comando `carregar_recursos_iniciais` agora carrega somente os seis equipamentos. As tabelas de espaços abaixo são históricas. Ver [remoção de espaços](11-remocao-espacos.md).
+
 As imagens fornecidas nesta solicitação definem a carga de seis equipamentos: Plotter de impressão, Impressora 3D, Corte a laser, Plotter de corte, Óculos de realidade virtual e Scanner 3D manual. As descrições foram transcritas dos cartões. Serviços continuam sendo cadastros independentes.
 
 | Espaço | Capacidade | Agendamento |

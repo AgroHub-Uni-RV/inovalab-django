@@ -8,7 +8,7 @@ from django.db.models.deletion import ProtectedError
 from django.http import Http404
 from django.test import TestCase
 
-from catalogo.models import Equipamento, Espaco, Servico
+from catalogo.models import Equipamento, Servico
 from agenda.models import Agendamento, EventoAgendamento
 from agenda.selectors import visible_bookings
 from agenda.services import BookingConflict, cancel_booking, save_booking
@@ -22,7 +22,6 @@ class BookingServiceTests(TestCase):
         cls.user = get_user_model().objects.create_user('comum', is_staff=True)
         cls.service = Servico.objects.first()
         cls.equipment = Equipamento.objects.create(nome='Impressora')
-        cls.space = Espaco.objects.create(nome='Sala', capacidade_maxima_de_pessoas=8)
         cls.start = datetime.fromisoformat('2026-11-01T14:00:00-03:00')
         cls.end = datetime.fromisoformat('2026-11-01T15:00:00-03:00')
 
@@ -37,7 +36,7 @@ class BookingServiceTests(TestCase):
         for category, target in (('servico', self.service), ('equipamento', self.equipment)):
             booking = self.create_booking(categoria=category, objeto=target.pk)
             self.assertEqual((booking.categoria, booking.objeto_id, booking.versao), (category, target.pk, 1))
-            self.assertEqual(sum(value is not None for value in (booking.servico_id, booking.equipamento_id, booking.espaco_id)), 1)
+            self.assertEqual(sum(value is not None for value in (booking.servico_id, booking.equipamento_id, booking.espaco_legado_id)), 1)
             self.assertEqual(booking.criado_por_id, self.admin.pk)
             self.assertEqual(booking.eventos.get().acao, 'criar')
             self.assertEqual(visible_bookings(self.admin).count(), Agendamento.objects.count())
@@ -68,7 +67,7 @@ class BookingServiceTests(TestCase):
 
     def test_database_enforces_exactly_one_target_and_positive_interval(self):
         base = {'motivo': 'Reserva', 'inicio': self.start, 'fim': self.end}
-        for targets in ({}, {'servico': self.service, 'espaco': self.space}):
+        for targets in ({}, {'servico': self.service, 'equipamento': self.equipment}):
             with self.assertRaises(IntegrityError), transaction.atomic():
                 Agendamento.objects.create(**base, **targets)
         with self.assertRaises(IntegrityError), transaction.atomic():
@@ -158,7 +157,8 @@ class BookingServiceTests(TestCase):
             with self.assertRaises(BookingConflict) as error:
                 operation()
             self.assertEqual(error.exception.code, 'versao_desatualizada')
-        for field in ('id', 'versao', 'cancelado_em', 'criado_por', 'servico', 'equipamento', 'espaco'):
+        for field in ('id', 'versao', 'cancelado_em', 'criado_por', 'servico', 'equipamento', 'espaco',
+                      'espaco_legado_id', 'espaco_legado_nome'):
             with self.subTest(field=field), self.assertRaises(ValidationError):
                 save_booking(actor=self.admin, booking_id=booking.pk, expected_version=2, data={'motivo': 'Não salvar', field: 1})
         for version in (None, True, 0, -1, 1.5, '2'):

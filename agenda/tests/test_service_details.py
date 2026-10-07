@@ -12,7 +12,7 @@ from rest_framework.test import APIClient
 from agenda.forms import BookingForm
 from agenda.models import Agendamento, EventoAgendamento
 from agenda.services import BookingConflict, cancel_booking, save_booking
-from catalogo.models import Equipamento, Espaco, Servico
+from catalogo.models import Equipamento, Servico
 from conteudo.tests.helpers import image_upload
 from materiais.models import Material
 
@@ -28,7 +28,6 @@ class BookingServiceDetailsTests(TestCase):
         cls.service = Servico.objects.first()
         cls.machine = Equipamento.objects.create(nome='Máquina A')
         cls.other_machine = Equipamento.objects.create(nome='Máquina B')
-        cls.room = Espaco.objects.first()
         cls.material = Material.objects.create(nome='PLA', categoria='Filamento', quantidade=500,
                                               unidade='g', fonte='Laboratório')
 
@@ -71,7 +70,7 @@ class BookingServiceDetailsTests(TestCase):
     def test_wrong_category_and_inconsistent_material_are_rejected(self):
         for fields in ({'material_proprio': True, 'material_gasto_gramas': 10},
                        {'material_gasto_gramas': 10}, {'material_proprio': 'false'},
-                       {'categoria': 'espaco', 'objeto': self.room.pk, 'material_proprio': True},
+                       {'categoria': 'espaco', 'objeto': 42, 'material_proprio': True},
                        {'categoria': 'equipamento', 'objeto': self.machine.pk, 'equipamentos': [self.other_machine.pk]}):
             with self.subTest(fields=fields), self.assertRaises(ValidationError):
                 self.create(**fields)

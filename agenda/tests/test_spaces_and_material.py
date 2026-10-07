@@ -11,7 +11,7 @@ from rest_framework.test import APIClient
 from agenda.forms import BookingForm
 from agenda.models import Agendamento
 from agenda.services import BookingConflict, cancel_booking, save_booking
-from catalogo.models import Equipamento, Espaco, Servico
+from catalogo.models import Equipamento, Servico
 from materiais.models import Material
 
 
@@ -65,7 +65,7 @@ class SpacesAndMaterialTests(TestCase):
         for changes in ({'material_gasto': True}, {'material_gasto': '1'}, {'material_gasto': 999999},
                         {'material_gasto': self.other.pk}, {'material_proprio': True, 'material_gasto_gramas': None},
                         {'material_proprio': None, 'material_gasto_gramas': None},
-                        {'categoria': 'espaco', 'objeto': Espaco.objects.first().pk}):
+                        {'categoria': 'espaco', 'objeto': 42}):
             with self.subTest(changes=changes), self.assertRaises(ValidationError):
                 self.create(**changes)
         self.assertFalse(Agendamento.objects.exists())
@@ -127,7 +127,6 @@ class SpacesAndMaterialTests(TestCase):
         response = self.client.get('/agenda/novo/')
         self.assertNotContains(response, '<option value="espaco"')
         self.assertContains(response, '<option value="visita"')
-        self.assertTrue(Espaco.objects.exists())
 
     def test_equipment_card_invalid_submission_preserves_selected_choice(self):
         equipment = Equipamento.objects.create(nome='Máquina de teste')

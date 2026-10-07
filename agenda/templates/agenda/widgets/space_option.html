@@ -1,8 +1,0 @@
-<label class="space-option{% if widget.restricted %} restricted{% endif %}{% if widget.code == 'secretaria' %} secretaria{% endif %}{% if widget.unavailable %} unavailable{% endif %}"{% if widget.attrs.id %} for="{{ widget.attrs.id }}"{% endif %}>
-  <span class="space-option-top">{% include 'django/forms/widgets/input.html' %}{% if widget.restricted %}{% include 'core/icon.html' with name='lock' %}{% endif %}</span>
-  <span class="space-option-name">{{ widget.label }}</span>
-  {% if widget.restricted %}<span class="space-option-note visually-hidden">Só administradores</span>{% endif %}
-  {% if widget.capacity %}<span class="space-option-capacity">{% include 'core/icon.html' with name='users' %}{{ widget.capacity }}<span class="visually-hidden"> pessoas</span></span>{% endif %}
-  {% if not widget.restricted %}<span class="space-option-furniture">{% if widget.code == 'area-convivencia' %}{% include 'core/icon.html' with name='sofa' %}{% include 'core/icon.html' with name='sofa' %}{% else %}{% include 'core/icon.html' with name='meeting' %}{% endif %}</span>{% endif %}
-  {% if widget.unavailable %}<span class="space-option-note">Indisponível para novos horários</span>{% endif %}
-</label>

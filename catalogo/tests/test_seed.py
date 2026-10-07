@@ -6,7 +6,7 @@ from django.core.management import call_command
 from django.db import connection
 from django.test import TestCase
 
-from catalogo.models import Equipamento, Espaco, Servico
+from catalogo.models import Equipamento, Servico
 
 
 EXPECTED_SERVICES = {
@@ -29,7 +29,6 @@ class InitialServicesTests(TestCase):
         self.assertEqual(Servico.objects.filter(status='disponivel').count(), 11)
         self.assertEqual(Servico.objects.exclude(codigo_inicial=None).count(), 11)
         self.assertEqual(Equipamento.objects.count(), 6)
-        self.assertEqual(Espaco.objects.count(), 9)
 
     def test_command_and_migration_are_idempotent_and_preserve_edits(self):
         entry = Servico.objects.get(nome='Impressão 3D')

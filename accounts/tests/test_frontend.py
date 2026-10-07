@@ -56,7 +56,7 @@ class FrontendRoutesTests(AccountsProviderMixin, TestCase):
 
     def test_catalog_menu_remains_current_for_all_categories(self):
         self.client.force_login(self.user)
-        for path in ('/catalogo/servicos/', '/catalogo/equipamentos/', '/catalogo/espacos/'):
+        for path in ('/catalogo/servicos/', '/catalogo/equipamentos/'):
             response = self.client.get(path)
             selected = [item['label'] for item in response.context['nav_items'] if item['current']]
             self.assertEqual(selected, ['Estrutura'])

@@ -3,14 +3,12 @@ from django.contrib.auth.models import Group
 from django.test import Client, TestCase
 
 from accounts.tests.test_identity import PASSWORD
-from catalogo.models import Equipamento, Espaco, Servico
+from catalogo.models import Equipamento, Servico
 
 
 CASES = (
     ('servicos', Servico, {'nome': 'Novo serviço', 'descricao': 'Descrição', 'status': 'disponivel'}),
     ('equipamentos', Equipamento, {'nome': 'Impressora', 'descricao': 'Descrição', 'status': 'ocupado'}),
-    ('espacos', Espaco, {'nome': 'Sala', 'capacidade_maxima_de_pessoas': 10,
-                       'somente_administradores': False, 'status': 'disponivel'}),
 )
 
 
@@ -78,8 +76,7 @@ class CatalogWebTests(TestCase):
 
     def test_invalid_form_does_not_persist(self):
         self.client.force_login(self.admin)
-        invalid = {'servicos': {'status': 'ocupado'}, 'equipamentos': {'nome': ' '},
-                   'espacos': {'capacidade_maxima_de_pessoas': 0}}
+        invalid = {'servicos': {'status': 'ocupado'}, 'equipamentos': {'nome': ' '}}
         for slug, _, data in CASES:
             entry = self.entries[slug]
             old_name = entry.nome
@@ -112,7 +109,7 @@ class CatalogWebTests(TestCase):
 
     def test_missing_id_returns_404_for_authenticated_user(self):
         self.client.force_login(self.user)
-        self.assertEqual(self.client.get('/catalogo/espacos/999999/').status_code, 404)
+        self.assertEqual(self.client.get('/catalogo/equipamentos/999999/').status_code, 404)
 
     def test_deactivation_revokes_catalog_access(self):
         self.client.force_login(self.admin)
