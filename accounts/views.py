@@ -26,6 +26,10 @@ class AccountLoginView(LoginView):
 
     def get_success_url(self):
         if not can_access_panel(self.request.user):
+            target = self.get_redirect_url()
+            if target and (urlsplit(target).path.startswith('/agenda/meus/')
+                           or urlsplit(target).path == '/agenda/visitas/'):
+                return target
             return reverse('conteudo:inicio')
         destination = super().get_success_url()
         # Keep Django's host/scheme validation, then prevent returns to either entry.

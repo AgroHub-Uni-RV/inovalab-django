@@ -2,7 +2,7 @@
 {% block content_class %}module-page detail-page{% endblock %}
 {% block content %}
 <div class="detail-sheet">
-  <div class="sheet-topbar">{% if not booking %}<a class="secondary-button" href="{% url 'agenda:create' %}">Alterar tipo de agendamento</a>{% endif %}<a class="secondary-button" href="{% url 'agenda:visit-list' %}">Voltar às visitas</a><span class="sheet-meta">{% include 'core/icon.html' with name='calendar' %}Visita</span></div>
+  <div class="sheet-topbar">{% if not booking %}<a class="secondary-button" href="{% url 'agenda:create' %}">Alterar tipo de agendamento</a>{% endif %}<a class="secondary-button" href="{% url 'agenda:mine' %}">Meus agendamentos</a><span class="sheet-meta">{% include 'core/icon.html' with name='calendar' %}Visita</span></div>
   <div class="sheet-content">
     <h1>{% if booking %}Editar visita #{{ booking.pk }}{% else %}Nova visita{% endif %}</h1>
     <p>A situação e a disponibilidade são definidas pelo AgroHub. As visitas confirmadas aparecem na agenda.</p>

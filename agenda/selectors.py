@@ -11,21 +11,23 @@ from django.utils import timezone
 from accounts.policies import is_business_admin
 from agenda.models import BOOKING_MODELS, EventoAgendamento
 from agenda.models import BOOKING_STATUSES, CATEGORIES
-from agenda.policies import can_access_agenda
+from agenda.policies import can_access_agenda, can_view_own_bookings
 
 
-def _visible_queryset(actor, category):
+def _visible_queryset(actor, category, *, personal=False):
     model = BOOKING_MODELS[category]
-    if not can_access_agenda(actor):
+    if not (can_view_own_bookings(actor) if personal else can_access_agenda(actor)):
         return model.objects.none()
     related = [category, 'criado_por', 'avaliado_por']
     if category == 'servico':
         related.append('material_gasto')
-    query = model.objects.filter(cancelado_em__isnull=True).select_related(*related).prefetch_related(
+    query = model.objects.all().select_related(*related).prefetch_related(
         Prefetch('eventos', queryset=EventoAgendamento.objects.filter(acao='criar'), to_attr='eventos_de_criacao'))
     if category == 'servico':
         query = query.prefetch_related('equipamentos')
-    if not is_business_admin(actor):
+    if not personal:
+        query = query.filter(cancelado_em__isnull=True)
+    if personal or not is_business_admin(actor):
         query = query.filter(criado_por=actor)
     return query
 
@@ -41,6 +43,16 @@ def visible_booking(actor, category, pk):
     if category not in BOOKING_MODELS:
         raise Http404
     return get_object_or_404(_visible_queryset(actor, category), pk=pk)
+
+
+def own_bookings(actor):
+    return [row for category in BOOKING_MODELS for row in _visible_queryset(actor, category, personal=True)]
+
+
+def own_booking(actor, category, pk):
+    if category not in BOOKING_MODELS:
+        raise Http404
+    return get_object_or_404(_visible_queryset(actor, category, personal=True), pk=pk)
 
 
 def month_bounds(value):

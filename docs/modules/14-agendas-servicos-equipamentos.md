@@ -41,13 +41,14 @@ Os botões de confirmar, recusar e cancelar continuam nas solicitações pendent
 
 | Rota de visita | Uso |
 | --- | --- |
-| `/agenda/visitas/` | Consultar as visitas autorizadas pela sessão remota, incluindo pedidos pendentes |
+| `/agenda/meus/` | Consultar Meus agendamentos locais e visitas próprias, conforme contrato remoto |
+| `/agenda/visitas/` | Entrada legada para Meus agendamentos |
 | `/agenda/visitas/novo/` | Solicitar visita pela API |
 | `/agenda/visitas/<id>/` | Consultar detalhe remoto |
 | `/agenda/visitas/<id>/editar/` | Editar pela API |
 | `/agenda/visitas/<id>/cancelar/` | Cancelar pela API |
 
-A entrada de criação oferece três cards com ícones: Visita, Equipamento e Serviços. A escolha abre o formulário específico, com confirmação antes da gravação ou envio; consultar `15-fluxo-criacao-agendamento.md`. A lista de visitas permite reencontrar um pedido ainda pendente sem conceder acesso administrativo a Solicitações. Se uma criação tiver resultado inconclusivo, consultar essa lista antes de reenviar: não há repetição automática nem fila local para POST.
+A entrada de criação oferece três cards com ícones: Visita, Equipamento e Serviços. A escolha abre o formulário específico, com confirmação antes da gravação ou envio; consultar `15-fluxo-criacao-agendamento.md`. Meus agendamentos substitui a lista exclusiva de visitas e permite reencontrar pedidos próprios, sem conceder acesso administrativo a Solicitações. A limitação de titularidade de visitas para contas staff do provedor e a autorização de consulta pessoal para contas externas estão descritas em `16-meus-agendamentos.md`. Se uma criação tiver resultado inconclusivo, conferir sua disponibilidade nessa consulta ou na agenda administrativa antes de reenviar: não há repetição automática nem fila local para POST.
 
 Se a consulta remota falhar, a interface informa que não foi possível carregar as visitas e continua mostrando os agendamentos locais. Não há dados antigos de visitas apresentados como atuais nem conciliação no banco local. Reservas canceladas ou recusadas permanecem consultáveis em Solicitações pela API.
 

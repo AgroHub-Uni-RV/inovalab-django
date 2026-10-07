@@ -1,3 +1,3 @@
 {% extends 'agenda/base.html' %}
 {% block content_class %}module-page detail-page{% endblock %}
-{% block content %}<div class="detail-sheet"><section class="sheet-content"><h1>Não foi possível concluir</h1><p class="error-message" role="alert">{{ message }}</p><div class="sheet-actions"><a class="secondary-button" href="{% url 'agenda:visit-list' %}">Consultar visitas</a><a class="secondary-button" href="{% url 'agenda:list' %}">Voltar à agenda</a></div></section></div>{% endblock %}
+{% block content %}<div class="detail-sheet"><section class="sheet-content"><h1>Não foi possível concluir</h1><p class="error-message" role="alert">{{ message }}</p><div class="sheet-actions"><a class="secondary-button" href="{% url 'agenda:mine' %}">Meus agendamentos</a><a class="secondary-button" href="{% url 'agenda:list' %}">Voltar à agenda</a></div></section></div>{% endblock %}

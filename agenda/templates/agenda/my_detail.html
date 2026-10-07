@@ -1,0 +1,21 @@
+{% extends personal_base %}
+{% block title %}Meu agendamento{% endblock %}
+{% block content_class %}module-page detail-page{% endblock %}
+{% block content %}
+<section class="module-page personal-bookings-page">
+<div class="detail-sheet">
+  <div class="sheet-topbar"><a class="secondary-button" href="{% url 'agenda:mine' %}">Voltar aos meus agendamentos</a><span class="sheet-meta">{{ booking.categoria_display }}</span></div>
+  <div class="sheet-content">
+    <h1>#{{ booking.pk }} · {{ booking.objeto_nome }}</h1>
+    <p><span class="badge booking-status {{ booking.situacao }}">{{ booking.get_situacao_display }}</span></p>
+    <dl class="inline-details"><div><dt>Início</dt><dd>{{ booking.inicio|date:'d/m/Y H:i:s' }}</dd></div><div><dt>Término</dt><dd>{{ booking.fim|date:'d/m/Y H:i:s' }}</dd></div><div><dt>Criado em</dt><dd>{{ booking.criado_em|date:'d/m/Y H:i' }}</dd></div></dl>
+    {% if booking.categoria == 'visita' %}<dl class="inline-details"><div><dt>Sala</dt><dd>{{ booking.sala }}</dd></div><div><dt>Solicitante</dt><dd>{{ booking.criador_nome }}</dd></div><div><dt>Quantidade de pessoas</dt><dd>{{ booking.quantidade_pessoas }}</dd></div></dl>{% else %}<section class="description-block"><h2>Motivo</h2><p>{{ booking.motivo|linebreaksbr }}</p></section>{% endif %}
+    {% if booking.categoria == 'servico' %}<dl class="inline-details"><div><dt>Equipamentos</dt><dd>{% for equipment in booking.equipamentos.all %}{{ equipment.nome }}{% if not forloop.last %}, {% endif %}{% empty %}Nenhum informado{% endfor %}</dd></div><div><dt>Tem material próprio?</dt><dd>{{ booking.material_proprio|yesno:'Sim,Não,Não informado' }}</dd></div>{% if booking.material_proprio == False %}<div><dt>Material utilizado</dt><dd>{{ booking.material_gasto.nome|default:'Não informado' }}</dd></div><div><dt>Material gasto</dt><dd>{{ booking.material_gasto_gramas }} g</dd></div>{% endif %}</dl>{% endif %}
+    <section class="description-block"><h2>Observações</h2><p>{{ booking.observacoes|default:'Nenhuma observação informada.'|linebreaksbr }}</p></section>
+    {% if booking.cancelado_em %}<p>Cancelado em {{ booking.cancelado_em|date:'d/m/Y H:i' }}.</p>{% endif %}
+    {% if events %}<section class="description-block"><h2>Histórico</h2>{% for event in events %}<article class="agenda-event"><h3>{{ event.get_acao_display }}</h3><p>{{ event.ator_nome }} · {{ event.instante|date:'d/m/Y H:i:s' }}</p></article>{% endfor %}</section>{% endif %}
+    <p>Horários de Brasília.</p>
+  </div>
+</div>
+</section>
+{% endblock %}

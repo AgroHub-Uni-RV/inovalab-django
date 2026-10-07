@@ -1,11 +1,14 @@
 from django.urls import path
 
-from agenda import views, remote_views
+from agenda import views, remote_views, personal
 
 app_name = 'agenda'
 urlpatterns = [
     path('', views.BookingListView.as_view(), name='list'),
-    path('visitas/', remote_views.RemoteBookingListView.as_view(), name='visit-list'),
+    path('meus/', personal.MyBookingsListView.as_view(), name='mine'),
+    path('meus/visitas/<int:pk>/', personal.MyBookingDetailView.as_view(), name='my-visit-detail'),
+    path('meus/<str:category>/<int:pk>/', personal.MyBookingDetailView.as_view(), name='my-detail'),
+    path('visitas/', personal.MyBookingsListView.as_view(), name='visit-list'),
     path('visitas/novo/', remote_views.RemoteBookingWriteView.as_view(), name='visit-create'),
     path('visitas/<int:pk>/', remote_views.RemoteBookingDetailView.as_view(), name='visit-detail'),
     path('visitas/<int:pk>/editar/', remote_views.RemoteBookingWriteView.as_view(), name='visit-update'),

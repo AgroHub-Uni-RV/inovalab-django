@@ -41,7 +41,7 @@
         </div>
         <div class="institutional-account">
           {% if user.is_authenticated %}
-          <details class="institutional-user"><summary>{{ user.get_full_name|default:user.username }}</summary><div>{% if can_access_panel %}<a href="{% url 'core:dashboard' %}">Área interna</a>{% endif %}<a href="{% url 'accounts:home' %}">Meu perfil</a><form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit">Sair</button></form></div></details>
+          <details class="institutional-user"><summary>{{ user.get_full_name|default:user.username }}</summary><div>{% if can_access_panel %}<a href="{% url 'core:dashboard' %}">Área interna</a>{% endif %}<a href="{% url 'accounts:home' %}">Meu perfil</a><a href="{% url 'agenda:mine' %}">Meus agendamentos</a><form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit">Sair</button></form></div></details>
           {% else %}<a class="institutional-login" href="{% url 'accounts:login' %}">Entrar</a>{% endif %}
           <nav class="institutional-social" aria-label="Redes sociais da UniRV">
             <a href="https://www.instagram.com/unirvoficial/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="18" cy="6" r="1" fill="currentColor" stroke="none"/></svg></a>

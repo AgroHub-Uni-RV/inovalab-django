@@ -8,6 +8,7 @@ from django.urls import reverse
 from accounts.agrohub.client import AgroHubError
 from accounts.agrohub.services import authenticated_request, sync_profile
 from accounts.policies import can_access_panel, is_technical_admin
+from agenda.policies import can_view_own_bookings
 
 
 class AgroHubSessionMiddleware:
@@ -44,6 +45,7 @@ class InternalAccessMiddleware:
                            'catalogo_api', 'tarefas_api', 'agenda_api', 'materiais_api'}
     PUBLIC_CONTENT_NAMES = {'inicio', 'sobre', 'servicos', 'contato', 'regimento',
                             'calendario-funcionamento', 'public-home', 'public-about', 'image'}
+    PERSONAL_AGENDA_NAMES = {'mine', 'my-detail', 'my-visit-detail', 'visit-list'}
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -56,6 +58,9 @@ class InternalAccessMiddleware:
         if match is None:
             return None
         namespace, name = match.namespace, match.url_name or ''
+        if (namespace == 'agenda' and name in self.PERSONAL_AGENDA_NAMES
+                and can_view_own_bookings(request.user)):
+            return None
         api_class = getattr(view_func, 'cls', None)
         internal_api = (api_class is not None
                         and api_class.__module__ in {'catalogo.api', 'tarefas.api', 'agenda.api',

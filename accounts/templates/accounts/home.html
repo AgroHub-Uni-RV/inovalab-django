@@ -33,6 +33,7 @@
     </form>
     {% if photo_form %}<form class="profile-form" method="post" enctype="multipart/form-data" action="{% url 'accounts:update-photo' %}">{% csrf_token %}{{ photo_form.non_field_errors }}{% for field in photo_form %}<div class="field">{{ field.label_tag }}{{ field }}{{ field.errors }}<small>{{ field.help_text }}</small></div>{% endfor %}<button class="button" type="submit">Atualizar foto</button></form>{% endif %}
     <div class="account-actions">
+        <a class="button secondary" href="{% url 'agenda:mine' %}">Meus agendamentos</a>
         <form action="{% url 'accounts:logout' %}" method="post">
             {% csrf_token %}
             <button class="button secondary" type="submit">Sair da conta</button>

@@ -1,17 +1,15 @@
 from django.contrib import messages
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import never_cache
-from django.views.generic import ListView
 
 from accounts.agrohub.client import AgroHubError
 from accounts.policies import is_business_admin
 from agenda.remote_forms import RemoteVisitForm
-from agenda.remote_requests import available_rooms, cancel_reservation, get_reservation, reservations, save_reservation
-from agenda.selectors import month_bounds
+from agenda.remote_requests import available_rooms, cancel_reservation, get_reservation, save_reservation
 from agenda.views import AgendaAccessMixin
 
 
@@ -103,33 +101,3 @@ class RemoteBookingCancelView(RemoteVisitView):
         booking = cancel_reservation(request, pk)
         messages.success(request, 'Visita cancelada no AgroHub.')
         return redirect(booking)
-
-
-@method_decorator(never_cache, name='dispatch')
-class RemoteBookingListView(AgendaAccessMixin, ListView):
-    template_name = 'agenda/remote_list.html'
-    paginate_by = 25
-    http_method_names = ['get', 'head', 'options']
-
-    def get(self, request, *args, **kwargs):
-        try:
-            return super().get(request, *args, **kwargs)
-        except AgroHubError as error:
-            return visit_error(request, error)
-        except ValidationError:
-            return visit_error(request, AgroHubError(400))
-
-    def get_queryset(self):
-        self.query = self.request.GET.get('q', '').strip()[:150]
-        self.month = self.request.GET.get('mes', '')
-        self.status = self.request.GET.get('status', '')
-        if self.month:
-            month_bounds(self.month)
-        if self.status not in ('', 'pendente', 'confirmada', 'cancelada', 'recusada'):
-            raise AgroHubError(400)
-        rows = reservations(self.request, query=self.query, month=self.month)
-        return [row for row in rows if not self.status or row.status == self.status]
-
-    def get_context_data(self, **kwargs):
-        return {**super().get_context_data(**kwargs), 'query': self.query, 'month': self.month,
-                'selected_status': self.status}

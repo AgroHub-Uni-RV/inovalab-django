@@ -30,12 +30,13 @@ class RemoteOnlyVisitBoundaryTests(TestCase):
 
 class RemoteVisitFlowTests(VisitsProviderMixin, TestCase):
     def test_create_pending_visit_redirects_to_detail_and_remains_discoverable(self):
+        self.stub.state['profile']['is_staff'] = False
         response = self.client.post('/agenda/visitas/novo/', self.payload())
         self.assertRedirects(response, '/agenda/visitas/101/', fetch_redirect_response=False)
         detail = self.client.get('/agenda/visitas/101/')
         self.assertContains(detail, 'Trazer material')
         self.assertContains(detail, 'Pendente')
-        self.assertContains(self.client.get('/agenda/'), '/agenda/visitas/')
+        self.assertContains(self.client.get('/agenda/'), '/agenda/meus/')
         self.assertContains(self.client.get('/agenda/visitas/'), 'Visita nova')
         self.assertEqual(self.client.get('/agenda/solicitacoes/').status_code, 403)
         self.assert_no_local_visits()
@@ -86,7 +87,7 @@ class RemoteVisitFlowTests(VisitsProviderMixin, TestCase):
         self.stub.state['create_uncertain'] = True
         response = self.client.post('/agenda/visitas/novo/', self.payload())
         self.assertContains(response, 'consulte suas visitas', status_code=503)
-        self.assertContains(response, '/agenda/visitas/', status_code=503)
+        self.assertContains(response, '/agenda/meus/', status_code=503)
         self.assertEqual(len(self.writes()), 1)
         self.assert_no_local_visits()
 
@@ -127,6 +128,7 @@ class RemoteVisitFlowTests(VisitsProviderMixin, TestCase):
         self.assertFalse(self.writes())
 
     def test_visits_filters_and_pagination_keep_remote_status_and_no_writes(self):
+        self.stub.state['profile']['is_staff'] = False
         self.stub.state['reservas'] = [visit_fixture(pk, titulo='Pedido filtrado') for pk in range(101, 128)]
         self.stub.state['reservas'] += [visit_fixture(130, status='cancelada'),
                                        visit_fixture(131, titulo='Excluir por texto')]
