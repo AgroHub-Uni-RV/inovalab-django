@@ -18,6 +18,8 @@ from agenda.selectors import calendar_weeks, category_filter, filter_bookings, m
 from agenda.services import PUBLIC_FIELDS, SERVICE_FIELDS, BookingConflict, cancel_booking, review_booking, save_booking
 from accounts.photos import profile_photo_response
 from agenda.agrohub import can_sync, reservation_summary, sync_reservation
+from accounts.agrohub.client import AgroHubError
+from agenda.remote_requests import pending_reservations
 
 
 class AgendaAccessMixin(LoginRequiredMixin):
@@ -228,17 +230,47 @@ class BookingHistoryView(AgendaAccessMixin, ListView):
         return {**super().get_context_data(**kwargs), 'booking': self.booking}
 
 
-class BookingReviewListView(AdminAgendaAccessMixin, BookingListView):
+@method_decorator(never_cache, name='dispatch')
+class BookingReviewListView(AdminAgendaAccessMixin, ListView):
     template_name = 'agenda/requests.html'
+    paginate_by = 25
+    http_method_names = ['get', 'head', 'options']
+
+    def get(self, request, *args, **kwargs):
+        try:
+            response = super().get(request, *args, **kwargs)
+        except ValidationError as error:
+            return render(request, 'agenda/error.html', {'message': ' '.join(error.messages)}, status=400)
+        response.status_code = self.provider_status
+        return response
 
     def get_queryset(self):
-        return super().get_queryset().filter(Q(situacao__in=['pendente', 'rejeitado']) | Q(avaliado_em__isnull=False))
+        self.query = self.request.GET.get('q', '').strip()[:150]
+        self.month = self.request.GET.get('mes', '')
+        if self.month:
+            month_bounds(self.month)
+        self.provider_status, self.provider_error = 200, ''
+        if self.request.user.agrohub_id is None:
+            self.provider_error = 'Entre com uma conta administrativa vinculada ao AgroHub para consultar as reservas.'
+            return []
+        try:
+            return pending_reservations(self.request, query=self.query, month=self.month)
+        except AgroHubError as error:
+            self.provider_status = 403 if error.status in (401, 403) else 503
+            self.provider_error = ('Sua sessão não tem permissão para consultar as reservas no AgroHub. Entre novamente com uma conta autorizada.'
+                                   if self.provider_status == 403 else
+                                   'Não foi possível consultar as solicitações no AgroHub. Tente atualizar a página em instantes.')
+            return []
 
-    def get_default_month(self):
-        return ''
+    def get_context_data(self, **kwargs):
+        return {**super().get_context_data(**kwargs), 'query': self.query, 'month': self.month,
+                'provider_error': self.provider_error}
 
-    def get_default_situation(self):
-        return 'pendente'
+    def paginate_queryset(self, queryset, page_size):
+        if self.provider_error:
+            paginator = self.get_paginator([], page_size)
+            return paginator, paginator.page(1), [], False
+        return super().paginate_queryset(queryset, page_size)
 
 
 class BookingReviewView(AdminAgendaAccessMixin, View):

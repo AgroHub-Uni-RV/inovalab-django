@@ -235,8 +235,9 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
             self.assertEqual(self.client.get(f'/agenda/{booking.pk}/{suffix}').status_code, 403)
         self.client.force_login(self.admin)
         response = self.client.get('/agenda/solicitacoes/')
-        self.assertEqual([b.pk for b in response.context['object_list']], [booking.pk])
-        self.assertContains(response, url)
+        self.assertEqual(response.context['object_list'], [])
+        self.assertNotContains(response, url)
+        self.assertContains(response, 'conta administrativa vinculada ao AgroHub')
         self.assertEqual(self.client.get(url).status_code, 405)
         self.assertRedirects(self.client.post(url, {'versao': 1, 'decisao': 'aprovar'}), '/agenda/solicitacoes/')
         self.assertContains(self.client.get(f'/agenda/{booking.pk}/'), 'Confirmado')
@@ -295,13 +296,14 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         selected = [item['label'] for item in response.context['nav_items'] if item['current']]
         self.assertEqual(selected, ['Solicitações de agendamento'])
 
-    def test_admin_request_filters_include_decisions_but_not_direct_admin_reservations(self):
+    def test_remote_requests_page_does_not_include_local_decisions_or_bookings(self):
         request = self.create()
         self.review(request)
         self.create(actor=self.admin, inicio=self.data['fim'], fim=self.data['fim'] + timedelta(hours=1))
         self.client.force_login(self.admin)
         response = self.client.get('/agenda/solicitacoes/', {'situacao': '', 'mes': ''})
-        self.assertEqual([b.pk for b in response.context['object_list']], [request.pk])
+        self.assertEqual(response.context['object_list'], [])
+        self.assertNotContains(response, f'/agenda/{request.pk}/')
 
     def test_decision_pages_remain_readable_after_evaluator_account_is_deleted(self):
         booking = self.create()
@@ -351,5 +353,5 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         booking = self.create()
         self.user.delete()
         self.client.force_login(self.admin)
-        self.assertContains(self.client.get('/agenda/solicitacoes/'), 'Conta removida')
+        self.assertContains(self.client.get('/agenda/solicitacoes/'), 'conta administrativa vinculada ao AgroHub')
         self.assertEqual(self.client.get(f'/agenda/{booking.pk}/').status_code, 200)
