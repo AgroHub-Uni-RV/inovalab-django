@@ -1,9 +1,8 @@
-from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.shortcuts import redirect, render
 from django.views import View
 
 from accounts.policies import is_business_admin
+from agenda.modal import booking_saved, render_booking
 from agenda.services import BookingConflict, VISIT_FIELDS, save_booking
 from agenda.views import AgendaAccessMixin
 from agenda.visit_forms import VisitForm
@@ -20,7 +19,7 @@ class VisitWriteView(AgendaAccessMixin, View):
 
     def get(self, request, **kwargs):
         booking = self.get_booking()
-        return render(request, 'agenda/visit_form.html', {'booking': booking, 'form': VisitForm(booking=booking)})
+        return render_booking(request, 'agenda/visit_form.html', {'booking': booking, 'form': VisitForm(booking=booking)})
 
     def post(self, request, **kwargs):
         booking = self.get_booking()
@@ -39,7 +38,5 @@ class VisitWriteView(AgendaAccessMixin, View):
                 for name, errors in error.message_dict.items():
                     form.add_error(name if name in form.fields else None, errors)
             else:
-                messages.success(request, 'Agendamento salvo.' if saved.situacao == 'confirmado'
-                                 else 'Solicitação enviada. Aguarde a confirmação de um administrador.')
-                return redirect(saved)
-        return render(request, 'agenda/visit_form.html', {'booking': booking, 'form': form}, status=status)
+                return booking_saved(request, saved, creating=booking is None)
+        return render_booking(request, 'agenda/visit_form.html', {'booking': booking, 'form': form}, status=status)

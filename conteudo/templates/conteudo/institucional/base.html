@@ -10,6 +10,7 @@
   <link rel="preload" href="{% static 'core/assets/Montserrat.ttf' %}" as="font" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="{% static 'conteudo/institucional/monolito.css' %}">
   <link rel="stylesheet" href="{% static 'core/ui.css' %}">
+  {% if can_access_panel %}<link rel="stylesheet" href="{% static 'core/modulos.css' %}">{% endif %}
   <link rel="stylesheet" href="{% static 'conteudo/institucional/site.css' %}">
   <script src="{% static 'conteudo/institucional/site.js' %}" defer></script>
   {% block extra_head %}{% endblock %}
@@ -70,5 +71,6 @@
     </div>
     <p class="institutional-legal">FESURV - UNIVERSIDADE DE RIO VERDE | CNPJ: 01.815.216/0001-78</p>
   </footer>
+  {% include 'agenda/modal.html' %}
 </body>
 </html>

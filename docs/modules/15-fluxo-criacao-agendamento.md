@@ -1,5 +1,7 @@
 # Criação de agendamento por categoria
 
+> A solicitação posterior em [Criação em modal](19-criacao-agendamentos-modal.md) reúne escolha, formulário, erros e confirmação em um único modal. As URLs abaixo continuam como alternativa sem JavaScript; os acessos de criação agora atualizam o modal sem trocar de página.
+
 > A decisão posterior de 07/10/2026 em [Agenda de visitas local](17-agenda-visitas-local.md) substitui o envio de visitas ao AgroHub. A seleção inicial continua com três cards; todas as categorias agora são gravadas localmente.
 
 A solicitação de 07/10/2026 organiza a criação em duas etapas. Adicionar Agendamento abre `/agenda/novo/` com três cards quadrados e ícones: **Visita**, **Equipamento** e **Serviços**. Escolher um card abre somente o formulário correspondente. Os cards reorganizam as colunas conforme a largura disponível, incluindo a sidebar expandida; no celular ficam em uma coluna. Tipografia, espaçamentos e arredondamentos usam `core/static/core/ui.css`.

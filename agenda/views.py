@@ -10,6 +10,7 @@ from django.views.decorators.cache import never_cache
 
 from accounts.policies import is_business_admin
 from agenda.forms import BookingForm, CancelForm, ReviewForm
+from agenda.modal import booking_saved, render_booking
 from agenda.models import BOOKING_STATUSES, CATEGORIES
 from agenda.policies import can_access_agenda
 from agenda.selectors import calendar_weeks, filter_bookings, month_bounds, visible_bookings, visible_booking
@@ -112,12 +113,12 @@ class BookingWriteView(AgendaAccessMixin, View):
             if category == 'visita':
                 return redirect('agenda:visit-create')
             if category not in ('servico', 'equipamento'):
-                return render(request, 'agenda/choose_category.html', {
+                return render_booking(request, 'agenda/choose_category.html', {
                     'category_error': 'Selecione uma das formas de agendamento abaixo.' if category else '',
                 }, status=400 if category else 200)
         form = BookingForm(booking=booking, actor=request.user,
                            initial={'categoria': request.GET['categoria']} if booking is None else {})
-        return render(request, 'agenda/form.html', {'form': form, 'booking': booking})
+        return render_booking(request, 'agenda/form.html', {'form': form, 'booking': booking})
 
     def post(self, request, **kwargs):
         if kwargs.get('category') == 'visita' or (
@@ -140,7 +141,7 @@ class BookingWriteView(AgendaAccessMixin, View):
             if booking and initial.get('categoria') != booking.categoria:
                 initial['objeto'] = None
             form = BookingForm(booking=booking, actor=request.user, initial=initial)
-            return render(request, 'agenda/form.html', {'form': form, 'booking': booking})
+            return render_booking(request, 'agenda/form.html', {'form': form, 'booking': booking})
         form = BookingForm(request.POST, booking=booking, actor=request.user)
         response_status = 200
         if form.is_valid():
@@ -156,10 +157,8 @@ class BookingWriteView(AgendaAccessMixin, View):
                     field = {'inicio': 'hora_inicio', 'fim': 'hora_termino', 'data': 'dia'}.get(field, field)
                     form.add_error(field if field in form.fields else None, errors)
             else:
-                messages.success(request, 'Solicitação enviada. Aguarde a confirmação de um administrador.'
-                                 if saved.situacao == 'pendente' else 'Agendamento salvo.')
-                return redirect(saved)
-        return render(request, 'agenda/form.html', {'form': form, 'booking': booking}, status=response_status)
+                return booking_saved(request, saved, creating=booking is None)
+        return render_booking(request, 'agenda/form.html', {'form': form, 'booking': booking}, status=response_status)
 
 
 class BookingCancelView(AdminAgendaAccessMixin, View):

@@ -1,5 +1,7 @@
 # Orientações do projeto
 
+- A solicitação seguinte de 07/10/2026 reúne a criação de agendamentos em um único modal: escolha de tipo, formulário, validação e confirmação atualizam o conteúdo sem navegação entre páginas. Reutilizar os formulários e as regras locais das três agendas; edição permanece no fluxo existente. O modal funciona na agenda, dashboard, Meus agendamentos e nos acessos institucionais de criação, preservando autenticação, retorno após login, foco/teclado, CSRF e sidebar. O atalho Agendamento de `/` continua abrindo `/agenda/meus/`. Manter URLs e formulários como alternativa sem JavaScript. Ver `docs/modules/19-criacao-agendamentos-modal.md`.
+
 - A solicitação seguinte de 07/10/2026 altera o acesso rápido Agendamento da página inicial `/` para `/agenda/meus/` (Meus agendamentos). Esta orientação substitui o destino anterior `/agenda/novo/` somente desse atalho. Preservar o retorno após login, o botão Agendar visita e os acessos de criação nas áreas internas.
 
 - A solicitação seguinte de 07/10/2026 adiciona Confirmadas às abas, contadores e colunas de Solicitações de agendamento, com filtro `status=confirmada`. Todas inclui também confirmadas das três agendas locais. Canceladas passa a cinza (cabeçalho, ícones, contador e etiqueta), Confirmadas usa verde e Recusadas mantém vermelho. Preservar filtros, paginação e acesso administrativo; ações nos cartões continuam exclusivas das pendentes. Esta decisão substitui a exclusão anterior de confirmadas de Solicitações. Ver `docs/modules/18-confirmadas-em-solicitacoes.md`.
