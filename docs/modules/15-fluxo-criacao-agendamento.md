@@ -10,6 +10,8 @@ A solicitação de 07/10/2026 organiza a criação em duas etapas. Adicionar Age
 
 Nos formulários locais de criação, a categoria é enviada como campo oculto e continua validada no servidor. Alterar tipo de agendamento e Voltar retornam à escolha. Categorias desconhecidas na abertura retornam HTTP 400 com a seleção disponível. O atalho `?categoria=visita` continua redirecionando para o formulário remoto.
 
+O acesso rápido **Agendamento** da página inicial `/` abre `/agenda/novo/` para escolher o tipo, conforme a correção seguinte de 07/10/2026. Para quem ainda não está autenticado, o login preserva esse destino. O botão específico **Agendar visita** continua abrindo o formulário de visita.
+
 **Confirmar agendamento** submete o formulário com POST e CSRF. Campos inválidos mantêm o formulário e os dados preenchidos para correção. Serviços e equipamentos continuam usando as validações e a gravação transacional existentes, incluindo disponibilidade, conflitos, autoria, histórico e regras de material. Solicitações da equipe são salvas como pendentes; administradores preservam a criação confirmada. Visitas são validadas e enviadas pela sessão AgroHub, que decide sua disponibilidade e situação, sem persistência local. A edição mantém seu fluxo próprio e a categoria original, mesmo se a URL receber outro parâmetro de categoria.
 
 ## Verificação
@@ -24,5 +26,7 @@ git diff --check
 ```
 
 Resultado: **581 testes Django passaram**, incluindo os seis testes do novo fluxo. `check` não encontrou problemas, `makemigrations --check --dry-run` não detectou mudanças e `git diff --check` passou. Não há novas migrations.
+
+Na correção do acesso rápido do início, `manage.py test conteudo.tests.test_institucional agenda.tests.test_create_flow --noinput` passou com **19 testes**. `manage.py check` e `git diff --check` também passaram. Uma consulta pelo cliente Django verificou o link renderizado em `/` e o destino `/agenda/novo/` preservado no parâmetro `next` do login.
 
 A conferência visual no navegador ficou indisponível nesta sessão: a ferramenta não ofereceu Chrome nem navegador integrado. Na depuração, conferir os três cards, navegação de ida/volta, foco por teclado e formulários em desktop/celular com sidebar aberta e recolhida. Validar uma visita com a API real do AgroHub; os testes automatizados usam um provedor simulado.
