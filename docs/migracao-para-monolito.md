@@ -1,6 +1,6 @@
 # Diretrizes para a futura migração ao monólito UniRV
 
-Orientação registrada pelo responsável em 07/10/2026. Trata-se de uma decisão para a futura integração deste sistema ao repositório `C:\Users\PC2\Documents\unirv-monolith`, sem mudança no comportamento do InovaLab separado.
+Orientação registrada pelo responsável em 07/10/2026. Trata-se de uma decisão para a futura integração deste sistema ao repositório `unirv-monolith`, sem mudança no comportamento do InovaLab separado.
 
 ## Identidade compartilhada
 
