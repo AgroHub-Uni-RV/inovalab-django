@@ -4,6 +4,7 @@
 {% block content %}
 <div class="page-heading"><h1>Solicitações de agendamento</h1><a class="secondary-button" href="{% url 'agenda:list' %}">Ver agenda</a></div>
 <p>Reservas cadastradas nas salas do InovaLab no AgroHub.</p>
+<p>Reservas confirmadas ficam em <a href="{% url 'agenda:list' %}">Agendamentos</a>.</p>
 {% if not provider_error %}<div class="statistics three">
 {% include 'core/stat_card.html' with label='Todas' count=stat_counts.all icon='calendar' %}
 {% include 'core/stat_card.html' with label='Pendentes' count=stat_counts.pendente icon='clock' tone='amber' %}
@@ -38,6 +39,7 @@
       {% if booking.status == 'pendente' %}<form method="post" action="{% url 'agenda:remote-decision' booking.id %}" class="booking-review-actions">
         {% csrf_token %}<input type="hidden" name="q" value="{{ query }}"><input type="hidden" name="mes" value="{{ month }}"><input type="hidden" name="status" value="{{ selected_status }}">
         <button type="submit" name="decisao" value="confirmar" aria-label="Confirmar reserva {{ booking.id }}">Confirmar</button>
+        <button type="submit" name="decisao" value="recusar" class="secondary-button" aria-label="Recusar reserva {{ booking.id }}">Recusar</button>
         <button type="submit" name="decisao" value="cancelar" class="secondary-button" aria-label="Cancelar reserva {{ booking.id }}">Cancelar</button>
       </form>{% endif %}
     </div>

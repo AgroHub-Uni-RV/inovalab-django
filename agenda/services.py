@@ -58,6 +58,8 @@ def _check_version(booking, version):
 
 def _load(booking_id, version):
     booking = get_object_or_404(Agendamento, pk=booking_id, cancelado_em__isnull=True)
+    if booking.recebido_agrohub:
+        raise BookingConflict('reserva_recebida_agrohub', 'Esta reserva é mantida pelo AgroHub. Altere-a no sistema de origem.')
     _check_version(booking, version)
     return booking
 
@@ -238,6 +240,9 @@ def _check_overlap(booking):
     target_filter = {'visita': True} if booking.visita else {booking.categoria + '_id': booking.objeto_id}
     overlap = Agendamento.objects.filter(situacao='confirmado', cancelado_em__isnull=True,
         inicio__lt=booking.fim, fim__gt=booking.inicio, **target_filter)
+    if booking.visita:
+        from agenda.agrohub import SALA_ID
+        overlap = overlap.filter(~Q(reserva_agrohub__recebida=True) | Q(reserva_agrohub__payload__sala_id=SALA_ID))
     if booking.pk:
         overlap = overlap.exclude(pk=booking.pk)
     if overlap.exists():

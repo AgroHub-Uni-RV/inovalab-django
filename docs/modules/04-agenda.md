@@ -1,5 +1,7 @@
 # Módulo 4 — Agenda interna
 
+**Solicitação mais recente de 07/10/2026:** Recusar usa a API do AgroHub; confirmadas saem do quadro de solicitações e viram agendamentos locais, vinculados sem duplicação. Ver [recusa e confirmações na agenda](13-recusa-e-confirmacoes-na-agenda.md). A autorização atual permite o registro local das confirmadas.
+
 **Solicitações posteriores de 07/10/2026:** `/agenda/solicitacoes/` consulta reservas do InovaLab no AgroHub via API, com abas Todas/Pendentes/Canceladas e quadro no padrão do Fluxo de tarefas. Mantém busca/mês/paginação e botões Confirmar/Cancelar nas pendentes, aplicando decisões no provedor. Ver [solicitações remotas](12-solicitacoes-remotas-agrohub.md); descrições anteriores da lista de pedidos locais são históricas.
 
 **Atualização de 07/10/2026:** o modelo `Espaco` e sua FK foram removidos. Reservas antigas conservam ID/nome como dados históricos, eventos, recibos e consulta/cancelamento. Categorias atuais continuam Serviços, Equipamentos e Visitas. Ver [remoção de espaços](11-remocao-espacos.md); as referências abaixo à FK registram a implementação anterior.

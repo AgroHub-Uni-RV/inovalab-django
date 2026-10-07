@@ -1,5 +1,7 @@
 # Solicitações do AgroHub — 07/10/2026
 
+**Evolução posterior:** o responsável autorizou Recusar e determinou que confirmadas saiam de Solicitações e virem agendamentos locais. O contrato atual está em [recusa e confirmações na agenda](13-recusa-e-confirmacoes-na-agenda.md), que substitui as descrições abaixo sobre coluna Confirmadas e ausência de registros locais para essas reservas.
+
 O responsável solicitou que `/agenda/solicitacoes/` mostre as reservas pendentes exibidas em [reservas cadastradas do monólito](https://agrohub.unirv.edu.br/InovaLab/laboratorio/), consultadas pela API. O repositório `AgroHub-Uni-RV/unirv-monolith` foi consultado somente para leitura; as alterações desta entrega pertencem ao InovaLab Django.
 
 A solicitação seguinte autoriza **Confirmar e Cancelar** ao lado de cada reserva. Ela amplia a entrega inicialmente limitada à consulta; as decisões abaixo alteram a reserva no AgroHub somente quando o administrador aciona um botão.

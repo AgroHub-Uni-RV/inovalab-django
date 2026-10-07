@@ -92,6 +92,8 @@ class Agendamento(models.Model):
 
     @property
     def objeto_nome(self):
+        if self.recebido_agrohub:
+            return self.reserva_agrohub.payload.get('titulo', 'Visita')
         if self.categoria == 'espaco':
             return self.espaco_legado_nome
         return 'Visita' if self.visita else getattr(self, self.categoria).nome if self.categoria else ''
@@ -103,6 +105,8 @@ class Agendamento(models.Model):
 
     @property
     def criador_nome(self):
+        if self.recebido_agrohub:
+            return self.reserva_agrohub.payload.get('solicitante', '') or 'Não informado'
         if self.criado_por:
             return self.criado_por.get_full_name() or self.criado_por.username
         if self.pk is None:
@@ -111,6 +115,11 @@ class Agendamento(models.Model):
         if events is not None:
             return events[0].ator_nome if events else 'Não registrado'
         return self.eventos.filter(acao='criar').values_list('ator_nome', flat=True).first() or 'Não registrado'
+
+    @property
+    def recebido_agrohub(self):
+        sync = getattr(self, 'reserva_agrohub', None)
+        return bool(sync and sync.recebida)
 
     def clean(self):
         errors = {}
@@ -165,6 +174,7 @@ class ReservaAgroHub(models.Model):
     agendamento = models.OneToOneField(Agendamento, on_delete=models.CASCADE, related_name='reserva_agrohub')
     referencia = models.UUIDField(default=uuid4, unique=True, editable=False)
     origem = models.URLField(max_length=2048, editable=False)
+    recebida = models.BooleanField(default=False, editable=False)
     reserva_id = models.PositiveBigIntegerField(null=True, blank=True, editable=False)
     status_remoto = models.CharField(max_length=20, blank=True, editable=False)
     operacao = models.CharField(max_length=10, default='criar', editable=False)

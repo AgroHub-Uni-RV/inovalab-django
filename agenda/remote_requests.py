@@ -24,6 +24,8 @@ class RemoteReservation:
     quantidade_pessoas: int
     criado_em: datetime
     status: str
+    sala_id: int
+    sala_slug: str
 
     @property
     def status_label(self):
@@ -83,6 +85,21 @@ def _rooms(request, budget):
     return rooms
 
 
+def _reservation(row, room_id, slug, name):
+    pk, people = row.get('id'), row.get('quantidade_pessoas')
+    if type(pk) is not int or not 0 < pk <= 9223372036854775807 or type(people) is not int or not 1 <= people <= 2147483647:
+        raise AgroHubError()
+    start, end = _instant(row.get('inicio')), _instant(row.get('fim'))
+    if end <= start or timezone.localtime(start).date() != timezone.localtime(end).date():
+        raise AgroHubError()
+    return RemoteReservation(
+        id=pk, sala=name, titulo=_text(row.get('titulo'), 200),
+        solicitante=_text(row.get('nome_solicitante'), 160, blank=True),
+        inicio=start, fim=end, quantidade_pessoas=people, criado_em=_instant(row.get('created_at')),
+        status=row['status'], sala_id=room_id, sala_slug=slug,
+    )
+
+
 def reservations(request, *, query='', month=''):
     """Consulta todas as situações das reservas das salas InovaLab."""
     budget = [40]
@@ -98,18 +115,8 @@ def reservations(request, *, query='', month=''):
                 raise AgroHubError()
             if room['id'] != room_id or room['slug'] != slug:
                 continue
-            pk, people = row.get('id'), row.get('quantidade_pessoas')
-            if type(pk) is not int or not 0 < pk <= 9223372036854775807 or type(people) is not int or people < 1:
-                raise AgroHubError()
-            start, end = _instant(row.get('inicio')), _instant(row.get('fim'))
-            if end <= start:
-                raise AgroHubError()
-            reservation = RemoteReservation(
-                id=pk, sala=name, titulo=_text(row.get('titulo'), 200),
-                solicitante=_text(row.get('nome_solicitante'), 160, blank=True),
-                inicio=start, fim=end, quantidade_pessoas=people, criado_em=_instant(row.get('created_at')),
-                status=row['status'],
-            )
+            reservation = _reservation(row, room_id, slug, name)
+            pk = reservation.id
             if pk in by_id and by_id[pk] != reservation:
                 raise AgroHubError()
             by_id[pk] = reservation
@@ -125,7 +132,7 @@ def reservations(request, *, query='', month=''):
 
 def decide_reservation(request, reservation_id, decision):
     """Aplica uma decisão somente a uma reserva pendente do InovaLab."""
-    if (decision not in ('confirmar', 'cancelar') or type(reservation_id) is not int
+    if (decision not in ('confirmar', 'cancelar', 'recusar') or type(reservation_id) is not int
             or not 0 < reservation_id <= 9223372036854775807):
         raise AgroHubError(400)
     route = f'reservas/{reservation_id}/'
@@ -142,11 +149,11 @@ def decide_reservation(request, reservation_id, decision):
         raise AgroHubError()
     if row['status'] != 'pendente':
         raise AgroHubError(409)
-    expected_status = 'confirmada' if decision == 'confirmar' else 'cancelada'
+    expected_status = {'confirmar': 'confirmada', 'cancelar': 'cancelada', 'recusar': 'recusada'}[decision]
     result = authenticated_request(
-        request, 'PATCH' if decision == 'confirmar' else 'POST',
-        route if decision == 'confirmar' else route+'cancelar/', namespace='agendamentos',
-        data={'status': expected_status} if decision == 'confirmar' else {},
+        request, 'POST' if decision == 'cancelar' else 'PATCH',
+        route+'cancelar/' if decision == 'cancelar' else route, namespace='agendamentos',
+        data={} if decision == 'cancelar' else {'status': expected_status},
     )
     updated_room = result.get('sala')
     if (type(result.get('id')) is not int or result['id'] != reservation_id
@@ -154,3 +161,4 @@ def decide_reservation(request, reservation_id, decision):
             or type(updated_room.get('id')) is not int or updated_room['id'] != room['id']
             or updated_room.get('slug') != room['slug']):
         raise AgroHubError()
+    return _reservation(result, room['id'], room['slug'], rooms[room['id']][1])

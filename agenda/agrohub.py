@@ -124,6 +124,8 @@ def queue_reservation(booking, actor, *, allow_create=False):
 
 
 def can_sync(actor, sync):
+    if sync.recebida:
+        return False
     if actor is None or not actor.is_active or actor.agrohub_id is None:
         return False
     if sync.operacao == 'criar':

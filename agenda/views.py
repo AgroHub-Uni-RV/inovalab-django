@@ -23,6 +23,7 @@ from accounts.photos import profile_photo_response
 from agenda.agrohub import can_sync, reservation_summary, sync_reservation
 from accounts.agrohub.client import AgroHubError
 from agenda.remote_requests import decide_reservation, reservations
+from agenda.received_reservations import reconcile_reservations
 
 
 class AgendaAccessMixin(LoginRequiredMixin):
@@ -53,6 +54,11 @@ class BookingListView(AgendaAccessMixin, ListView):
         return ''
 
     def get(self, request, *args, **kwargs):
+        if is_business_admin(request.user) and request.user.agrohub_id is not None:
+            try:
+                reconcile_reservations(reservations(request))
+            except (AgroHubError, BookingConflict, ValidationError):
+                messages.warning(request, 'Não foi possível atualizar as reservas do AgroHub. A agenda mostra os últimos dados recebidos.')
         try:
             return super().get(request, *args, **kwargs)
         except ValidationError as error:
@@ -75,6 +81,9 @@ class BookingListView(AgendaAccessMixin, ListView):
                 | Q(criado_por__first_name__icontains=self.query) | Q(criado_por__last_name__icontains=self.query)
                 | Q(motivo__icontains=self.query)
                 | Q(servico__nome__icontains=self.query) | Q(equipamento__nome__icontains=self.query)
+                | Q(reserva_agrohub__recebida=True, reserva_agrohub__payload__titulo__icontains=self.query)
+                | Q(reserva_agrohub__recebida=True, reserva_agrohub__payload__solicitante__icontains=self.query)
+                | Q(reserva_agrohub__recebida=True, reserva_agrohub__payload__sala__icontains=self.query)
                 | Q(espaco_legado_nome__icontains=self.query))
         return queryset
 
@@ -146,6 +155,8 @@ class BookingWriteView(AgendaAccessMixin, View):
         booking = get_object_or_404(self.get_queryset(), pk=self.kwargs['pk']) if 'pk' in self.kwargs else None
         if booking and booking.categoria == 'espaco':
             raise PermissionDenied('Reservas de espaços são legado: consulte ou cancele o registro.')
+        if booking and booking.recebido_agrohub:
+            raise PermissionDenied('Esta reserva é mantida pelo AgroHub. Altere-a no sistema de origem.')
         return booking
 
     def get(self, request, **kwargs):
@@ -200,6 +211,8 @@ class BookingWriteView(AgendaAccessMixin, View):
 class BookingCancelView(AdminAgendaAccessMixin, View):
     def get(self, request, pk):
         booking = get_object_or_404(self.get_queryset(), pk=pk)
+        if booking.recebido_agrohub:
+            raise PermissionDenied('Esta reserva é mantida pelo AgroHub. Altere-a no sistema de origem.')
         return render(request, 'agenda/cancel.html', {'booking': booking, 'form': CancelForm(initial={'versao': booking.versao})})
 
     def post(self, request, pk):
@@ -261,8 +274,16 @@ class BookingReviewListView(AdminAgendaAccessMixin, ListView):
             self.provider_error = 'Entre com uma conta administrativa vinculada ao AgroHub para consultar as reservas.'
             return []
         try:
-            self.reservations = reservations(self.request, query=self.query, month=self.month)
+            rows = reservations(self.request)
+            reconcile_reservations(rows)
+            self.reservations = [row for row in rows if row.status != 'confirmada'
+                and (not self.month or timezone.localtime(row.inicio).strftime('%Y-%m') == self.month)
+                and (not self.query or self.query.casefold() in ' '.join((str(row.id), row.sala, row.titulo, row.solicitante)).casefold())]
             return [row for row in self.reservations if not self.selected_status or row.status == self.selected_status]
+        except (BookingConflict, ValidationError):
+            self.provider_status = 503
+            self.provider_error = 'Não foi possível registrar as reservas confirmadas na agenda. Atualize as solicitações.'
+            return []
         except AgroHubError as error:
             self.provider_status = 403 if error.status in (401, 403) else 503
             self.provider_error = ('Sua sessão não tem permissão para consultar as reservas no AgroHub. Entre novamente com uma conta autorizada.'
@@ -277,7 +298,7 @@ class BookingReviewListView(AdminAgendaAccessMixin, ListView):
              'count': sum(row.status == status for row in self.reservations),
              'bookings': [row for row in context['object_list'] if row.status == status]}
             for status, label, tone in (
-                ('pendente', 'Pendentes', 'criacao'), ('confirmada', 'Confirmadas', 'concluido'),
+                ('pendente', 'Pendentes', 'criacao'),
                 ('cancelada', 'Canceladas', 'avaliacao'), ('recusada', 'Recusadas', 'avaliacao'))
         ]
         return {**context, 'query': self.query, 'month': self.month, 'selected_status': self.selected_status,
@@ -299,7 +320,7 @@ class RemoteBookingDecisionView(AdminAgendaAccessMixin, View):
     def post(self, request, pk):
         decision = request.POST.get('decisao')
         allowed = {'csrfmiddlewaretoken', 'decisao', 'q', 'mes', 'status'}
-        if (decision not in ('confirmar', 'cancelar') or set(request.POST) - allowed
+        if (decision not in ('confirmar', 'cancelar', 'recusar') or set(request.POST) - allowed
                 or any(len(request.POST.getlist(key)) != 1 for key in request.POST)
                 or request.POST.get('status', '') not in ('', 'pendente', 'cancelada')):
             return self.error(request, 'Confira a ação e os campos enviados.', 400)
@@ -309,9 +330,12 @@ class RemoteBookingDecisionView(AdminAgendaAccessMixin, View):
         try:
             if month:
                 month_bounds(month)
-            decide_reservation(request, pk, decision)
+            remote = decide_reservation(request, pk, decision)
+            reconcile_reservations([remote])
         except ValidationError:
-            return self.error(request, 'Informe um mês válido.', 400)
+            return self.error(request, 'Confira o mês e atualize a agenda para verificar o resultado no AgroHub.', 400)
+        except BookingConflict:
+            return self.error(request, 'A agenda está sendo atualizada. Confira as solicitações antes de tentar novamente.', 503)
         except AgroHubError as error:
             status = error.status
             if status in (401, 403):
@@ -323,7 +347,8 @@ class RemoteBookingDecisionView(AdminAgendaAccessMixin, View):
             if status in (400, 422):
                 return self.error(request, 'O AgroHub recusou a operação. Confira a situação e o horário da reserva.', 400)
             return self.error(request, 'Não foi possível confirmar o resultado no AgroHub. Atualize as solicitações antes de tentar novamente.', 503)
-        messages.success(request, f'Reserva #{pk} confirmada no AgroHub.' if decision == 'confirmar'
+        messages.success(request, f'Reserva #{pk} confirmada no AgroHub. Agendamento registrado no sistema.' if decision == 'confirmar'
+                         else f'Reserva #{pk} recusada no AgroHub.' if decision == 'recusar'
                          else f'Reserva #{pk} cancelada no AgroHub.')
         params = {key: request.POST.get(key, '').strip()[:150] for key in ('q', 'mes', 'status') if request.POST.get(key)}
         return redirect(reverse('agenda:requests') + ('?'+urlencode(params) if params else ''))

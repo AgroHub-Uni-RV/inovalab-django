@@ -113,6 +113,9 @@
 .user-card p { margin:var(--space-1) 0; font-size:var(--font-body); color:#777; }
 .task-board { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--space-6); }
 .task-board.task-board-filtered { grid-template-columns:minmax(0,1fr); }
+@container(min-width:901px) {
+  .requests-page .task-board:not(.task-board-filtered) { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
 .task-column { min-width:0; background:white; border:1px solid #d8d8d8; border-radius:var(--radius-card); min-height:1000px; overflow:hidden; }
 .task-column > h2 { margin:0; font-size:var(--font-section); font-weight:600; text-align:center; padding:var(--space-3); background:var(--lavender); border-bottom:1px solid #ddd; }
 .task-column.criacao > h2, .criacao .kanban-icon { background:#fff2d7; color:#eba200; }
