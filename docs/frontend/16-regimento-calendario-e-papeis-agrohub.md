@@ -23,13 +23,13 @@ A fonte de autorização é o campo `roles` retornado por **GET `/api/v1/account
 | Contém `staff`, sem `admin` | Usuário interno da equipe | Sim | Não |
 | Vazio, ausente ou outros papéis | Usuário do AgroHub | Não | Não |
 
-Permissões específicas continuam em vigor: a equipe consulta o catálogo, agenda visitas e executa suas tarefas; somente administradores mantêm cadastros, avaliam solicitações e gerenciam integrações. `staff` não equivale à flag técnica Django com o mesmo nome.
+Permissões específicas continuam em vigor: a equipe consulta o catálogo, agenda visitas e executa suas tarefas; somente administradores mantêm cadastros, avaliam solicitações. `staff` não equivale à flag técnica Django com o mesmo nome.
 
 A migração `accounts.0005_papeis_agrohub` adiciona uma cópia local dos papéis, somente para sincronização. Ela é atualizada no login e antes de cada requisição privada, a partir de `/me/`. Remover o papel no provedor revoga o acesso na próxima requisição sem exigir novo login. Uma falha do provedor impede o acesso privado com 503; resposta inválida nunca autoriza usando os papéis antigos. As seis páginas institucionais continuam disponíveis durante falhas da sessão remota.
 
 Para contas vinculadas ao AgroHub, grupos e flags locais antigos não concedem o papel de administrador ou equipe. Contas técnicas locais existentes conservam o tratamento próprio; a autenticação por senha permanece exclusivamente no AgroHub. A manutenção técnica global de contas/grupos continua exigindo superusuário local ativo e, para uma conta vinculada, também o papel remoto `admin`. A sincronização não promove ninguém automaticamente a superusuário do banco local.
 
-O middleware aplica a restrição às rotas e APIs internas antes de executar suas views. Usuários comuns recebem 403, mesmo acessando diretamente a URL; visitantes são encaminhados ao login. As APIs externas de integrações preservam a autenticação por credencial própria. Páginas e imagens públicas de banners permanecem públicas. O cadastro público e o perfil não permitem editar papéis.
+O middleware aplica a restrição às rotas e APIs internas antes de executar suas views. Usuários comuns recebem 403, mesmo acessando diretamente a URL; visitantes são encaminhados ao login. O antigo recebimento externo foi removido; as APIs internas usam sessão/CSRF. Páginas e imagens públicas de banners permanecem públicas. O cadastro público e o perfil não permitem editar papéis.
 
 Usuários sem acesso interno voltam ao início institucional após login e conservam o perfil com edição dos próprios dados, foto e saída. O perfil usa o cabeçalho público, sem sidebar ou link para o Dashboard. Administradores e equipe preservam o perfil na estrutura interna.
 

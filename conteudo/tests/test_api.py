@@ -7,7 +7,6 @@ from django.test import Client, TestCase
 from conteudo.models import Banner
 from conteudo.services import delete_banner, save_banner
 from conteudo.tests.helpers import DATA, BannerFixtures, image_upload
-from integracoes.services import create_client
 
 
 class BannerApiTests(BannerFixtures, TestCase):
@@ -16,8 +15,8 @@ class BannerApiTests(BannerFixtures, TestCase):
         self.banner = save_banner(actor=self.admin, data=DATA, image=image_upload())
         self.path = f'/api/v1/banners/{self.banner.pk}/'
 
-    def test_admin_read_denied_to_anonymous_staff_and_integrator(self):
-        _, token = create_client(actor=self.admin, name='Integração banner')
+    def test_admin_read_denied_to_anonymous_staff_and_bearer_token(self):
+        token = 'credencial-sem-autenticacao-por-sessao'
         self.assertEqual(self.client.get('/api/v1/banners/').status_code, 403)
         self.assertEqual(self.client.get(self.path, HTTP_AUTHORIZATION=f'Bearer {token}').status_code, 403)
         self.client.force_login(self.user)

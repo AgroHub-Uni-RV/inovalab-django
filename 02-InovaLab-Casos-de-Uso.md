@@ -77,17 +77,9 @@ Todos os casos têm escopo no sistema InovaLab e nível de objetivo do usuário,
 - **Alternativas:** conflito propõe escolher outro horário sem gravar; edição revalida o novo intervalo desconsiderando o próprio registro; exclusão exige confirmação e política Q08; alvo indisponível impede nova reserva segundo RN08; falha não deixa registro parcial.
 - **Pós-condição:** reserva criada, editada ou excluída conforme ação. Não há geração automática de tarefa confirmada.
 
-## UC09 — Solicitar agendamento pelo AgroHub
+## UC09 — Recebimento externo retirado
 
-- **Base:** C para integração; P para contrato e idempotência. RF14–RF16, RF22.
-- **Ator primário:** solicitante no AgroHub. **Ator de suporte:** sistema AgroHub.
-- **Interesse:** solicitar uso do laboratório pelo sistema já utilizado.
-- **Pré-condições:** integração autenticada e alvo reconhecido no InovaLab. F3 confirmou preparar recebimento no InovaLab; o contrato implementado deve ser validado com o consumidor AgroHub antes da conexão real.
-- **Fluxo principal:** 1. Solicitante preenche pedido no AgroHub. 2. AgroHub envia dados e identificador externo. 3. InovaLab valida credencial, requerente e payload. 4. Aplica as mesmas regras de UC08. 5. Persiste a reserva e vínculo externo. 6. Retorna identificador e resultado para o AgroHub apresentar ao solicitante.
-- **Alternativas:** credencial inválida é rejeitada; campos inválidos geram erro identificável; conflito não cria reserva; repetição da mesma chave e conteúdo retorna o registro anterior; mesma chave com conteúdo diferente gera conflito; perda de resposta permite reenvio seguro.
-- **Pós-condição:** no máximo uma reserva por solicitação externa. Edição/cancelamento bidirecional não está confirmado.
-
-**Entrega local do módulo5:** F3 escolheu preparar recebimento no InovaLab. `POST /api/v1/integracoes/agendamentos/` exige credencial Bearer do integrador, `id_externo`, `requerente_id` e campos da agenda. Novo pedido201; reenvio equivalente200 com mesmoID/estado atual; outra carga na chave409. Cancelamento/edição local não é revertido pelo reenvio. Administradores gerenciam integradores/segredos e consultam pedidos em `/integracoes/`; catálogo externo mínimo somente leitura. Credencial externa não autentica APIs internas. [Contrato e depuração](docs/modules/05-integracoes.md); fluxo na instalação real do AgroHub ainda não foi conectado/verificado.
+O módulo de integradores e sua API de pedidos foram removidos em 07/10/2026. Este caso deixa de fazer parte do sistema. Contas autenticadas criam seus agendamentos nos formulários locais. Ver [remoção](docs/modules/23-remocao-integracoes.md).
 
 ## UC10 — Administrar materiais
 

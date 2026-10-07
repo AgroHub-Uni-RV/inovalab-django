@@ -1,6 +1,6 @@
 # InovaLab — Diretrizes de modelagem para Django
 
-Versão 0.8 • 04/10/2026. Diretrizes e contratos entregues de [identidade](docs/modules/01-identidade-e-acesso.md), [catálogo](docs/modules/02-catalogo.md), [tarefas](docs/modules/03-tarefas.md), [agenda](docs/modules/04-agenda.md), [recebimento externo](docs/modules/05-integracoes.md), [materiais](docs/modules/06-materiais.md) e [banners](docs/modules/07-conteudo.md), verificados com Python 3.14.3, Django 6.1.1, DRF 3.18.1 e Pillow 12.3.0 no SQLite local. Banco/hospedagem de produção continuam pendentes. O diagnóstico histórico está no arquivo 05.
+Versão 0.8 • 04/10/2026. Diretrizes e contratos entregues de [identidade](docs/modules/01-identidade-e-acesso.md), [catálogo](docs/modules/02-catalogo.md), [tarefas](docs/modules/03-tarefas.md), [agenda](docs/modules/04-agenda.md), [materiais](docs/modules/06-materiais.md) e [banners](docs/modules/07-conteudo.md), verificados com Python 3.14.3, Django 6.1.1, DRF 3.18.1 e Pillow 12.3.0 no SQLite local. Banco/hospedagem de produção continuam pendentes. O diagnóstico histórico está no arquivo 05.
 
 ## 1. Organização sugerida
 
@@ -12,7 +12,6 @@ Versão 0.8 • 04/10/2026. Diretrizes e contratos entregues de [identidade](doc
 | agenda | Agendamentos unificados e regras de disponibilidade |
 | materiais | Cadastro de materiais; movimentações apenas se aprovadas |
 | conteudo | Banners e publicação |
-| integracoes | Contrato e autenticação AgroHub; adaptação ao domínio |
 
 A colisão inicial entre o app local `auth` e `django.contrib.auth` foi corrigida no módulo 1: o scaffold local foi substituído por `accounts`, com usuário baseado em `AbstractUser`, grupo `Administradores` e migrações próprias. `manage.py check` passa. `core` permanece sem funcionalidades de negócio; futuramente deve concentrar elementos compartilhados e a composição do painel.
 
@@ -67,15 +66,9 @@ F3 resolveu a autoridade de Q03: somente administradores aprovam, recusam e reab
 
 **Implementação da agenda local:** início/fim com fuso, Brasília na interface, intervalo `[início,fim)`, datas passadas e virada de dia permitidas; sem margem/capacidade/funcionamento não confirmados. `save_booking` e `cancel_booking` abrem transação cuja primeira operação é UPDATE sem alteração do status dos alvos em ordem estável. No SQLite isso adquire escrita antes de consultar versão/conflitos; não depender de `select_for_update`. Eventos compartilham a transação, versões usam UPDATE condicionado e busy/locked retorna 409. Testes com conexões reais foram executados no SQLite; implantação/PostgreSQL ainda exigem verificação própria. [Transações SQLite](https://www.sqlite.org/lang_transaction.html), [limitações SQLite/Django](https://docs.djangoproject.com/en/6.0/ref/databases/#sqlite-notes).
 
-## 6. Recebimento externo e lacunas do contrato AgroHub
+## 6. Conexões com o AgroHub
 
-Documentar direção do fluxo, autenticação, versão, identificador externo do pedido, identificação do requerente, categoria, referência ao objeto, motivo, início, fim e fuso. Devolver identificador local e resultado inequívoco.
-
-Propor unicidade de `(origem, id_externo)`. Persistir chave e reserva de forma atômica; repetir pedido idêntico retorna o resultado anterior. Chave repetida com conteúdo diferente deve ser conflito, não uma edição implícita.
-
-Definir se edição/exclusão local precisa de notificação ao AgroHub. Não implementar sincronização bidirecional, webhooks ou aprovação automática como fatos confirmados.
-
-**Entrega do módulo5:** F3 escolheu preparar a API de recebimento. `ClienteIntegracao` guarda UUID/ativo/digest de token e versão, sem simular usuário interno. `PedidoIntegracao` guarda cliente/chave/requerente externos/digest do conteúdo/reserva protegida, com unicidade(cliente,id_externo). Canonicalização de textos/UTC/ordem JSON distingue reenvio equivalente de conteúdo diferente. PrimeiroSQL na transação bloqueia cliente e revalida digest/ativo; núcleo compartilhado da agenda grava reserva/evento antes do pedido na mesma transação. Reenvio após editar/cancelar devolve mesmoID/estado atual, sem restaurar. Autenticação Bearer customizada é exclusiva dessa API; gestão web usa papéis/CSRF/version existentes. [Contrato e verificações locais](docs/modules/05-integracoes.md). Consumidor real, sincronização, retenção, HTTPS/produção e migração histórica seguem pendentes.
+Accounts autentica e sincroniza contas/papéis; eventos e contato continuam utilizando seus adaptadores atuais. A agenda é local e suas APIs internas usam sessão e CSRF. O módulo de recebimento por integradores, seus modelos e credenciais foram removidos. Ver [atualização dos bancos](docs/modules/23-remocao-integracoes.md).
 
 ## 7. Integridade e publicação
 
@@ -97,7 +90,7 @@ Entregar um módulo por vez e aguardar depuração pelo responsável antes de av
 2. Implementar identidade, autorização e cadastros básicos.
 3. Implementar tarefas e transições aprovadas, com quadro Kanban conforme referência F4.
 4. Implementar agenda unificada e proteção contra conflito.
-5. Integrar AgroHub com contrato e cenários de reenvio.
+5. Preservar os adaptadores de Accounts, eventos e contato; não reinstalar o recebimento externo.
 6. Implementar materiais e banners conforme decisões pendentes.
 7. Validar cenários do arquivo 03 e metas não funcionais aprovadas.
 

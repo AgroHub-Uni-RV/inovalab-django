@@ -71,7 +71,6 @@ INSTALLED_APPS = [
     'catalogo.apps.CatalogoConfig',
     'tarefas.apps.TarefasConfig',
     'agenda.apps.AgendaConfig',
-    'integracoes.apps.IntegracoesConfig',
     'materiais.apps.MateriaisConfig',
     'conteudo.apps.ConteudoConfig',
 ]

@@ -1,5 +1,7 @@
 # Orientações do projeto
 
+- Em 07/10/2026, o responsável remove o módulo `integracoes`, incluindo gestão de integradores, credenciais, API de recebimento, modelos/tabelas, navegação e documentação própria. Preservar agendamentos, históricos e os adaptadores AgroHub de Accounts, eventos e contato. As diretrizes anteriores de preservação do recebimento por integradores ficam substituídas. Ver `docs/modules/23-remocao-integracoes.md`.
+
 - A solicitação seguinte de 07/10/2026 padroniza os horários dos formulários e telas de agendamentos, tarefas e banners em `hh:mm`, sem segundos. Campos nativos usam passo de 60 segundos; horários novos ou alterados pelo formulário são gravados em minutos. Ao editar outros dados e manter o minuto exibido, preservar a precisão dos registros existentes. Os modelos e contratos de API permanecem compatíveis, sem migração ou alteração das integrações. Ver `docs/modules/22-horarios-em-minutos.md`.
 
 - A solicitação seguinte de 07/10/2026 corrige a aparência do modal aberto após o login pelo banner Agendar visita. Ao mover a ficha da página para o diálogo, preservar o contêiner `module-page detail-page` usado pelos fragmentos. A estrutura institucional respeita `content_class` e os módulos públicos recebem as cores compartilhadas, incluindo formulários sem JavaScript. Preservar o retorno após login, abertura automática, categoria de visita, rascunhos, CSRF e gravação local. Ver `docs/modules/19-criacao-agendamentos-modal.md`.

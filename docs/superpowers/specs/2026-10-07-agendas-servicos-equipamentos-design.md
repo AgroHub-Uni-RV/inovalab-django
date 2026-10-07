@@ -1,5 +1,7 @@
 # Agendas locais de serviços e equipamentos
 
+> Atualização de 07/10/2026: o módulo de integradores, sua API e seus recibos foram retirados. As referências a esse módulo nesta entrega registram decisões anteriores e não descrevem funções disponíveis. As conexões de Accounts, eventos e contato permanecem.
+
 ## Objetivo e decisão aprovada
 
 A solicitação mais recente substitui a importação de visitas confirmadas: visitas ficam exclusivamente no AgroHub, tanto na consulta quanto nas ações. O banco deste sistema mantém duas agendas concretas, `AgendaServico` e `AgendaEquipamento`, sem tabela de agendamento comum. O responsável autorizou planejar, confirmar o plano diretamente e executá-lo nesta sessão.

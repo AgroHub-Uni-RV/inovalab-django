@@ -173,7 +173,7 @@ def _save_visit(*, actor, data, booking_id=None, expected_version=None):
 
 
 def _save_booking(*, actor, actor_name, data, category=None, booking_id=None, expected_version=None, initial_status='confirmado'):
-    # Trusted core: role-aware facade or authenticated integration adapter only.
+    # Núcleo privado chamado pela fachada com autorização por papel.
     unknown = set(data) - PUBLIC_FIELDS
     if unknown:
         raise ValidationError({name: 'Este campo não pode ser alterado.' for name in unknown})

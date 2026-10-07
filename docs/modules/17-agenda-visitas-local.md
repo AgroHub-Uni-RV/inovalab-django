@@ -37,7 +37,7 @@ A API interna aceita criação com `categoria=visita` e os cinco campos; ediçã
 
 O código de consultas e ações remotas de visitas foi removido. Não há envio, consulta, importação, espelho ou fila de visitas remotas. O monólito não foi alterado.
 
-Accounts continua autenticando e sincronizando papéis/sessões. A integração de eventos do dashboard e das páginas públicas continua funcionando. Contato e outras integrações existentes não foram modificados. A API de recebimento por integradores mantém o contrato de serviços/equipamentos: sua escolha de categoria fica explicitamente limitada a essas duas opções para não expandir o contrato ao adicionar `AgendaVisita` no registro de modelos locais.
+Accounts continua autenticando e sincronizando papéis/sessões. A integração de eventos do dashboard e das páginas públicas continua funcionando. Contato e outras integrações existentes não foram modificados. O recebimento por integradores foi posteriormente retirado; ver [remoção](23-remocao-integracoes.md).
 
 ## Verificação
 

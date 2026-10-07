@@ -1,6 +1,6 @@
 # InovaLab
 
-A agenda local utiliza **AgendaServico** e **AgendaEquipamento**, com uma base abstrata de campos comuns. **Visitas são consultadas e gerenciadas exclusivamente pela API do AgroHub**, inclusive as confirmadas apresentadas em `/agenda/` e no dashboard, sem cópia no banco local. Solicitações em `/agenda/solicitacoes/` mantêm as abas **Todas, Pendentes, Canceladas e Recusadas** e os botões **Confirmar/Recusar/Cancelar** nas pendentes. A sessão e as permissões do provedor controlam essas ações. Ver [modelagem, migração e contrato atual](docs/modules/14-agendas-servicos-equipamentos.md) e o [plano Superpowers](docs/superpowers/plans/2026-10-07-agendas-servicos-equipamentos.md).
+A agenda utiliza **AgendaServico**, **AgendaEquipamento** e **AgendaVisita**, todas locais. Solicitações reúne as três categorias, incluindo confirmadas. Ver [agenda de visitas local](docs/modules/17-agenda-visitas-local.md).
 
 Atualização de 07/10/2026: o modelo e cadastro de **Espaços** foram removidos, incluindo telas e API. O catálogo mantém Serviços e Equipamentos; na separação das agendas, reservas antigas de espaço são preservadas em exportação privada. Ver [histórico da remoção de espaços](docs/modules/11-remocao-espacos.md) e [preservação do legado da agenda](docs/modules/14-agendas-servicos-equipamentos.md).
 
@@ -11,7 +11,7 @@ as migrações do Neon no build de cada push. O banco Neon dedicado e as
 variáveis de Production/Preview já estão configurados. Consulte o [guia de deploy,
 segurança, ambientes e limitações de uploads](docs/deploy/vercel-neon.md).
 
-Os sete módulos planejados estão implementados localmente: **Identidade e acesso**, **Catálogo**, **Tarefas**, **Agenda interna**, **Recebimento de reservas externas**, **Materiais** e **Conteúdo/Banners**. Banners oferece gestão administrativa, upload WebP, publicação por local/período e consulta pública por páginas/API. A conexão a um AgroHub real ainda depende do consumidor e ambiente. Aguardar depuração desta entrega antes de novas etapas.
+Os módulos disponíveis são **Identidade e acesso**, **Catálogo**, **Tarefas**, **Agenda**, **Materiais** e **Conteúdo/Banners**. Banners oferece gestão administrativa, upload WebP, publicação por local/período e consulta pública por páginas/API. O módulo de recebimento por integradores foi removido em 07/10/2026. [Remoção e atualização dos bancos](docs/modules/23-remocao-integracoes.md).
 
 ## Documentação
 
@@ -27,7 +27,6 @@ Os sete módulos planejados estão implementados localmente: **Identidade e aces
 | [Módulo 2 — Catálogo](docs/modules/02-catalogo.md) | Cadastros, carga inicial, endpoints e testes para aprofundar |
 | [Módulo 3 — Tarefas](docs/modules/03-tarefas.md) | Quadro, permissões, fluxo de avaliação, histórico, API e depuração |
 | [Módulo 4 — Agenda](docs/modules/04-agenda.md) | Calendário, exclusividade, cancelamento, concorrência, API e depuração |
-| [Módulo 5 — Integrações](docs/modules/05-integracoes.md) | Credenciais, recebimento, idempotência, contrato e depuração |
 | [Módulo 6 — Materiais](docs/modules/06-materiais.md) | Cadastro, quantidade decimal, versão, API e depuração |
 | [Módulo 7 — Conteúdo](docs/modules/07-conteudo.md) | Banners WebP, publicação, imagem protegida, API e depuração |
 | [Frontend — Base e Dashboard](docs/frontend/01-base-e-dashboard.md) | Primeira entrega visual pelas referências e roteiro de depuração |
@@ -41,7 +40,6 @@ Leia as classificações **C** (confirmado pela fonte), **D** (derivado) e **P**
 - Somente administradores aprovam, recusam e reabrem tarefas; o responsável executa e envia para avaliação.
 - Cada reserva do MVP tem um único serviço, equipamento ou espaço, sem bloquear automaticamente recursos associados.
 - Uma reserva por objeto/horário nas três categorias; exclusividade dos serviços confirmada em 02/10/2026.
-- Preparar primeiro a API de recebimento no InovaLab, com credencial própria e proteção contra duplicação, conforme resposta em 02/10/2026.
 - Contas internas cadastradas pelo administrador técnico, com login por usuário e senha.
 - Administradores do laboratório mantêm o catálogo; todos os usuários internos ativos consultam.
 - Materiais: cadastro simples mantido pelos administradores, consulta interna ativa, quantidade não negativa até 3 casas/unidade informada, categoria/fonte livres, status disponível/indisponível; sem movimentações.
@@ -90,8 +88,6 @@ Use **Tarefas** ou abra `/tarefas/`. Administradores criam demandas e avaliam en
 
 Administradores usam **Agenda** ou `/agenda/`. API: `/api/v1/agendamentos/`, detalhes e `/{id}/historico/`. Escritas existentes exigem `versao`; sobreposição/versão antiga retornam 409. Cancelamento preserva o histórico e libera o horário. O [guia da agenda](docs/modules/04-agenda.md) registra regras provisórias e a limitação conhecida em intervalos históricos na transição de horário de verão de 2019.
 
-Administradores usam **Integrações** ou `/integracoes/` para cadastrar integradores, gerar/renovar/revogar credenciais e consultar pedidos. API externa: `POST /api/v1/integracoes/agendamentos/` e `GET /api/v1/integracoes/catalogo/?categoria=servico`. Autenticação por credencial Bearer própria; não usa sessão interna nem concede acesso à agenda privada. [Contrato do módulo5](docs/modules/05-integracoes.md).
-
 Use **Materiais** ou `/materiais/` para consultar; administradores cadastram/corrigem. API interna por sessão/CSRF: `/api/v1/materiais/`, com detalhes por ID e versão obrigatória em PUT/PATCH. Quantidade decimal é devolvida como string com 3 casas; versão antiga retorna 409. [Contrato e roteiro](docs/modules/06-materiais.md).
 
 Administradores usam **Banners** ou `/banners/`. API interna por sessão/CSRF: `/api/v1/banners/`, versão em edição/exclusão e upload multipart WebP. Visitantes consultam `/publico/`, `/publico/sobre/` ou `/api/v1/publico/banners/?local=home|sobre`; imagens passam por `/banners/{id}/imagem/`, sem acesso direto ao diretório `media/`. [Contrato, escolhas provisórias e retenção](docs/modules/07-conteudo.md). Administração exclusiva, leitura pública, vários banners ordenados e período obrigatório são escolhas iniciais para Q10/Q12/Q15, ainda sujeitas à validação do responsável.
@@ -100,7 +96,7 @@ Os [padrões visuais compartilhados](docs/frontend/03-padroes-visuais.md) centra
 
 ## Processo
 
-A entrega de [usuário e horários do agendamento](docs/frontend/12-usuario-e-horarios-do-agendamento.md) remove o requerente livre e usa o usuário que cadastrou a reserva. O formulário escolhe um dia, hora de início e hora de término; períodos antigos e histórico são preservados. A API interna não aceita mais `requerente`, enquanto o contrato externo de integrações permanece. Execute `python manage.py migrate` ao atualizar outro ambiente; a migração local já foi aplicada. Validação: 424 testes Django aprovados e verificações básicas no Chrome.
+A entrega de [usuário e horários do agendamento](docs/frontend/12-usuario-e-horarios-do-agendamento.md) remove o requerente livre e usa o usuário que cadastrou a reserva. O formulário escolhe um dia, hora de início e hora de término; períodos antigos e histórico são preservados. A API interna não aceita mais `requerente`. Execute `python manage.py migrate` ao atualizar outro ambiente; a migração local já foi aplicada. Validação: 424 testes Django aprovados e verificações básicas no Chrome.
 
 A entrega de [atualizações sem recarregar](docs/frontend/10-atualizacoes-sem-recarregar.md) aplica filtros, abas, paginação e troca de categoria da agenda por requisições assíncronas, preservando foco e rascunhos. Foram aprovados 355 testes Django e verificações no Chrome em desktop e celular, incluindo respostas atrasadas e falha de conexão. Sem migrações nesta entrega.
 
@@ -114,7 +110,7 @@ Em 06/10/2026, filtros e atualização de opções passaram a ter [aplicação a
 
 Revisar requisitos e decisões de cada etapa, validar seu desenho, preparar o plano, implementar o fluxo web/API e verificar cenários relevantes. A coleção de skills [Superpowers](https://github.com/obra/superpowers) foi instalada neste ambiente do Codex; não é dependência da aplicação e não acompanha um clone do projeto.
 
-Por decisão do responsável, entregar um módulo por vez e aguardar sua depuração antes do próximo. Identidade e catálogo seguem suas especificações e planos autorizados. Tarefas, agenda, integrações, materiais e conteúdo seguem execução direta com planos simples ([tarefas](docs/superpowers/plans/2026-10-01-tarefas.md), [agenda](docs/superpowers/plans/2026-10-02-agenda.md), [integrações](docs/superpowers/plans/2026-10-02-integracoes.md), [materiais](docs/superpowers/plans/2026-10-02-materiais.md), [conteúdo](docs/superpowers/plans/2026-10-04-conteudo.md)), mantendo testes e revisão independente. Após [base e Dashboard](docs/superpowers/plans/2026-10-05-frontend-painel.md), a solicitação de todas as páginas reúne as telas restantes no [plano do frontend completo](docs/superpowers/plans/2026-10-05-frontend-completo.md). Escolhas para lacunas dos requisitos estão identificadas nos guias. Aguardar depuração desta entrega visual antes de iniciar outra etapa.
+Por decisão do responsável, entregar um módulo por vez e aguardar sua depuração antes do próximo. Identidade e catálogo seguem suas especificações e planos autorizados. Tarefas, agenda, materiais e conteúdo seguem execução direta com planos simples ([tarefas](docs/superpowers/plans/2026-10-01-tarefas.md), [agenda](docs/superpowers/plans/2026-10-02-agenda.md), [materiais](docs/superpowers/plans/2026-10-02-materiais.md), [conteúdo](docs/superpowers/plans/2026-10-04-conteudo.md)), mantendo testes e revisão independente. Após [base e Dashboard](docs/superpowers/plans/2026-10-05-frontend-painel.md), a solicitação de todas as páginas reúne as telas restantes no [plano do frontend completo](docs/superpowers/plans/2026-10-05-frontend-completo.md). Escolhas para lacunas dos requisitos estão identificadas nos guias. Aguardar depuração desta entrega visual antes de iniciar outra etapa.
 
 Para as próximas entregas visuais, seguir as referências com as funcionalidades atuais. A logo do InovaLab fornecida em `Referencias/logo.png` está incorporada; logos institucionais restantes aguardam os arquivos do responsável. A sidebar guarda a preferência de aberto/fechado no navegador, e Páginas mantém a estrutura interna após login. Veja [ajustes da sidebar, calendário e logo](docs/frontend/04-sidebar-calendario-e-logo.md). Executar os testes automatizados do Django e os testes básicos no navegador; o responsável realizará os testes mais profundos posteriormente. Essas orientações estão em [AGENTS.md](AGENTS.md).
 

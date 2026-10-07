@@ -1,6 +1,6 @@
 # InovaLab — Cenários base e rastreabilidade
 
-Versão 0.6 • 04/10/2026. Cenários base para orientar validação; cobertura executada da agenda/recebimento externo/materiais/banners nas seções 7–10. Dados e nomes são exemplos fictícios. C/D/P e Q01–Q15 estão definidos em `01-InovaLab-Escopo-e-Requisitos.md`.
+Versão 0.6 • 04/10/2026. Cenários base para orientar validação; cobertura executada da agenda/materiais/banners nas seções 7–10. Dados e nomes são exemplos fictícios. C/D/P e Q01–Q15 estão definidos em `01-InovaLab-Escopo-e-Requisitos.md`.
 
 ## 1. Fluxo proposto das tarefas
 
@@ -194,18 +194,9 @@ Em 02/10/2026: 42 testes da agenda e suíte completa de 159 passaram no SQLite l
 
 Chrome verificou cadastro, edição, histórico, conflito, adjacência, cancelamento/liberação, API, acesso negado, versão antiga após refresh, teclado e 360 px. Na entrega da agenda, CT16–CT18 e idempotência externa ficaram para o adaptador descrito na seção 8; negar acesso na API interna não substitui validar a autenticação do integrador. PostgreSQL/carga/produção e o caso histórico de horário de verão conhecido não foram validados como concluídos.
 
-## 8. Cobertura executada — adaptador de recebimento externo
+## 8. Retirada do recebimento externo
 
-Em 02/10/2026, módulo5:35 testes e suíte completa194 passaram. [Contrato/comandos/limites](docs/modules/05-integracoes.md).
-
-| Cenários | Verificação local |
-| --- | --- |
-| CT16 | Credencial real por header, três categorias, ID de requerente/pedido, origem e reserva na mesma agenda; sem conta local falsa |
-| CT17 | Normalização UTC/textos; chave por cliente, mudança de conteúdo409; duas conexões reais, inclusive mesma chave/alvos diferentes; reenvio após renovar credencial ou editar/cancelar localmente |
-| CT18 | 401/challenge para ausência/erro/revogação, sessão não substitui token; token não dá acesso interno; corpo/campos protegidos, catálogo mínimo sem reservas privadas |
-| CT28–CT29 | Gestão web administrativa com CSRF/version, segredo uma vez/no-store, origem na agenda e contrato publicado no guia; operações de reserva compartilhadas |
-
-Chrome verificou envio/reenvio/conflitos, renovação/revogação, pedidos, origem, cancelamento sem recriação, staff negado, teclado/360px. Revisão independente não identificou achados. Falha no INSERT do pedido reverte reserva/evento, e a retirada do bloqueio fez o teste de concorrência/ordem SQL falhar. Esta cobertura valida o adaptador no InovaLab, não a instalação real do AgroHub, PostgreSQL ou carga de produção.
+Os testes do adaptador foram retirados junto com o módulo. As regressões atuais verificam ausência de rotas/menu e retirada das tabelas/permissões, preservando a agenda e seu histórico. CT16–CT18 de recebimento externo deixam de ser cenários ativos. Ver [remoção](docs/modules/23-remocao-integracoes.md).
 
 ## 9. Cobertura executada — materiais
 

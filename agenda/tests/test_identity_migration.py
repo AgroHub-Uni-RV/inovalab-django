@@ -12,7 +12,7 @@ class BookingIdentityMigrationTests(PrivateArchiveMixin, TransactionTestCase):
         previous = [('agenda', '0005_agendamento_avaliado_em_agendamento_avaliado_por_and_more')]
         executor = MigrationExecutor(connection)
         latest = executor.loader.graph.leaf_nodes()
-        current = [('agenda', '0012_identifica_reservas_recebidas_agrohub'), ('catalogo', '0007_remove_espaco'), ('integracoes', '0001_initial')]
+        current = [('agenda', '0012_identifica_reservas_recebidas_agrohub'), ('catalogo', '0007_remove_espaco')]
         executor.migrate(previous)
         try:
             apps = executor.loader.project_state(previous).apps

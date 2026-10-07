@@ -4,7 +4,6 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.test import Client, TestCase
 
-from integracoes.services import create_client
 from materiais.models import Material
 from materiais.services import save_material
 from materiais.tests.test_services import DATA
@@ -22,7 +21,7 @@ class MaterialApiTests(TestCase):
         self.path = f'/api/v1/materiais/{self.material.pk}/'
 
     def test_anonymous_and_external_token_do_not_authenticate(self):
-        _, token = create_client(actor=self.admin, name='Consumidor de teste')
+        token = 'credencial-sem-autenticacao-por-sessao'
         for headers in ({}, {'HTTP_AUTHORIZATION': f'Bearer {token}'}):
             self.assertEqual(self.client.get('/api/v1/materiais/', **headers).status_code, 403)
             self.assertEqual(self.client.post('/api/v1/materiais/', DATA, content_type='application/json',

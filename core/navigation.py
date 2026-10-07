@@ -21,8 +21,6 @@ def panel_navigation(request):
     if admin:
         routes.append(('Banners', 'conteudo:list', 'image'))
     routes.extend([('Páginas', 'conteudo:inicio', 'layers'), ('Estrutura', 'catalogo:servicos-list', 'building')])
-    if admin:
-        routes.append(('Integrações', 'integracoes:list', 'link'))
     routes.append(('Perfil', 'accounts:home', 'profile'))
     items = []
     for label, route, icon in routes:

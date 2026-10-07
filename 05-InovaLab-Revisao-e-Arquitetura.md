@@ -77,14 +77,13 @@ flowchart LR
 | `catalogo` | Serviços, equipamentos e espaços | `accounts` para autorização |
 | `tarefas` | Atribuição e transições de tarefas | `accounts`, `catalogo` |
 | `agenda` | Reservas, disponibilidade e conflitos | `accounts`, `catalogo` |
-| `integracoes` | Consumidores externos e adaptação de pedidos | `agenda`; consultas autorizadas do catálogo |
 | `materiais` | Cadastro simples e quantidade decimal, correções com versão conforme Q09/Q12 confirmados | `accounts`; sem movimentações ou consumo por tarefa |
 | `conteudo` | Banners, WebP validado, gestão com versão e publicação por local/período | `accounts`, Pillow; storage local, arquivos por rota controlada; retenção/produção a definir |
 | `core` | Layout, painel e elementos compartilhados | Consultas autorizadas dos módulos; sem concentrar regras de reserva/tarefa |
 
 Separar modelos, operações (`services`), consultas (`selectors`), formulários, views, API e testes quando necessário. Não criar camadas vazias apenas para seguir um padrão.
 
-Exemplo: formulário e endpoint de aprovação chamam a mesma operação de tarefas, que verifica ator, estado e concorrência antes de atualizar. Na reserva, autenticação externa ocorre no adaptador; disponibilidade e gravação permanecem em `agenda`.
+Exemplo: formulário e endpoint de aprovação chamam a mesma operação de tarefas, que verifica ator, estado e concorrência antes de atualizar. Na reserva, a autorização por conta/papel precede disponibilidade e gravação em `agenda`.
 
 ## 6. Identidade, autorização e integridade
 
@@ -98,7 +97,7 @@ Na agenda atual, serviços/equipamentos são exclusivos por recurso; visitas ado
 
 ## 7. Superfície proposta da API
 
-Os módulos estão entregues conforme os contratos dos [módulos 1](docs/modules/01-identidade-e-acesso.md), [2](docs/modules/02-catalogo.md), [3](docs/modules/03-tarefas.md), [4](docs/modules/04-agenda.md), [5](docs/modules/05-integracoes.md), [6](docs/modules/06-materiais.md) e [7](docs/modules/07-conteudo.md). Os endpoints abaixo existem localmente; escolhas provisórias permanecem identificadas nos guias. RF23 não concede acesso externo irrestrito aos módulos internos.
+Os módulos estão entregues conforme os contratos dos [módulos 1](docs/modules/01-identidade-e-acesso.md), [2](docs/modules/02-catalogo.md), [3](docs/modules/03-tarefas.md), [4](docs/modules/04-agenda.md), [6](docs/modules/06-materiais.md) e [7](docs/modules/07-conteudo.md). Os endpoints abaixo existem localmente; escolhas provisórias permanecem identificadas nos guias. RF23 não concede acesso externo irrestrito aos módulos internos.
 
 | Caminho proposto | Operação | Acesso e decisões |
 | --- | --- | --- |
@@ -109,17 +108,15 @@ Os módulos estão entregues conforme os contratos dos [módulos 1](docs/modules
 | `/api/v1/tarefas/{id}/transicoes/` (entregue) | Iniciar, enviar, aprovar, recusar ou reabrir | RN16; mapa operacional do módulo 3, com escolhas restantes identificadas como provisórias |
 | `/api/v1/tarefas/{id}/historico/` e `/api/v1/tarefas/responsaveis/` (entregues) | Eventos autorizados e opções de atribuição | Histórico no mesmo escopo da tarefa; opções de contas ativas somente admin |
 | `/api/v1/agendamentos/`, `/{id}/`, `/{id}/historico/` (entregues) | Agenda interna e eventos | Administrador ativo/superusuário; sessão/CSRF, versão, cancelamento lógico e conflitos 409 |
-| `/api/v1/integracoes/agendamentos/` (entregue) | Receber pedido externo por POST | Token próprio, requerente/pedido externos, idempotência por cliente; consumidor real/Q07 ainda por validar |
-| `/api/v1/integracoes/catalogo/` (entregue) | IDs/nomes reserváveis por categoria | Mesmo token; somente leitura paginada, sem agenda privada |
 | `/api/v1/materiais/` e `/{id}/` (entregues) | Consultar/manter cadastro simples | Sessão/CSRF; consulta interna ativa, escrita administrativa, quantidade decimal, edição exige versão; sem DELETE |
 | `/api/v1/banners/` e `/{id}/` (entregues) | Gestão, multipart/JSON, versão, exclusão lógica | Sessão/CSRF administrativa; autoridade/período/ordem como escolhas iniciais Q10/Q12/Q15 |
 | `/api/v1/publico/banners/?local=home|sobre` (entregue) | Somente leitura paginada dos elegíveis | Pública com seis campos; sem rascunhos ou programação futura; imagem por rota controlada, no-store |
 
-Para navegador, usar sessão Django e CSRF, inclusive nas chamadas JavaScript de escrita. [Autenticação por sessão no DRF](https://www.django-rest-framework.org/api-guide/authentication/#sessionauthentication). Login preserva a proteção CSRF do Django. A API externa entregue usa Bearer opaco próprio, com token aleatório, digest SHA-256 e revogação/renovação administrativas; o contrato está no módulo 5. OAuth/OIDC, login institucional e sincronização de usuários não estão confirmados.
+Para navegador, usar sessão Django e CSRF, inclusive nas chamadas JavaScript de escrita. [Autenticação por sessão no DRF](https://www.django-rest-framework.org/api-guide/authentication/#sessionauthentication). Login preserva a proteção CSRF do Django. Accounts usa o AgroHub; os endpoints internos mantêm sessão/CSRF. O recebimento por integradores foi removido.
 
 O contrato deve especificar JSON, paginação, campos permitidos por ação, timestamps com fuso, identificadores estáveis e erros com código legível por máquina. Propostas: `400` para dados inválidos, `403` para operação proibida, `404` para objeto fora do escopo e `409` para conflito de horário, versão ou idempotência. Para ausência de credencial, documentar o autenticador escolhido: sessão no DRF pode retornar `403`; outros autenticadores usam `401`.
 
-Idempotência externa entregue: chave única por cliente, conteúdo normalizado e reserva persistidos atomicamente; reenvio idêntico retorna a mesma reserva, com versão/estado atuais mesmo após edição ou cancelamento local. Conteúdo diferente com a mesma chave gera conflito 409. Reenvio não edita nem restaura a reserva.
+O recebimento de pedidos externos e sua idempotência foram retirados em 07/10/2026. Ver [remoção](docs/modules/23-remocao-integracoes.md).
 
 ## 8. Frontend básico
 

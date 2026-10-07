@@ -10,7 +10,7 @@ Entrega de 07/10/2026: contas autenticadas e ativas podem criar serviços, equip
 - A autoria é verificada na consulta pessoal e novamente pelo serviço antes da gravação, inclusive após adquirir o bloqueio de concorrência. Usuários comuns não podem agir sobre registros de terceiros, nem usando IDs iguais em categorias diferentes.
 - A API de sessão aceita criação e cancelamento pessoal; edição continua administrativa. Contas externas continuam sem acesso à listagem interna da API e usam Meus agendamentos para consulta.
 - Accounts continua sincronizando a sessão e os papéis. Login retorna aos acessos de criação autorizados; contas externas recebem links para detalhes pessoais e estrutura institucional. O modal usa o estilo compartilhado também para essas contas e atualiza a lista pessoal após salvar.
-- Apenas a leitura autenticada das fotos dos equipamentos é liberada para apresentar os formulários. Cadastro, catálogo interno, tarefas, materiais, integrações e demais funções mantêm suas permissões.
+- Apenas a leitura autenticada das fotos dos equipamentos é liberada para apresentar os formulários. Cadastro, catálogo interno, tarefas, materiais e demais funções mantêm suas permissões.
 
 ## Banner inicial
 

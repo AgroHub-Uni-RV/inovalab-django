@@ -41,7 +41,7 @@ class AgroHubSessionMiddleware:
 class InternalAccessMiddleware:
     """Protege rotas internas antes de executar views e APIs de sessão."""
 
-    INTERNAL_NAMESPACES = {'core', 'catalogo', 'tarefas', 'agenda', 'materiais', 'integracoes',
+    INTERNAL_NAMESPACES = {'core', 'catalogo', 'tarefas', 'agenda', 'materiais',
                            'catalogo_api', 'tarefas_api', 'agenda_api', 'materiais_api'}
     PUBLIC_CONTENT_NAMES = {'inicio', 'sobre', 'servicos', 'contato', 'regimento',
                             'calendario-funcionamento', 'public-home', 'public-about', 'image'}

@@ -42,7 +42,7 @@ class AgroHubRolesTests(TestCase):
         self.assertTrue(is_business_admin(user))
         self.assertFalse(user.is_superuser)
         self.assertEqual(self.client.get('/catalogo/servicos/novo/').status_code, 200)
-        self.assertEqual(self.client.get('/integracoes/').status_code, 200)
+        self.assertEqual(self.client.get('/banners/').status_code, 200)
 
     def test_staff_is_internal_user_and_cannot_use_administrative_functions(self):
         self.assertRedirects(self.login(['staff']), '/index/')
@@ -52,13 +52,13 @@ class AgroHubRolesTests(TestCase):
             with self.subTest(path=path):
                 self.assertEqual(self.client.get(path).status_code, 200)
         self.assertEqual(self.client.get('/catalogo/servicos/novo/').status_code, 403)
-        self.assertEqual(self.client.get('/integracoes/').status_code, 403)
+        self.assertEqual(self.client.get('/banners/').status_code, 403)
 
     def test_regular_user_can_return_to_booking_creation_without_access_to_other_internal_routes(self):
         self.assertRedirects(self.login(['student'], next='/agenda/novo/'), '/agenda/novo/')
         self.assertContains(self.client.get('/agenda/visitas/novo/'), 'Agendar visita')
         for path in ('/index/', '/painel/', '/agenda/', '/catalogo/servicos/',
-                     '/tarefas/', '/materiais/', '/banners/', '/integracoes/', '/usuarios/'):
+                     '/tarefas/', '/materiais/', '/banners/', '/usuarios/'):
             with self.subTest(path=path):
                 response = self.client.get(path)
                 self.assertEqual(response.status_code, 403)
@@ -118,9 +118,9 @@ class AgroHubRolesTests(TestCase):
 
     def test_role_change_from_staff_to_admin_is_applied_without_new_login(self):
         self.login(['staff'])
-        self.assertEqual(self.client.get('/integracoes/').status_code, 403)
+        self.assertEqual(self.client.get('/banners/').status_code, 403)
         self.stub.state['profile']['roles'] = ['admin']
-        self.assertEqual(self.client.get('/integracoes/').status_code, 200)
+        self.assertEqual(self.client.get('/banners/').status_code, 200)
 
     def test_staff_cannot_use_stale_technical_flags_to_manage_accounts_or_view_other_photos(self):
         self.login(['staff'])

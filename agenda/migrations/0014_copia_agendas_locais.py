@@ -5,27 +5,26 @@ from django.conf import settings
 from django.db import migrations, models
 from django.core.management.color import no_style
 from agenda.legacy_archive import archive_legacy
+from agenda.migrations._retired_integrations import remove_retired_tables
 
 
 def copy_rows(apps, schema_editor):
     alias = schema_editor.connection.alias
     old = apps.get_model('agenda', 'Agendamento')
     event = apps.get_model('agenda', 'EventoAgendamento')
-    receipt = apps.get_model('integracoes', 'PedidoIntegracao')
     remote = apps.get_model('agenda', 'ReservaAgroHub')
+    # Bancos antigos ainda podem ter FKs do módulo removido para a agenda legada.
+    remove_retired_tables(schema_editor)
     excluded = list(old.objects.using(alias).filter(servico__isnull=True, equipamento__isnull=True).values_list('pk', flat=True))
     archive_legacy({
         'bookings': list(old.objects.using(alias).filter(pk__in=excluded).values()),
         'equipment_links': list(old.equipamentos.through.objects.using(alias).filter(agendamento_id__in=excluded).values()),
         'events': list(event.objects.using(alias).filter(agendamento_id__in=excluded).values()),
-        'receipts': list(receipt.objects.using(alias).filter(agendamento_id__in=excluded).values()),
         'remote_links': list(remote.objects.using(alias).values()),
         'visit_locks': list(apps.get_model('agenda', 'ControleAgendaVisitas').objects.using(alias).values()),
         'local_booking_categories': {str(pk): category for category in ('servico', 'equipamento')
             for pk in old.objects.using(alias).filter(**{category + '__isnull': False}).values_list('pk', flat=True)},
     }, database=schema_editor.connection.settings_dict['NAME'])
-    # PROTECT receipts must be archived and removed before deleting excluded bookings.
-    receipt.objects.using(alias).filter(agendamento_id__in=excluded).delete()
     event.objects.using(alias).filter(agendamento_id__in=excluded).delete()
     for category, name in [('servico', 'AgendaServico'), ('equipamento', 'AgendaEquipamento')]:
         target = apps.get_model('agenda', name)
@@ -43,11 +42,10 @@ def copy_rows(apps, schema_editor):
                 target.equipamentos.through.objects.using(alias).bulk_create([
                     target.equipamentos.through(agendaservico_id=saved.pk, equipamento_id=pk) for pk in ids])
             event.objects.using(alias).filter(agendamento_id=row.pk).update(**{'agenda_'+category+'_id': row.pk})
-            receipt.objects.using(alias).filter(agendamento_id=row.pk).update(**{'agenda_'+category+'_id': row.pk})
         if target.objects.using(alias).count() != expected:
             raise RuntimeError('Falha ao conferir cópia das agendas locais.')
-    if event.objects.using(alias).filter(agenda_servico__isnull=True, agenda_equipamento__isnull=True).exists() or receipt.objects.using(alias).filter(agenda_servico__isnull=True, agenda_equipamento__isnull=True).exists():
-        raise RuntimeError('Há eventos ou recibos sem agenda tipada.')
+    if event.objects.using(alias).filter(agenda_servico__isnull=True, agenda_equipamento__isnull=True).exists():
+        raise RuntimeError('Há eventos sem agenda tipada.')
     for statement in schema_editor.connection.ops.sequence_reset_sql(no_style(), [apps.get_model('agenda', 'AgendaServico'), apps.get_model('agenda', 'AgendaEquipamento')]):
         schema_editor.execute(statement)
 
@@ -56,7 +54,6 @@ def restore_rows(apps, schema_editor):
     alias = schema_editor.connection.alias
     old = apps.get_model('agenda', 'Agendamento')
     event = apps.get_model('agenda', 'EventoAgendamento')
-    receipt = apps.get_model('integracoes', 'PedidoIntegracao')
     archive_path = getattr(settings, 'AGENDAS_LEGACY_RESTORE_FILE', '') or os.environ.get('AGENDAS_LEGACY_RESTORE_FILE')
     payload = json.loads(Path(archive_path).read_text(encoding='utf-8')) if archive_path else None
     if payload is not None and payload.get('schema') != 1:
@@ -104,12 +101,11 @@ def restore_rows(apps, schema_editor):
                 old.equipamentos.through.objects.using(alias).bulk_create([
                     old.equipamentos.through(agendamento_id=saved.pk, equipamento_id=pk) for pk in ids])
             event.objects.using(alias).filter(**{'agenda_'+category+'_id': row.pk}).update(agendamento_id=saved.pk)
-            receipt.objects.using(alias).filter(**{'agenda_'+category+'_id': row.pk}).update(agendamento_id=saved.pk)
     if payload is not None:
         for row in payload['bookings']:
             saved = restore_booking(dict(row))
             legacy_mapping[row['id']] = saved.pk
-        for key, model in [('events', event), ('receipts', receipt), ('remote_links', apps.get_model('agenda', 'ReservaAgroHub'))]:
+        for key, model in [('events', event), ('remote_links', apps.get_model('agenda', 'ReservaAgroHub'))]:
             occupied = set(model.objects.using(alias).values_list('pk', flat=True))
             next_related_id = max(occupied | {row['id'] for row in payload[key]}, default=0) + 1
             for row in payload[key]:
@@ -123,19 +119,19 @@ def restore_rows(apps, schema_editor):
                     next_related_id += 1
                 occupied.add(values['id'])
                 saved = model.objects.using(alias).create(**values)
-                timestamp = 'instante' if key == 'events' else 'criado_em' if key == 'receipts' else 'atualizado_em'
+                timestamp = 'instante' if key == 'events' else 'atualizado_em'
                 model.objects.using(alias).filter(pk=saved.pk).update(**{timestamp: values[timestamp]})
         for values in payload.get('equipment_links', []):
             old.equipamentos.through.objects.using(alias).get_or_create(
                 agendamento_id=legacy_mapping[values['agendamento_id']], equipamento_id=values['equipamento_id'])
         for values in payload.get('visit_locks', []):
             apps.get_model('agenda', 'ControleAgendaVisitas').objects.using(alias).get_or_create(**values)
-    for statement in schema_editor.connection.ops.sequence_reset_sql(no_style(), [old, event, receipt, apps.get_model('agenda', 'ReservaAgroHub')]):
+    for statement in schema_editor.connection.ops.sequence_reset_sql(no_style(), [old, event, apps.get_model('agenda', 'ReservaAgroHub')]):
         schema_editor.execute(statement)
 
 
 class Migration(migrations.Migration):
-    dependencies = [('agenda', '0013_agendaequipamento_agendaservico_and_more'), ('integracoes', '0002_remove_pedidointegracao_agendamento_and_more')]
+    dependencies = [('agenda', '0013_agendaequipamento_agendaservico_and_more')]
     operations = [
         migrations.RunPython(copy_rows, restore_rows),
         migrations.RemoveField(model_name='eventoagendamento', name='agendamento'),

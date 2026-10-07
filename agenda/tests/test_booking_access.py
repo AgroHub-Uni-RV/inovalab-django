@@ -139,7 +139,7 @@ class NormalBookingAccessTests(TestCase):
             url = f'/api/v1/agendamentos/{category}/{created.json()["id"]}/'
             self.assertEqual(api.patch(url, {'versao': 1}, format='json').status_code, 403)
             self.assertEqual(api.delete(url, {'versao': 1}, format='json').status_code, 204)
-        for url in ('/agenda/', '/agenda/solicitacoes/', '/catalogo/servicos/', '/tarefas/', '/materiais/', '/integracoes/', '/api/v1/agendamentos/'):
+        for url in ('/agenda/', '/agenda/solicitacoes/', '/catalogo/servicos/', '/tarefas/', '/materiais/', '/api/v1/agendamentos/'):
             self.assertEqual(self.client.get(url).status_code, 403)
 
     def test_admin_can_cancel_another_users_booking_and_owner_cannot_edit_or_approve(self):

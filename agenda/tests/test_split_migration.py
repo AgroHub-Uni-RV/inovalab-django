@@ -11,7 +11,7 @@ from django.test import SimpleTestCase, TransactionTestCase, override_settings
 from agenda.legacy_archive import archive_legacy
 from agenda.tests.migration_helpers import PrivateArchiveMixin
 
-PREVIOUS = [('agenda', '0012_identifica_reservas_recebidas_agrohub'), ('integracoes', '0001_initial'), ('catalogo', '0007_remove_espaco')]
+PREVIOUS = [('agenda', '0012_identifica_reservas_recebidas_agrohub'), ('catalogo', '0007_remove_espaco')]
 
 
 class LegacyArchiveTests(PrivateArchiveMixin, SimpleTestCase):
@@ -24,7 +24,7 @@ class LegacyArchiveTests(PrivateArchiveMixin, SimpleTestCase):
 
 
 class SplitMigrationTests(PrivateArchiveMixin, TransactionTestCase):
-    def test_migration_preserves_typed_data_dates_m2m_audit_receipts_and_archives_removed_rows(self):
+    def test_migration_preserves_typed_data_dates_m2m_audit_and_archives_removed_rows(self):
         executor = MigrationExecutor(connection)
         latest = executor.loader.graph.leaf_nodes()
         executor.migrate(PREVIOUS)
@@ -48,12 +48,9 @@ class SplitMigrationTests(PrivateArchiveMixin, TransactionTestCase):
             visit.equipamentos.add(machine)
             booking_model.objects.create(pk=73, espaco_legado_id=12, espaco_legado_nome='Sala histórica', motivo='Legado', **period)
             booking_model.objects.all().update(criado_em='2026-10-01T09:00:00Z')
-            client = apps.get_model('integracoes', 'ClienteIntegracao').objects.create(nome='Cliente histórico', token_digest='secret-not-archived')
             for pk in (70, 71, 72, 73):
                 event = apps.get_model('agenda', 'EventoAgendamento').objects.create(pk=pk, agendamento_id=pk, ator_id=actor.pk, ator_nome='Histórico', acao='criar', alteracoes={'motivo': {'anterior': None, 'novo': 'original'}})
                 apps.get_model('agenda', 'EventoAgendamento').objects.filter(pk=pk).update(instante='2026-10-01T09:30:00Z')
-                apps.get_model('integracoes', 'PedidoIntegracao').objects.create(pk=pk, agendamento_id=pk, cliente=client, id_externo=f'ext-{pk}', requerente_id='pessoa', conteudo_digest=str(pk)*32)
-                apps.get_model('integracoes', 'PedidoIntegracao').objects.filter(pk=pk).update(criado_em='2026-10-01T09:45:00Z')
             apps.get_model('agenda', 'ReservaAgroHub').objects.create(agendamento=visit, origem='https://provider.example/api/v1/', reserva_id=99,
                 recebida=True, payload={'titulo': 'Visita original', 'solicitante': 'Pessoa remota'}, estado='registrada')
             apps.get_model('agenda', 'ControleAgendaVisitas').objects.create(pk=2)
@@ -72,25 +69,17 @@ class SplitMigrationTests(PrivateArchiveMixin, TransactionTestCase):
             self.assertEqual(equipment.cancelado_em.isoformat(), '2026-10-07T10:00:00+00:00')
             for pk, field in [(70, 'agenda_servico_id'), (71, 'agenda_equipamento_id')]:
                 event = apps.get_model('agenda', 'EventoAgendamento').objects.get(pk=pk)
-                receipt = apps.get_model('integracoes', 'PedidoIntegracao').objects.get(pk=pk)
                 self.assertEqual(getattr(event, field), pk)
-                self.assertEqual(getattr(receipt, field), pk)
                 self.assertEqual(event.instante.isoformat(), '2026-10-01T09:30:00+00:00')
-                self.assertEqual(receipt.criado_em.isoformat(), '2026-10-01T09:45:00+00:00')
-                self.assertEqual(receipt.conteudo_digest, str(pk)*32)
-                self.assertEqual(receipt.id_externo, f'ext-{pk}')
             self.assertNotIn('agenda_agendamento', connection.introspection.table_names())
             self.assertEqual(apps.get_model('agenda', 'EventoAgendamento').objects.count(), 2)
-            self.assertEqual(apps.get_model('integracoes', 'PedidoIntegracao').objects.count(), 2)
             archives = list(Path(self.archive_directory).glob('*.json'))
             self.assertEqual(len(archives), 1)
             archive = archives[0]
             payload = json.loads(archive.read_text(encoding='utf-8'))
             self.assertEqual({row['id'] for row in payload['bookings']}, {72, 73})
             self.assertEqual({row['id'] for row in payload['events']}, {72, 73})
-            self.assertEqual({row['id'] for row in payload['receipts']}, {72, 73})
             self.assertEqual(payload['remote_links'][0]['reserva_id'], 99)
-            self.assertNotIn('secret-not-archived', archive.read_text(encoding='utf-8'))
             with override_settings(AGENDAS_LEGACY_RESTORE_FILE=str(archive)):
                 executor = MigrationExecutor(connection)
                 executor.migrate(PREVIOUS)
@@ -103,7 +92,6 @@ class SplitMigrationTests(PrivateArchiveMixin, TransactionTestCase):
             self.assertTrue(apps.get_model('agenda', 'ControleAgendaVisitas').objects.filter(pk=2).exists())
             self.assertEqual(apps.get_model('agenda', 'ReservaAgroHub').objects.get(reserva_id=99).agendamento_id, 72)
             self.assertEqual(apps.get_model('agenda', 'EventoAgendamento').objects.get(pk=72).instante.isoformat(), '2026-10-01T09:30:00+00:00')
-            self.assertEqual(apps.get_model('integracoes', 'PedidoIntegracao').objects.get(pk=73).conteudo_digest, '73'*32)
         finally:
             MigrationExecutor(connection).migrate(latest)
 
@@ -118,7 +106,6 @@ class SplitMigrationTests(PrivateArchiveMixin, TransactionTestCase):
             period = dict(inicio='2026-11-01T14:00:00Z', fim='2026-11-01T15:00:00Z')
             original = apps.get_model('agenda', 'Agendamento').objects.create(pk=40, equipamento=machine, motivo='Equipamento original', **period)
             apps.get_model('agenda', 'ReservaAgroHub').objects.create(agendamento=original, origem='https://provider.example/api/v1/', reserva_id=140, estado='registrada')
-            client = apps.get_model('integracoes', 'ClienteIntegracao').objects.create(nome='Cliente rollback')
             executor = MigrationExecutor(connection)
             executor.migrate(latest)
             apps = executor.loader.project_state(latest).apps
@@ -126,7 +113,6 @@ class SplitMigrationTests(PrivateArchiveMixin, TransactionTestCase):
             for category in ('servico', 'equipamento'):
                 target = {'agenda_' + category + '_id': 40}
                 apps.get_model('agenda', 'EventoAgendamento').objects.create(ator_nome=category, acao='criar', **target)
-                apps.get_model('integracoes', 'PedidoIntegracao').objects.create(cliente_id=client.pk, id_externo=category, requerente_id='pessoa', conteudo_digest=category, **target)
             archive = next(Path(self.archive_directory).glob('*.json'))
             with override_settings(AGENDAS_LEGACY_RESTORE_FILE=str(archive)):
                 MigrationExecutor(connection).migrate(PREVIOUS)
@@ -138,7 +124,6 @@ class SplitMigrationTests(PrivateArchiveMixin, TransactionTestCase):
             self.assertEqual(apps.get_model('agenda', 'ReservaAgroHub').objects.get(reserva_id=140).agendamento_id, restored_equipment.pk)
             for category, target in [('servico', restored_service), ('equipamento', restored_equipment)]:
                 self.assertEqual(apps.get_model('agenda', 'EventoAgendamento').objects.get(ator_nome=category).agendamento_id, target.pk)
-                self.assertEqual(apps.get_model('integracoes', 'PedidoIntegracao').objects.get(id_externo=category).agendamento_id, target.pk)
             appended = old.objects.create(visita=True, quantidade_pessoas=1, **period)
             self.assertGreater(appended.pk, max(restored_service.pk, restored_equipment.pk))
         finally:

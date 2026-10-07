@@ -1,5 +1,7 @@
 # Solicitações de agendamento e aprovação administrativa
 
+> Atualização de 07/10/2026: o módulo de integradores, sua API e seus recibos foram retirados. As referências a esse módulo nesta entrega registram decisões anteriores e não descrevem funções disponíveis. As conexões de Accounts, eventos e contato permanecem.
+
 Entrega de 06/10/2026. Especificação aprovada em
 `docs/superpowers/specs/2026-10-06-solicitacoes-de-agendamento-design.md`.
 Implementação direta na branch `feat/solicitacoes-agendamento`, derivada de `main`.

@@ -1,5 +1,7 @@
 # Frontend pelas referências — desenho e entregas
 
+> Atualização de 07/10/2026: o módulo de integradores e seu item no menu foram retirados. As referências a essa tela neste desenho são históricas.
+
 Em 05/10/2026, o responsável pediu frontend fiel às referências e confirmou **funcionalidades atuais; recursos novos em etapas próprias**. A orientação de frontend simples do MVP foi substituída para esta etapa visual. Continua valendo entregar uma parte, aguardar depuração e autorização antes da seguinte. Login de identidade não tem referência substituta e será preservado.
 
 ## Fontes examinadas

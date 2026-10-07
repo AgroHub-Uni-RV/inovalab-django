@@ -1,5 +1,7 @@
 # Solicitações de agendamento com aprovação administrativa
 
+> Atualização de 07/10/2026: o módulo de integradores, sua API e seus recibos foram retirados. As referências a esse módulo nesta entrega registram decisões anteriores e não descrevem funções disponíveis. As conexões de Accounts, eventos e contato permanecem.
+
 Data: 06/10/2026. Módulo: agenda.
 
 ## Objetivo e desenho aprovado

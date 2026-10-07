@@ -1,4 +1,0 @@
-{% extends 'core/sheet.html' %}
-{% block title %}Integrações{% endblock %}
-{% block sheet_toolbar %}<a class="secondary-button" href="{% url 'integracoes:list' %}">Voltar às integrações</a><a class="secondary-button" href="{% url 'integracoes:update' integration.pk %}">Editar integrador</a>{% endblock %}
-{% block sheet_content %}<h1>{{ integration.nome }}</h1><dl class="inline-details"><div><dt>Estado</dt><dd>{{ integration.ativo|yesno:'Ativo,Inativo' }}</dd></div><div><dt>Credencial</dt><dd>{% if integration.ativo and integration.token_digest %}Gerada{% else %}Sem credencial ativa{% endif %}</dd></div><div><dt>Versão</dt><dd>{{ integration.versao }}</dd></div></dl><nav class="sheet-actions" aria-label="Ações do integrador"><a class="primary-button" href="{% url 'integracoes:credential' integration.pk %}">Gerar nova credencial</a><a class="secondary-button" href="{% url 'integracoes:requests' integration.pk %}">Pedidos recebidos</a></nav>{% endblock %}

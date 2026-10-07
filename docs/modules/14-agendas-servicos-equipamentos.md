@@ -1,5 +1,7 @@
 # Agendas locais e visitas no AgroHub
 
+> Atualização de 07/10/2026: o módulo de integradores, sua API e seus recibos foram retirados. As referências a esse módulo nesta entrega registram decisões anteriores e não descrevem funções disponíveis. As conexões de Accounts, eventos e contato permanecem.
+
 A decisão de 07/10/2026 separa os agendamentos locais em **AgendaServico** e **AgendaEquipamento**. Todas as visitas permanecem no AgroHub, inclusive quando confirmadas. Esta decisão substitui a criação de cópias locais descrita na entrega anterior.
 
 ## Estrutura dos dados

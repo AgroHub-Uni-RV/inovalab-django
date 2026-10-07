@@ -7,12 +7,11 @@ from agenda.tests.migration_helpers import PrivateArchiveMixin
 
 
 class SpaceRemovalMigrationTests(PrivateArchiveMixin, TransactionTestCase):
-    def test_removal_preserves_active_and_canceled_bookings_audit_and_receipts(self):
-        previous = [('agenda', '0010_quantidade_pessoas_visitas'), ('catalogo', '0006_fotos_iniciais_webp'),
-                    ('integracoes', '0001_initial')]
+    def test_removal_preserves_active_and_canceled_bookings_audit(self):
+        previous = [('agenda', '0010_quantidade_pessoas_visitas'), ('catalogo', '0006_fotos_iniciais_webp')]
         executor = MigrationExecutor(connection)
         latest = executor.loader.graph.leaf_nodes()
-        current = [('agenda', '0012_identifica_reservas_recebidas_agrohub'), ('catalogo', '0007_remove_espaco'), ('integracoes', '0001_initial')]
+        current = [('agenda', '0012_identifica_reservas_recebidas_agrohub'), ('catalogo', '0007_remove_espaco')]
         executor.migrate(previous)
         try:
             apps = executor.loader.project_state(previous).apps
@@ -29,10 +28,6 @@ class SpaceRemovalMigrationTests(PrivateArchiveMixin, TransactionTestCase):
             event = apps.get_model('agenda', 'EventoAgendamento').objects.create(
                 agendamento=bookings[0], ator_nome='Conta antiga', acao='criar', alteracoes=changes,
             )
-            client = apps.get_model('integracoes', 'ClienteIntegracao').objects.create(nome='Legado')
-            receipt = apps.get_model('integracoes', 'PedidoIntegracao').objects.create(
-                cliente=client, agendamento=bookings[0], id_externo='antigo', requerente_id='1', conteudo_digest='a' * 64,
-            )
             executor = MigrationExecutor(connection)
             executor.migrate(current)
             apps = executor.loader.project_state(current).apps
@@ -48,8 +43,6 @@ class SpaceRemovalMigrationTests(PrivateArchiveMixin, TransactionTestCase):
             self.assertEqual(apps.get_model('agenda', 'Agendamento').objects.get(pk=visit.pk).quantidade_pessoas, 5)
             saved_event = apps.get_model('agenda', 'EventoAgendamento').objects.get(pk=event.pk)
             self.assertEqual((saved_event.agendamento_id, saved_event.alteracoes), (bookings[0].pk, changes))
-            saved_receipt = apps.get_model('integracoes', 'PedidoIntegracao').objects.get(pk=receipt.pk)
-            self.assertEqual((saved_receipt.agendamento_id, saved_receipt.conteudo_digest), (bookings[0].pk, 'a' * 64))
             executor = MigrationExecutor(connection)
             executor.migrate(previous)
             apps = executor.loader.project_state(previous).apps

@@ -11,7 +11,7 @@ Versão 0.9 • 06/10/2026 • PDF original conferido; decisões do responsável
 
 Atualização F3 em 02/10/2026: responsável autorizou a agenda e confirmou uma reserva por serviço em cada horário, com equipamentos/espaços exclusivos. Naquela entrega, a agenda interna estava concluída e o adaptador externo era a etapa seguinte.
 
-Na passagem seguinte, F3 autorizou o módulo5 e escolheu preparar a API de recebimento no InovaLab com credencial própria e proteção contra pedidos duplicados. Adaptador local entregue; contrato de campos é escolha de implementação para validar com o consumidor. Conexão a um AgroHub real, hospedagem, sincronização e migração continuam pendentes.
+Em 07/10/2026, o responsável retirou o módulo de recebimento externo e sua gestão de integradores. As propostas de recebimento e idempotência de pedidos externos ficam encerradas; Accounts, eventos e contato permanecem. Ver [remoção](docs/modules/23-remocao-integracoes.md).
 
 Em 04/10/2026, F3 autorizou desenvolver o módulo 7. Conteúdo/banners entregue localmente: WebP, gestão, publicação e API. As escolhas iniciais para Q10/Q12/Q15 estão no [contrato do módulo](docs/modules/07-conteudo.md); a pergunta opcional sobre esses pontos não foi respondida. Autorização para desenvolver não transforma cada escolha técnica em regra C.
 
@@ -66,7 +66,7 @@ Os critérios abaixo são a especificação operacional proposta; onde o comport
 | RF11 | Disponibilizar os serviços pré-cadastrados do PDF | C — F1 p. 1–2 | MVP | Os 11 nomes da seção 6 existem, sem duplicação ao repetir a carga |
 | RF12 | Unificar agenda e formulário para Equipamentos, Serviços e Visitas | C — F5, substitui categorias de F1/F3 | MVP | Serviços/equipamentos selecionam seu objeto; visita não seleciona espaço ou outro objeto; novas reservas de espaços são rejeitadas |
 | RF13 | Permitir ao administrador criar, editar e excluir agendamentos | C — F1 p. 2 | MVP | Operações persistem e refletem na agenda; tratamento de histórico depende de Q08 |
-| RF14 | Viabilizar agendamento via API para o usuário do AgroHub; propor recebimento no InovaLab | Integração C — F1 p. 2; direção/contrato D/P, Q07 | MVP | No fluxo proposto, solicitação válida cria um registro na agenda unificada e devolve seu identificador |
+| RF14 (retirado em 07/10/2026) | Proposta histórica de recebimento externo, encerrada pela remoção do módulo | Integração C — F1 p. 2; direção/contrato D/P, Q07 | MVP | No fluxo proposto, solicitação válida cria um registro na agenda unificada e devolve seu identificador |
 | RF15 | Registrar dia, início e término e identificar automaticamente o usuário criador; serviços/equipamentos incluem objeto, motivo e observações opcionais | C — F5 e solicitações de autoria/observações; quantidade acrescentada em 06/10/2026 | MVP | Visita exige dia, horários e quantidade inteira de pessoas, mínimo 1; não recebe motivo/observações livres/objeto; autoria e dados administrativos são automáticos |
 | RF16 | Impedir sobreposição de reservas confirmadas do mesmo serviço ou equipamento | C — F3; categorias corrigidas por F5 | MVP | Pedidos concorrentes para o mesmo recurso produzem no máximo uma confirmação; exclusividade de visitas é proposta provisória |
 | RF17 | Consultar e manter materiais com nome, categoria, quantidade, status e fonte | Campos C — F1 p. 2; manutenção/quantidade/unidade/status C — F3/Q09/Q12 | MVP | Dados persistem; quantidade não negativa até 3 casas/unidade informada, categoria/fonte livres, disponível/indisponível, manutenção administrativa e consulta interna ativa |
@@ -74,7 +74,7 @@ Os critérios abaixo são a especificação operacional proposta; onde o comport
 | RF19 | Publicar banners conforme local e período de exibição | D/P — F1 p. 3 | MVP entregue sob escolhas provisórias | Inativo não aparece; agendado aparece em início<=agora<fim, com fuso; contrato inicial Q10 no módulo 7 |
 | RF20 | Filtrar tarefas por status, serviço, responsável e prazo | P | Seguinte | Filtros nunca ampliam as permissões de RF02 |
 | RF21 | Registrar histórico de alterações relevantes | P | MVP | Operação registra ator, instante e mudança; histórico só é acessível a autorizados |
-| RF22 | Tratar reenvios de agendamento externo sem duplicação | P — integração RF14 | MVP | Mesma origem e chave, com o mesmo conteúdo, retornam o registro anterior; conteúdo diferente gera conflito |
+| RF22 (retirado em 07/10/2026) | Proposta histórica de idempotência externa, encerrada pela remoção do módulo | P — integração RF14 | MVP | Mesma origem e chave, com o mesmo conteúdo, retornam o registro anterior; conteúdo diferente gera conflito |
 | RF23 | Expor operações por API para integração com outros sistemas | Objetivo C — F3; contrato P | MVP por etapa | Cada módulo entregue possui os endpoints acordados, documentação de contrato e as mesmas permissões e validações da interface |
 | RF24 | Oferecer frontend básico para as operações internas | C — F3; telas F4 como referência | MVP por etapa | Usuário realiza o fluxo entregue pelo navegador; interface mostra erros e respeita o acesso definido no servidor |
 | RF25 | Registrar conta pelo AgroHub | C — F6 | MVP | Cadastro envia os campos Accounts e a confirmação de senha; retorno válido autentica sem conceder privilégios administrativos |
@@ -185,7 +185,7 @@ O PDF lista “Óculos de realidade virtual” e “Scanner 3D manual” como se
 | 02/10/2026 | F3 — passagem para materiais/Q09/Q12 | Cadastro simples com consulta interna; administradores mantêm, quantidade não negativa até 3 casas/unidade informada, categoria/fonte em texto e disponível/indisponível; sem movimentações | Módulo 6 entregue com frontend/API e versão para correção segura; depurar antes de banners |
 | 04/10/2026 | F3 — desenvolver módulo 7 | Autorizou implementação de conteúdo/banners | Entrega local; Q10/Q12/Q15 adotados como escolhas provisórias, sem resposta adicional à pergunta opcional; aguardar depuração |
 
-As escolhas da agenda sobre cancelamento lógico/histórico, ocupado manual, datas passadas, funcionamento e capacidade estão no [guia do módulo 4](docs/modules/04-agenda.md). São escolhas de implementação para depuração, sem novas respostas confirmadas a Q06/Q08/Q13/Q14. A API por sessão não constitui acesso AgroHub; o [módulo5](docs/modules/05-integracoes.md) tem credencial/contrato próprios, ainda sujeitos à validação no consumidor real e demais lacunas Q07.
+As escolhas da agenda sobre cancelamento lógico/histórico, ocupado manual, datas passadas, funcionamento e capacidade estão no [guia do módulo 4](docs/modules/04-agenda.md). São escolhas de implementação para depuração, sem novas respostas confirmadas a Q06/Q08/Q13/Q14. As APIs internas continuam usando sessão e CSRF; o recebimento por integradores foi removido.
 
 ## 10. Evolução sugerida, fora do escopo confirmado
 

@@ -2,7 +2,7 @@
     [string]$BaseUrl = 'http://127.0.0.1:8000',
     [string]$Session = 'padroes-visuais',
     [int[]]$Widths = @(1920, 1440, 1366, 1201, 820, 768, 360),
-    [string[]]$Paths = @('/index/', '/usuarios/', '/tarefas/', '/tarefas/nova/', '/agenda/', '/agenda/novo/', '/materiais/', '/materiais/novo/', '/banners/', '/banners/novo/', '/catalogo/servicos/', '/catalogo/equipamentos/', '/integracoes/', '/perfil/', '/publico/'),
+    [string[]]$Paths = @('/index/', '/usuarios/', '/tarefas/', '/tarefas/nova/', '/agenda/', '/agenda/novo/', '/materiais/', '/materiais/novo/', '/banners/', '/banners/novo/', '/catalogo/servicos/', '/catalogo/equipamentos/', '/perfil/', '/publico/'),
     [string]$OutputPath = ''
 )
 

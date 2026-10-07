@@ -1,5 +1,7 @@
 # Módulo 4 — Agenda interna
 
+> Atualização de 07/10/2026: o módulo de integradores, seus recibos e metadados associados foram removidos. As referências a esse recebimento abaixo descrevem entregas anteriores. Agendamentos e eventos históricos permanecem. Ver [remoção](23-remocao-integracoes.md).
+
 **Solicitação mais recente de 07/10/2026:** Recusar usa a API do AgroHub; confirmadas saem do quadro de solicitações e viram agendamentos locais, vinculados sem duplicação. Ver [recusa e confirmações na agenda](13-recusa-e-confirmacoes-na-agenda.md). A autorização atual permite o registro local das confirmadas.
 
 **Solicitações posteriores de 07/10/2026:** `/agenda/solicitacoes/` consulta reservas do InovaLab no AgroHub via API, com abas Todas/Pendentes/Canceladas e quadro no padrão do Fluxo de tarefas. Mantém busca/mês/paginação e botões Confirmar/Cancelar nas pendentes, aplicando decisões no provedor. Ver [solicitações remotas](12-solicitacoes-remotas-agrohub.md); descrições anteriores da lista de pedidos locais são históricas.
