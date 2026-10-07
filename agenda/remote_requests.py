@@ -9,8 +9,12 @@ from accounts.agrohub.client import AgroHubError
 from accounts.agrohub.services import authenticated_request
 
 
+RESERVATION_STATUSES = {'pendente': 'Pendente', 'confirmada': 'Confirmada',
+                        'cancelada': 'Cancelada', 'recusada': 'Recusada'}
+
+
 @dataclass(frozen=True)
-class PendingReservation:
+class RemoteReservation:
     id: int
     sala: str
     titulo: str
@@ -19,6 +23,11 @@ class PendingReservation:
     fim: datetime
     quantidade_pessoas: int
     criado_em: datetime
+    status: str
+
+    @property
+    def status_label(self):
+        return RESERVATION_STATUSES[self.status]
 
 
 def _text(value, maximum, *, blank=False):
@@ -74,20 +83,20 @@ def _rooms(request, budget):
     return rooms
 
 
-def pending_reservations(request, *, query='', month=''):
-    """Consulta somente leitura das reservas pendentes das salas InovaLab."""
+def reservations(request, *, query='', month=''):
+    """Consulta todas as situações das reservas das salas InovaLab."""
     budget = [40]
     rooms = _rooms(request, budget)
 
-    reservations = {}
+    by_id = {}
     for room_id, (slug, name) in rooms.items():
-        for row in _pages(request, 'reservas/', {'sala': slug, 'status': 'pendente'}, budget):
+        for row in _pages(request, 'reservas/', {'sala': slug}, budget):
             room = row.get('sala')
             if (not isinstance(room, dict) or type(room.get('id')) is not int or room['id'] < 1
                     or not isinstance(room.get('slug'), str)
-                    or row.get('status') not in ('pendente', 'confirmada', 'cancelada', 'recusada')):
+                    or not isinstance(row.get('status'), str) or row['status'] not in RESERVATION_STATUSES):
                 raise AgroHubError()
-            if row['status'] != 'pendente' or room['id'] != room_id or room['slug'] != slug:
+            if room['id'] != room_id or room['slug'] != slug:
                 continue
             pk, people = row.get('id'), row.get('quantidade_pessoas')
             if type(pk) is not int or not 0 < pk <= 9223372036854775807 or type(people) is not int or people < 1:
@@ -95,16 +104,17 @@ def pending_reservations(request, *, query='', month=''):
             start, end = _instant(row.get('inicio')), _instant(row.get('fim'))
             if end <= start:
                 raise AgroHubError()
-            reservation = PendingReservation(
+            reservation = RemoteReservation(
                 id=pk, sala=name, titulo=_text(row.get('titulo'), 200),
                 solicitante=_text(row.get('nome_solicitante'), 160, blank=True),
                 inicio=start, fim=end, quantidade_pessoas=people, criado_em=_instant(row.get('created_at')),
+                status=row['status'],
             )
-            if pk in reservations and reservations[pk] != reservation:
+            if pk in by_id and by_id[pk] != reservation:
                 raise AgroHubError()
-            reservations[pk] = reservation
+            by_id[pk] = reservation
 
-    rows = sorted(reservations.values(), key=lambda row: (row.criado_em, row.id), reverse=True)
+    rows = sorted(by_id.values(), key=lambda row: (row.criado_em, row.id), reverse=True)
     if month:
         rows = [row for row in rows if timezone.localtime(row.inicio).strftime('%Y-%m') == month]
     if query:
@@ -128,7 +138,7 @@ def decide_reservation(request, reservation_id, decision):
     rooms = _rooms(request, [40])
     if room['id'] not in rooms or rooms[room['id']][0] != room['slug']:
         raise AgroHubError(403)
-    if row.get('status') not in ('pendente', 'confirmada', 'cancelada', 'recusada'):
+    if not isinstance(row.get('status'), str) or row['status'] not in RESERVATION_STATUSES:
         raise AgroHubError()
     if row['status'] != 'pendente':
         raise AgroHubError(409)

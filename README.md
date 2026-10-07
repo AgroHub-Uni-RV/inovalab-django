@@ -1,6 +1,6 @@
 # InovaLab
 
-Solicitações de agendamento em `/agenda/solicitacoes/` consultam as **reservas pendentes do InovaLab no AgroHub**, com busca, mês, paginação e botões **Confirmar/Cancelar** via API. A página exige uma conta administrativa vinculada ao AgroHub; as decisões dependem também das permissões dessa conta no provedor. [Contrato e validação](docs/modules/12-solicitacoes-remotas-agrohub.md).
+Solicitações de agendamento em `/agenda/solicitacoes/` consultam as **reservas do InovaLab no AgroHub**, com abas **Todas, Pendentes e Canceladas** e cartões no padrão do Fluxo de tarefas. Mantém busca, mês, paginação e botões **Confirmar/Cancelar** nas pendentes via API. A página exige uma conta administrativa vinculada ao AgroHub; as decisões dependem também das permissões dessa conta no provedor. [Contrato e validação](docs/modules/12-solicitacoes-remotas-agrohub.md).
 
 Atualização de 07/10/2026: o modelo e cadastro de **Espaços** foram removidos, incluindo telas e API. O catálogo mantém Serviços e Equipamentos; reservas antigas conservam os dados históricos para consulta/cancelamento. Migrações aplicadas localmente. Ver [remoção de espaços e depuração](docs/modules/11-remocao-espacos.md).
 

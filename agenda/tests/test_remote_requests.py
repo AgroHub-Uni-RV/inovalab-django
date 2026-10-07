@@ -47,7 +47,8 @@ class PendingRequestsStub(ReservationsStub):
         params = parse_qs(urlsplit(handler.path).query)
         rows = self.state['rooms'] if path.endswith('salas/') else self.state['reservas']
         if path.endswith('reservas/') and not self.state['ignore_filters']:
-            rows = [row for row in rows if row['sala']['slug'] == params['sala'][0] and row['status'] == params['status'][0]]
+            rows = [row for row in rows if row['sala']['slug'] == params['sala'][0]
+                    and ('status' not in params or row['status'] == params['status'][0])]
         page, size = int(params.get('page', ['1'])[0]), self.state['listing_page_size']
         next_page = None
         if len(rows) > page*size:
@@ -94,7 +95,7 @@ class RemotePendingRequestsTests(TestCase):
         Agendamento.objects.create(servico=Servico.objects.first(), motivo='Pedido somente local',
             inicio='2026-11-10T12:00:00Z', fim='2026-11-10T13:00:00Z', criado_por=user, situacao='pendente')
         before = (Agendamento.objects.count(), EventoAgendamento.objects.count(), ReservaAgroHub.objects.count())
-        response = self.client.get('/agenda/solicitacoes/')
+        response = self.client.get('/agenda/solicitacoes/', {'status': 'pendente'})
         self.assertContains(response, '#101')
         self.assertContains(response, 'Pedido do monólito')
         self.assertContains(response, 'Pessoa externa')
@@ -110,7 +111,7 @@ class RemotePendingRequestsTests(TestCase):
         self.assertTrue(all(row[0] == 'GET' and row[3] == 'Bearer access-1' for row in self.listing_requests()))
         self.assertFalse(user.is_staff)
 
-    def test_all_inovalab_rooms_including_inactive_and_only_pending_rows(self):
+    def test_all_inovalab_rooms_including_inactive_exclude_foreign_rows(self):
         second = {**self.stub.state['sala'], 'id': 2, 'slug': 'sala-antiga', 'nome': 'Sala antiga', 'ativa': False}
         foreign = {**self.stub.state['sala'], 'id': 3, 'slug': 'outra-sala', 'site_code': 'agrohub'}
         self.stub.state.update(rooms=[self.stub.state['sala'], second, foreign], ignore_filters=True,
@@ -118,10 +119,12 @@ class RemotePendingRequestsTests(TestCase):
                       self.reservation(104, status='confirmada'), self.reservation(105, status='cancelada'),
                       self.reservation(106, status='recusada')])
         response = self.client.get('/agenda/solicitacoes/', {'situacao': 'confirmada'})
-        self.assertEqual({row.id for row in response.context['object_list']}, {101, 102})
+        self.assertEqual({row.id for row in response.context['object_list']}, {101, 102, 104, 105, 106})
+        pending = self.client.get('/agenda/solicitacoes/', {'status': 'pendente'})
+        self.assertEqual({row.id for row in pending.context['object_list']}, {101, 102})
         requests = self.listing_requests()
         self.assertIn('ativas=false', requests[0][1])
-        self.assertTrue(all('status=pendente' in row[1] for row in requests if '/reservas/' in row[1]))
+        self.assertTrue(all('status=' not in row[1] for row in requests if '/reservas/' in row[1]))
         self.assertFalse(any('sala=outra-sala' in row[1] for row in requests))
 
     def test_remote_pagination_uses_own_origin_and_display_paginates_25(self):
@@ -181,7 +184,7 @@ class RemotePendingRequestsTests(TestCase):
         self.stub.state['ignore_filters'] = True
         for changes in ({'id': True}, {'inicio': '2026-11-10T09:00:00'}, {'fim': 'invalid'},
                         {'quantidade_pessoas': 0}, {'created_at': 'invalid'},
-                        {'inicio': '0001-01-01T00:00:00Z'}, {'sala': {}}, {'status': 'invalid'}):
+                        {'inicio': '0001-01-01T00:00:00Z'}, {'sala': {}}, {'status': 'invalid'}, {'status': []}, {'status': {}}):
             self.stub.state['reservas'] = [self.reservation(**changes)]
             self.assertEqual(self.client.get('/agenda/solicitacoes/').status_code, 503)
         self.stub.state['reservas'] = [self.reservation(titulo='<script>alert(1)</script>')]
@@ -198,7 +201,7 @@ class RemotePendingRequestsTests(TestCase):
 
     def test_get_and_head_are_read_only_and_empty_result_is_explicit(self):
         response = self.client.get('/agenda/solicitacoes/')
-        self.assertContains(response, 'Nenhuma reserva pendente no AgroHub')
+        self.assertContains(response, 'Nenhuma reserva no AgroHub')
         self.assertEqual(self.client.head('/agenda/solicitacoes/').status_code, 200)
         self.assertEqual(self.client.post('/agenda/solicitacoes/', {}).status_code, 405)
         self.assertFalse(Agendamento.objects.exists())
@@ -206,12 +209,84 @@ class RemotePendingRequestsTests(TestCase):
     def writes(self):
         return [row for row in self.listing_requests() if row[0] != 'GET']
 
+    def test_default_board_includes_all_statuses_and_only_pending_cards_have_actions(self):
+        self.stub.state['reservas'] = [self.reservation(101), self.reservation(102, status='confirmada'),
+                                       self.reservation(103, status='cancelada'), self.reservation(104, status='recusada')]
+        response = self.client.get('/agenda/solicitacoes/')
+        self.assertEqual(response.context['selected_status'], '')
+        self.assertEqual(response.context['paginator'].count, 4)
+        self.assertEqual(response.context['stat_counts'], {'all': 4, 'pendente': 1, 'confirmada': 1, 'cancelada': 1, 'recusada': 1})
+        self.assertEqual({column['status']: [row.id for row in column['bookings']] for column in response.context['columns']},
+                         {'pendente': [101], 'confirmada': [102], 'cancelada': [103], 'recusada': [104]})
+        self.assertContains(response, 'class="module-tabs"')
+        self.assertContains(response, 'class="task-board"')
+        self.assertContains(response, 'class="kanban-card"', count=4)
+        self.assertContains(response, 'value="confirmar"', count=1)
+        self.assertContains(response, 'value="cancelar"', count=1)
+        for pk in (102, 103, 104):
+            self.assertNotContains(response, f'/agenda/solicitacoes/{pk}/decidir/')
+        self.assertFalse(self.writes())
+
+    def test_tabs_filter_remote_status_keep_shared_filters_and_totals(self):
+        self.stub.state['reservas'] = [self.reservation(101), self.reservation(102, status='cancelada'),
+            self.reservation(103, status='cancelada', titulo='Excluir por texto', nome_solicitante='Outra pessoa'),
+            self.reservation(104, status='cancelada', inicio='2026-12-10T09:00:00-03:00', fim='2026-12-10T10:00:00-03:00')]
+        params = {'q': 'Pessoa externa', 'mes': '2026-11', 'status': 'cancelada'}
+        response = self.client.get('/agenda/solicitacoes/', params)
+        self.assertEqual([row.id for row in response.context['object_list']], [102])
+        self.assertEqual(response.context['stat_counts']['all'], 2)
+        self.assertEqual(response.context['stat_counts']['pendente'], 1)
+        self.assertEqual(response.context['stat_counts']['cancelada'], 1)
+        self.assertContains(response, 'name="status" value="cancelada"')
+        self.assertContains(response, 'class="task-board task-board-filtered"')
+        self.assertContains(response, 'aria-label="Canceladas"><h2>Canceladas')
+        self.assertNotContains(response, 'aria-label="Pendentes"><h2>Pendentes')
+        self.assertNotContains(response, 'value="confirmar"')
+        self.assertContains(response, 'q=Pessoa+externa&amp;mes=2026-11&amp;status=pendente')
+        pending = self.client.get('/agenda/solicitacoes/', {**params, 'status': 'pendente'})
+        self.assertEqual([row.id for row in pending.context['object_list']], [101])
+        self.assertContains(pending, 'aria-label="Pendentes"><h2>Pendentes')
+        invalid = self.client.get('/agenda/solicitacoes/', {'status': 'invalid'})
+        self.assertEqual(invalid.context['selected_status'], '')
+        self.assertEqual(invalid.context['paginator'].count, 4)
+        empty = self.client.get('/agenda/solicitacoes/', {**params, 'q': 'Sem resultado'})
+        self.assertContains(empty, 'Nenhuma reserva cancelada no AgroHub')
+
+    def test_board_pagination_totals_and_tab_links_reset_page(self):
+        self.stub.state.update(listing_page_size=10, reservas=[self.reservation(pk, status='cancelada') for pk in range(101, 133)]
+                               + [self.reservation(201), self.reservation(202)])
+        params = {'status': 'cancelada', 'q': 'Pedido', 'mes': '2026-11', 'page': 2}
+        response = self.client.get('/agenda/solicitacoes/', params)
+        self.assertEqual(response.context['paginator'].count, 32)
+        self.assertEqual(response.context['stat_counts']['all'], 34)
+        self.assertEqual(response.context['stat_counts']['cancelada'], 32)
+        self.assertEqual([row.id for row in response.context['object_list']], list(range(107, 100, -1)))
+        canceled = next(column for column in response.context['columns'] if column['status'] == 'cancelada')
+        self.assertEqual(len(canceled['bookings']), 7)
+        html = response.content.decode()
+        tab_html = html.split('aria-label="Filtrar solicitações por situação"')[1].split('</nav>')[0]
+        self.assertNotIn('page=', tab_html)
+        self.assertIn('q=Pedido', tab_html)
+        self.assertIn('mes=2026-11', tab_html)
+        self.assertContains(response, 'status=cancelada&amp;q=Pedido&amp;mes=2026-11&amp;page=1')
+
+    def test_decisions_move_cards_to_new_column_in_all_tab(self):
+        self.stub.state['reservas'] = [self.reservation(101), self.reservation(102)]
+        self.client.post('/agenda/solicitacoes/101/decidir/', {'decisao': 'confirmar'})
+        response = self.client.post('/agenda/solicitacoes/102/decidir/', {'decisao': 'cancelar'}, follow=True)
+        columns = {column['status']: [row.id for row in column['bookings']] for column in response.context['columns']}
+        self.assertEqual(columns, {'pendente': [], 'confirmada': [101], 'cancelada': [102], 'recusada': []})
+        self.assertEqual(response.context['stat_counts']['pendente'], 0)
+        self.assertNotContains(response, 'value="confirmar"')
+        self.assertNotContains(response, 'value="cancelar"')
+        self.assertEqual(response.context['paginator'].count, 2)
+
     def test_confirm_uses_remote_id_and_only_status_without_local_copy(self):
         room = {**self.stub.state['sala'], 'id': 2, 'slug': 'segunda-sala'}
         self.stub.state.update(rooms=[room], reservas=[self.reservation(room=room)])
         response = self.client.post('/agenda/solicitacoes/101/decidir/',
-                                    {'decisao': 'confirmar', 'q': 'Pedido', 'mes': '2026-11'})
-        self.assertRedirects(response, '/agenda/solicitacoes/?q=Pedido&mes=2026-11', fetch_redirect_response=False)
+                                    {'decisao': 'confirmar', 'q': 'Pedido', 'mes': '2026-11', 'status': 'pendente'})
+        self.assertRedirects(response, '/agenda/solicitacoes/?q=Pedido&mes=2026-11&status=pendente', fetch_redirect_response=False)
         self.assertEqual(self.writes(), [('PATCH', '/api/v1/agendamentos/reservas/101/',
                                          {'status': 'confirmada'}, 'Bearer access-1')])
         self.assertContains(self.client.get('/agenda/solicitacoes/'), 'Reserva #101 confirmada no AgroHub.')
@@ -221,7 +296,7 @@ class RemotePendingRequestsTests(TestCase):
 
     def test_cancel_posts_to_provider_and_reservation_disappears(self):
         self.stub.state['reservas'] = [self.reservation()]
-        response = self.client.post('/agenda/solicitacoes/101/decidir/', {'decisao': 'cancelar'}, follow=True)
+        response = self.client.post('/agenda/solicitacoes/101/decidir/', {'decisao': 'cancelar', 'status': 'pendente'}, follow=True)
         self.assertContains(response, 'Reserva #101 cancelada no AgroHub.')
         self.assertEqual(response.context['paginator'].count, 0)
         self.assertEqual(self.writes(), [('POST', '/api/v1/agendamentos/reservas/101/cancelar/', {}, 'Bearer access-1')])
@@ -248,7 +323,8 @@ class RemotePendingRequestsTests(TestCase):
     def test_action_rejects_forged_fields_invalid_decision_month_and_id(self):
         self.stub.state['reservas'] = [self.reservation()]
         url = '/agenda/solicitacoes/101/decidir/'
-        for payload in ({}, {'decisao': 'aprovar'}, {'decisao': 'confirmar', 'status': 'cancelada'},
+        for payload in ({}, {'decisao': 'aprovar'}, {'decisao': 'confirmar', 'sala': 'outra'},
+                        {'decisao': 'confirmar', 'status': 'confirmada'},
                         {'decisao': ['confirmar', 'cancelar']}, {'decisao': 'confirmar', 'mes': '2026-99'}):
             self.assertEqual(self.client.post(url, payload).status_code, 400)
         for pk in (0, 9223372036854775808):
@@ -283,7 +359,7 @@ class RemotePendingRequestsTests(TestCase):
 
     def test_malformed_detail_or_mutation_response_cannot_claim_success(self):
         url = '/agenda/solicitacoes/101/decidir/'
-        for detail in ({}, {'id': True, 'sala': {}}, self.reservation(status='unexpected')):
+        for detail in ({}, {'id': True, 'sala': {}}, self.reservation(status='unexpected'), self.reservation(status=[])):
             self.stub.state.update(reservas=[self.reservation()], detail_reply=detail)
             self.assertEqual(self.client.post(url, {'decisao': 'confirmar'}).status_code, 503)
         self.assertFalse(self.writes())
