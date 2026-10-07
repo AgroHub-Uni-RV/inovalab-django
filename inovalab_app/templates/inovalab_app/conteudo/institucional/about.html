@@ -1,0 +1,191 @@
+{% extends "inovalab_app/conteudo/institucional/base.html" %}
+{% load static %}
+
+{% block title %}Sobre o InovaLab UniRV{% endblock %}
+{% block meta_description %}Conheça a cultura, a equipe e a trajetória do InovaLab UniRV, laboratório de inovação e criatividade da universidade.{% endblock %}
+{% block content_flow_class %}space-y-0{% endblock %}
+
+{% block content %}
+<div class="inova-surface inova-about">
+  <section class="inova-about-hero" aria-labelledby="inova-about-title">
+    <img
+      {% if hero_banner %}
+      src="{{ hero_banner.image.url }}"
+      alt="{{ hero_banner.alt_text|default:hero_banner.title }}"
+      {% else %}
+      src="{% static 'inovalab_app/branding/inovalab/about-hero.png' %}"
+      alt=""
+      {% endif %}
+      class="inova-about-hero__image"
+      width="1920"
+      height="459"
+      loading="eager"
+      decoding="async"
+    />
+    <div class="inova-container inova-about-hero__inner">
+      <h1 id="inova-about-title" class="inova-page-title inova-about-hero__title">
+        Sobre o InovaLab
+      </h1>
+      <nav class="inova-hero-breadcrumb" aria-label="Trilha de navegação">
+        <a href="{% url 'conteudo:inicio' %}">Início</a>
+        <span class="inova-hero-breadcrumb__sep" aria-hidden="true">&gt;</span>
+        <span class="inova-hero-breadcrumb__current" aria-current="page">Sobre</span>
+      </nav>
+    </div>
+  </section>
+
+  <section class="inova-about-intro" aria-labelledby="inova-about-intro-title">
+    <div class="inova-container inova-about-intro__inner">
+      <h2 id="inova-about-intro-title">Conheça o InovaLab</h2>
+      <span class="inova-heading-divider" aria-hidden="true"></span>
+      <p>
+        O InovaLab UniRV conecta estudantes, docentes, técnicos e parceiros em torno
+        de problemas reais, com infraestrutura para criar, testar e amadurecer soluções.
+      </p>
+    </div>
+  </section>
+
+  <section class="inova-about-timeline inova-band--timeline" aria-labelledby="inova-about-timeline-title">
+    <div class="inova-container">
+      <h2 id="inova-about-timeline-title" class="sr-only">Trajetória do InovaLab</h2>
+      <ol class="inova-about-timeline__list">
+        {% for item in about_timeline %}
+        <li class="inova-about-timeline__item">
+          <time datetime="{{ item.year }}" class="inova-about-timeline__year">{{ item.year }}</time>
+          <span class="inova-about-timeline__marker" aria-hidden="true"></span>
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.description }}</p>
+        </li>
+        {% endfor %}
+      </ol>
+    </div>
+  </section>
+
+  <section class="inova-about-essence" aria-labelledby="inova-about-essence-title">
+    <div class="inova-container inova-about-essence__layout">
+      <div class="inova-about-essence__intro">
+        <p class="inova-about-kicker">Sobre nós</p>
+        <h2 id="inova-about-essence-title">Nossa essência</h2>
+        <p>
+          Missão, visão e valores orientam uma cultura de inovação prática, conectada
+          à universidade e às demandas da sociedade. O laboratório promove experiências
+          interdisciplinares e soluções aplicadas com impacto regional.
+        </p>
+      </div>
+
+      <div class="inova-about-essence__cards">
+        <article class="inova-about-principle">
+          <img
+            src="{% static 'inovalab_app/branding/inovalab/icon-mission.svg' %}"
+            alt=""
+            class="inova-about-principle__icon"
+            width="64"
+            height="64"
+            loading="lazy"
+            decoding="async"
+          />
+          <h3>Missão</h3>
+          <p>
+            Fomentar a cultura de inovação na UniRV por meio de experiências práticas,
+            tecnologias acessíveis e conexão com demandas da sociedade.
+          </p>
+        </article>
+
+        <article class="inova-about-principle">
+          <img
+            src="{% static 'inovalab_app/branding/inovalab/icon-vision.svg' %}"
+            alt=""
+            class="inova-about-principle__icon"
+            width="64"
+            height="64"
+            loading="lazy"
+            decoding="async"
+          />
+          <h3>Visão</h3>
+          <p>
+            Ser referência regional em prototipagem, pesquisa aplicada e formação
+            empreendedora dentro do ecossistema universitário.
+          </p>
+        </article>
+
+        <article class="inova-about-principle">
+          <img
+            src="{% static 'inovalab_app/branding/inovalab/icon-values.svg' %}"
+            alt=""
+            class="inova-about-principle__icon"
+            width="64"
+            height="64"
+            loading="lazy"
+            decoding="async"
+          />
+          <h3>Valores</h3>
+          <p>
+            Colaboração, qualidade técnica, sustentabilidade, acessibilidade e compromisso
+            com resultados que tenham utilidade pública.
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="inova-about-team" aria-labelledby="inova-about-team-title">
+    <div class="inova-container">
+      <div class="inova-about-team__heading">
+        <h2 id="inova-about-team-title">Equipe</h2>
+        <span class="inova-heading-divider" aria-hidden="true"></span>
+        <p>Conheça quem coordena as conexões entre projetos, comunidade acadêmica e parceiros do InovaLab.</p>
+      </div>
+
+      <div class="inova-team-grid">
+        {% for person in team_members %}
+        <article class="inova-team-card">
+          <div class="inova-team-card__media">
+            <img
+              src="{% static person.image %}"
+              alt="{{ person.name }}"
+              class="inova-team-photo"
+              width="480"
+              height="600"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+          <div class="inova-team-card__body">
+            <p class="inova-team-card__role">{{ person.position }}</p>
+            <h3 class="inova-team-card__name">{{ person.name }}</h3>
+            <p class="inova-team-card__description">{{ person.description }}</p>
+            <div class="inova-team-card__links">
+              {% if person.email %}
+              <a
+                href="mailto:{{ person.email }}"
+                class="inova-team-card__link"
+                aria-label="E-mail de {{ person.name }}"
+              >Email</a>
+              {% endif %}
+              {% if person.linkedin %}
+              <a
+                href="{{ person.linkedin }}"
+                class="inova-team-card__link"
+                rel="noopener noreferrer"
+                target="_blank"
+                aria-label="LinkedIn de {{ person.name }} (abre em nova aba)"
+              >LinkedIn</a>
+              {% endif %}
+              {% if person.lattes %}
+              <a
+                href="{{ person.lattes }}"
+                class="inova-team-card__link"
+                rel="noopener noreferrer"
+                target="_blank"
+                aria-label="Currículo Lattes de {{ person.name }} (abre em nova aba)"
+              >Lattes</a>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

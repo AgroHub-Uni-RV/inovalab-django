@@ -1,0 +1,4 @@
+{% extends 'inovalab_app/shared/sheet.html' %}
+{% block title %}{% if object %}Editar{% else %}Novo{% endif %} {{ singular_title }}{% endblock %}
+{% block sheet_toolbar %}<a class="secondary-button" href="{{ list_url }}">Voltar para {{ title }}</a>{% endblock %}
+{% block sheet_content %}<h1>{% if object %}Editar{% else %}Novo{% endif %} {{ singular_title }}</h1>{% if form.errors %}<p role="alert">Corrija os campos indicados para salvar.</p>{% endif %}<form method="post" enctype="multipart/form-data" class="sheet-form">{% csrf_token %}{% include 'inovalab_app/shared/form_fields.html' %}<div class="sheet-actions"><button type="submit">Salvar</button><a class="secondary-button" href="{{ list_url }}">Cancelar</a></div></form>{% endblock %}

@@ -59,7 +59,7 @@ def home(request: HttpRequest) -> HttpResponse:
             return redirect('accounts:home')
     return render(request, 'accounts/home.html', {
         'is_business_admin': is_business_admin(request.user),
-        'profile_base_template': 'catalogo/base.html' if can_access_panel(request.user)
+        'profile_base_template': 'inovalab_app/catalogo/base.html' if can_access_panel(request.user)
                                 else 'accounts/public_profile_base.html',
         'form': form,
     })

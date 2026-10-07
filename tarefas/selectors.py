@@ -1,9 +1,0 @@
-from accounts.policies import is_business_admin
-from tarefas.models import Tarefa
-
-
-def visible_tasks(actor):
-    queryset = Tarefa.objects.filter(excluida_em__isnull=True).select_related('servico', 'responsavel')
-    if not actor.is_authenticated or not actor.is_active:
-        return queryset.none()
-    return queryset if is_business_admin(actor) else queryset.filter(responsavel=actor)

@@ -1,0 +1,7 @@
+{% load static %}
+<dialog id="booking-modal" class="booking-modal" aria-label="Agendamento" data-create-url="{% url 'agenda:create' %}" data-visit-url="{% url 'agenda:visit-create' %}" data-mine-url="{% url 'agenda:mine' %}">
+  <button type="button" class="booking-modal-close" data-booking-close aria-label="Fechar agendamento">&times;</button>
+  <div class="booking-modal-status" role="status" aria-live="polite" hidden></div>
+  <div class="booking-modal-body"></div>
+</dialog>
+<script src="{% static 'inovalab_app/agenda/booking-modal.js' %}" defer></script>

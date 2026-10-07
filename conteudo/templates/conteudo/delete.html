@@ -1,4 +1,0 @@
-{% extends 'core/sheet.html' %}
-{% block title %}Excluir banner{% endblock %}
-{% block sheet_toolbar %}<a class="secondary-button" href="{% url 'conteudo:detail' object.pk %}">Voltar ao banner</a>{% endblock %}
-{% block sheet_content %}<h1>Excluir banner</h1><p>Confirma a exclusão de “{{ object.titulo }}”? Ele deixará de aparecer nas páginas públicas.</p><form method="post" class="sheet-form">{% csrf_token %}{% include 'core/form_fields.html' %}<div class="sheet-actions"><button type="submit">Confirmar exclusão</button><a class="secondary-button" href="{% url 'conteudo:detail' object.pk %}">Cancelar</a></div></form>{% endblock %}

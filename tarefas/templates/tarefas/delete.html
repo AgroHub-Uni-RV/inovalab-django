@@ -1,4 +1,0 @@
-{% extends 'core/sheet.html' %}
-{% block title %}Excluir tarefa{% endblock %}
-{% block sheet_toolbar %}<a class="secondary-button" href="{% url 'tarefas:detail' task.pk %}">Voltar à tarefa</a>{% endblock %}
-{% block sheet_content %}<h1>Excluir tarefa #{{ task.pk }}</h1><p>{{ task.descricao }}</p><p>A tarefa sairá do quadro e das consultas. Seus dados e histórico serão preservados no banco.</p><form method="post" class="sheet-form">{% csrf_token %}{% include 'core/form_fields.html' %}<div class="sheet-actions"><button type="submit">Confirmar exclusão</button><a class="secondary-button" href="{% url 'tarefas:detail' task.pk %}">Cancelar</a></div></form>{% endblock %}

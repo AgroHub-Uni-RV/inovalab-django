@@ -1,4 +1,0 @@
-{% extends 'core/sheet.html' %}
-{% block title %}{{ object.nome }}{% endblock %}
-{% block sheet_toolbar %}<a class="secondary-button" href="{% url 'materiais:list' %}">Voltar para materiais</a>{% if can_manage %}<a class="secondary-button" href="{% url 'materiais:update' object.pk %}">Editar material</a>{% endif %}{% endblock %}
-{% block sheet_content %}<h1>{{ object.nome }}</h1><dl class="inline-details"><div><dt>Categoria</dt><dd>{{ object.categoria }}</dd></div><div><dt>Quantidade</dt><dd>{{ object.quantidade }} {{ object.unidade }}</dd></div><div><dt>Status</dt><dd>{{ object.get_status_display }}</dd></div><div><dt>Fonte / origem</dt><dd>{{ object.fonte }}</dd></div></dl>{% endblock %}

@@ -1,0 +1,4 @@
+{% extends 'inovalab_app/shared/sheet.html' %}
+{% block title %}Histórico do agendamento{% endblock %}
+{% block sheet_toolbar %}<a class="secondary-button" href="{{ booking.get_absolute_url }}">Voltar ao agendamento</a>{% endblock %}
+{% block sheet_content %}<h1>Histórico do agendamento #{{ booking.pk }}</h1><div class="history-content">{% for event in object_list %}<article class="agenda-event"><h2>{{ event.get_acao_display }} · {{ event.ator_nome }}</h2><p>{{ event.instante|date:'d/m/Y H:i' }} · Horário de Brasília.</p><dl>{% for field,values in event.alteracoes.items %}<dt>{{ field }}</dt><dd>{{ values.anterior|default_if_none:'—' }} → {{ values.novo|default_if_none:'—' }}</dd>{% endfor %}</dl></article>{% empty %}<p>Nenhum evento.</p>{% endfor %}</div><p>Os valores de data nas alterações usam ISO 8601 em UTC.</p>{% include 'inovalab_app/shared/pagination.html' %}{% endblock %}

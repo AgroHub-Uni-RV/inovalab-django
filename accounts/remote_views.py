@@ -47,7 +47,7 @@ def remote_profile(request, *, photo_form=None):
             return redirect('accounts:home')
     return render(request, 'accounts/home.html', {'form': form, 'photo_form': photo_form or AgroHubPhotoForm(),
                                                 'agrohub_account': True, 'is_business_admin': is_business_admin(user),
-                                                'profile_base_template': 'catalogo/base.html' if can_access_panel(user)
+                                                'profile_base_template': 'inovalab_app/catalogo/base.html' if can_access_panel(user)
                                                                          else 'accounts/public_profile_base.html'})
 
 

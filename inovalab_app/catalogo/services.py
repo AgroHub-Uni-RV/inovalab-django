@@ -1,0 +1,36 @@
+from collections.abc import Mapping
+
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import transaction
+
+from inovalab_app.adapters.host import is_business_admin
+from inovalab_app.catalogo.models import Equipamento, Servico
+
+
+PUBLIC_FIELDS = {
+    Servico: ('nome', 'descricao', 'status'),
+    Equipamento: ('nome', 'descricao', 'foto', 'status'),
+}
+
+
+@transaction.atomic
+def save_entry(*, actor, model, data: Mapping, instance=None):
+    """Authorize, validate and persist public catalog fields for web and API."""
+    if not is_business_admin(actor):
+        raise PermissionDenied('Somente administradores do laboratório podem manter o catálogo.')
+    unknown = set(data) - set(PUBLIC_FIELDS[model])
+    if unknown:
+        raise ValidationError({field: 'Este campo não pode ser alterado.' for field in unknown})
+    if instance is not None and not isinstance(instance, model):
+        raise ValueError('O cadastro não pertence ao modelo informado.')
+    entry = model.objects.select_for_update().get(pk=instance.pk) if instance is not None else model()
+    for field, value in data.items():
+        if model is Equipamento and field == 'foto':
+            entry._meta.get_field('foto').save_form_data(entry, value)
+        else:
+            setattr(entry, field, value)
+    if isinstance(entry.nome, str):
+        entry.nome = entry.nome.strip()
+    entry.full_clean()
+    entry.save()
+    return entry

@@ -6,8 +6,8 @@ from django.test import TestCase, override_settings
 
 from accounts.policies import is_business_admin
 from accounts.tests.agrohub_stub import AccountsStub, PASSWORD
-from agenda.models import AgendaVisita
-from catalogo.models import Servico
+from inovalab_app.agenda.models import AgendaVisita
+from inovalab_app.catalogo.models import Servico
 
 
 class AgroHubRolesTests(TestCase):
@@ -26,8 +26,8 @@ class AgroHubRolesTests(TestCase):
 
     def setUp(self):
         self.stub.reset()
-        self.enterContext(patch('core.views.load_events', return_value=([], False)))
-        self.enterContext(patch('conteudo.public_events.load_events', return_value=([], False)))
+        self.enterContext(patch('inovalab_app.shared.views.load_events', return_value=([], False)))
+        self.enterContext(patch('inovalab_app.conteudo.public_events.load_events', return_value=([], False)))
 
     def login(self, roles, **extra):
         self.stub.state['profile']['roles'] = roles

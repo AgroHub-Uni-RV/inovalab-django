@@ -1,5 +1,9 @@
 # InovaLab
 
+O negócio está consolidado em **`inovalab_app`**, com pacotes internos para agenda, catálogo, materiais, tarefas, conteúdo e suporte compartilhado. Accounts continua no hospedeiro e mantém a autenticação atual. Consulte a [arquitetura e os procedimentos de instalação/atualização](docs/modules/24-consolidacao-inovalab.md).
+
+**Atualização desta entrega:** antes de trocar o código, aplicar todas as migrações na versão anterior, pausar escrita e fazer backup. Na versão consolidada, executar `python manage.py check_inovalab_upgrade` e depois `python manage.py migrate --fake-initial --noinput`. Instalações vazias usam `migrate` seguido de `seed_inovalab`. As instruções históricas abaixo não substituem esse procedimento.
+
 A agenda utiliza **AgendaServico**, **AgendaEquipamento** e **AgendaVisita**, todas locais. Solicitações reúne as três categorias, incluindo confirmadas. Ver [agenda de visitas local](docs/modules/17-agenda-visitas-local.md).
 
 Atualização de 07/10/2026: o modelo e cadastro de **Espaços** foram removidos, incluindo telas e API. O catálogo mantém Serviços e Equipamentos; na separação das agendas, reservas antigas de espaço são preservadas em exportação privada. Ver [histórico da remoção de espaços](docs/modules/11-remocao-espacos.md) e [preservação do legado da agenda](docs/modules/14-agendas-servicos-equipamentos.md).

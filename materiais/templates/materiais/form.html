@@ -1,4 +1,0 @@
-{% extends 'core/sheet.html' %}
-{% block title %}{% if object %}Editar material{% else %}Novo material{% endif %}{% endblock %}
-{% block sheet_toolbar %}<a class="secondary-button" href="{% url 'materiais:list' %}">Voltar para materiais</a>{% endblock %}
-{% block sheet_content %}<h1>{% if object %}Editar material{% else %}Novo material{% endif %}</h1><form method="post" class="sheet-form">{% csrf_token %}{% include 'core/form_fields.html' %}<div class="sheet-actions"><button type="submit">Salvar material</button>{% if object %}<a class="secondary-button" href="{% url 'materiais:detail' object.pk %}">Cancelar</a>{% else %}<a class="secondary-button" href="{% url 'materiais:list' %}">Cancelar</a>{% endif %}</div></form>{% endblock %}

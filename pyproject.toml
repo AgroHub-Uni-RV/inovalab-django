@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "inovalab-app"
+version = "0.1.0"
+description = "Aplicativo Django do laboratório InovaLab com identidade fornecida pelo hospedeiro."
+requires-python = ">=3.10"
+dependencies = ["Django>=5.2,<6.2", "djangorestframework>=3.17,<3.19", "Pillow>=12,<13"]
+
+[tool.setuptools.packages.find]
+include = ["inovalab_app*"]
+exclude = ["inovalab_app.tests*"]
+
+[tool.setuptools.package-data]
+inovalab_app = ["templates/**/*", "static/**/*", "baseline_checks.json"]

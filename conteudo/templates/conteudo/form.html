@@ -1,4 +1,0 @@
-{% extends 'core/sheet.html' %}
-{% block title %}{% if object %}Editar banner{% else %}Novo banner{% endif %}{% endblock %}
-{% block sheet_toolbar %}<a class="secondary-button" href="{% url 'conteudo:list' %}">Voltar para banners</a>{% endblock %}
-{% block sheet_content %}<h1>{% if object %}Editar banner{% else %}Novo banner{% endif %}</h1><p>Agendados precisam de início e fim. Para ativo ou inativo, deixe o período vazio.</p>{% if object %}<p>A imagem atual será mantida se você não enviar outra.</p>{% endif %}<form method="post" enctype="multipart/form-data" class="sheet-form">{% csrf_token %}{% include 'core/form_fields.html' %}<div class="sheet-actions"><button type="submit">Salvar banner</button>{% if object %}<a class="secondary-button" href="{% url 'conteudo:detail' object.pk %}">Cancelar</a>{% else %}<a class="secondary-button" href="{% url 'conteudo:list' %}">Cancelar</a>{% endif %}</div></form>{% endblock %}

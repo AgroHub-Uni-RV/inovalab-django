@@ -18,7 +18,7 @@ class RemovedIntegrationsTests(TestCase):
     def test_admin_sidebar_has_no_integrations_and_remaining_modules_render(self):
         user = get_user_model().objects.create_superuser('admin-sem-integracoes')
         self.client.force_login(user)
-        with patch('core.views.load_events', return_value=([], False)):
+        with patch('inovalab_app.shared.views.load_events', return_value=([], False)):
             for path in ('/index/', '/agenda/', '/materiais/', '/tarefas/',
                          '/banners/', '/catalogo/servicos/', '/perfil/'):
                 with self.subTest(path=path):

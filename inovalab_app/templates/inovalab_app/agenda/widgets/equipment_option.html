@@ -1,0 +1,5 @@
+<label class="equipment-option{% if widget.unavailable %} unavailable{% endif %}"{% if widget.attrs.id %} for="{{ widget.attrs.id }}"{% endif %}>
+  {% include 'django/forms/widgets/input.html' %}
+  {% if widget.photo_url %}<img src="{{ widget.photo_url }}" alt="" loading="lazy" class="equipment-option-photo">{% else %}<span class="equipment-photo-placeholder">{% include 'inovalab_app/shared/icon.html' with name='edit' %}<span>Sem foto</span></span>{% endif %}
+  <span class="equipment-option-copy"><strong>{{ widget.label }}</strong>{% if widget.description %}<span>{{ widget.description }}</span>{% endif %}{% if widget.unavailable %}<span>Indisponível para novos horários</span>{% endif %}</span>
+</label>

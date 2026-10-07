@@ -1,0 +1,55 @@
+{% extends "inovalab_app/conteudo/institucional/base.html" %}
+{% load static %}
+
+{% block title %}Regimento do Espaço Maker - InovaLab UniRV{% endblock %}
+{% block meta_description %}Regimento do Espaço Maker do InovaLab UniRV: princípios, objetivos, recursos, regras de uso e gestão.{% endblock %}
+
+{% block content %}
+<div class="inova-surface inova-regulation">
+  <section class="inova-regulation-hero" aria-labelledby="regimento-title">
+    <img
+      src="{% static 'inovalab_app/branding/inovalab/regulation-hero.png' %}"
+      alt=""
+      class="inova-regulation-hero__image"
+      width="1920"
+      height="1280"
+    />
+    <div class="inova-regulation-hero__inner">
+      <h1 id="regimento-title" class="inova-page-title inova-regulation-hero__title">Regimento</h1>
+      <nav class="inova-hero-breadcrumb" aria-label="Navegação estrutural">
+        <a href="{% url 'conteudo:inicio' %}">Início</a>
+        <span class="inova-hero-breadcrumb__sep" aria-hidden="true">›</span>
+        <span class="inova-hero-breadcrumb__current" aria-current="page">Regimento</span>
+      </nav>
+    </div>
+  </section>
+
+  <section class="inova-regulation-body" aria-label="Regimento do Espaço Maker">
+    <div class="inova-regulation-document">
+      {% for section in regulation_sections %}
+      <section class="inova-regulation-section" aria-labelledby="regimento-secao-{{ forloop.counter }}">
+        <h2 id="regimento-secao-{{ forloop.counter }}" class="inova-regulation-section__title">{{ section.title }}</h2>
+        {% for article in section.articles %}
+        <article class="inova-regulation-article">
+          <p><strong class="inova-regulation-article__label">{{ article.label }}</strong> — {{ article.text }}</p>
+          {% for paragraph in article.paragraphs %}
+          <p>{{ paragraph }}</p>
+          {% endfor %}
+          {% if article.clauses %}
+          <ol class="inova-regulation-article__list">
+            {% for item in article.clauses %}
+            <li>{{ item }}</li>
+            {% endfor %}
+          </ol>
+          {% endif %}
+          {% for paragraph in article.after_items %}
+          <p>{{ paragraph }}</p>
+          {% endfor %}
+        </article>
+        {% endfor %}
+      </section>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

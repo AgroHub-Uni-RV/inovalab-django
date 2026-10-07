@@ -4,6 +4,8 @@ Orientação registrada pelo responsável em 07/10/2026. Trata-se de uma decisã
 
 ## Identidade compartilhada
 
+A consolidação posterior reúne o negócio em `inovalab_app`, mantendo Accounts separado no sistema independente. O adaptador `INOVALAB_HOST_ADAPTER` define a fronteira com o hospedeiro; referências de identidade continuam por `AUTH_USER_MODEL`. O pacote foi preparado para montagem sob um prefixo e sem dependência dos campos locais do AgroHub. Ver [arquitetura e atualização](modules/24-consolidacao-inovalab.md). A consolidação não incorpora o sistema ao monólito nem resolve a sobreposição com os apps InovaLab/LabMaker existentes lá.
+
 Ao executar dentro do monólito, os módulos devem reutilizar o usuário principal de `apps.accounts.CustomUser`, configurado em `AUTH_USER_MODEL`. As referências de autores, responsáveis, solicitantes e avaliadores devem apontar para esse modelo compartilhado por meio de `settings.AUTH_USER_MODEL` ou `get_user_model()`.
 
 Não criar outro modelo ou tabela de usuário para o InovaLab, nem uma cópia representativa da conta central. O vínculo `agrohub_id` existente no sistema separado pode orientar a associação das identidades durante a transferência de dados. Preservar autoria, responsáveis e históricos ao associar os registros às contas centrais.

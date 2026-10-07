@@ -1,7 +1,0 @@
-{% extends 'agenda/base.html' %}
-{% block content %}
-<h1>Não foi possível concluir</h1><p class="error" role="alert">{{ message }}</p>
-{% if booking %}<p><a href="{{ booking.get_absolute_url }}">Atualizar agendamento</a></p>{% endif %}
-{% if remote_request %}<p><a href="{% url 'agenda:requests' %}">Voltar às solicitações</a></p>
-{% else %}<p><a href="{% url 'agenda:list' %}">Voltar à agenda</a></p>{% endif %}
-{% endblock %}

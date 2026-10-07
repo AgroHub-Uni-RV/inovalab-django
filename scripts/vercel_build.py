@@ -50,7 +50,12 @@ def main():
             cursor.execute("SET lock_timeout = '120s'")
             cursor.execute('SELECT pg_advisory_lock(%s)', [684726103])
         try:
-            call_command('migrate', interactive=False)
+            from inovalab_app.upgrade import business_models
+            existing = set(connection.introspection.table_names()) & {model._meta.db_table for model in business_models()}
+            # The app's migrate command validates existing schema before adoption.
+            call_command('migrate', interactive=False, fake_initial=True)
+            if not existing:
+                call_command('seed_inovalab')
         finally:
             with connection.cursor() as cursor:
                 cursor.execute('SELECT pg_advisory_unlock(%s)', [684726103])

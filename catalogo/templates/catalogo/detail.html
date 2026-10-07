@@ -1,4 +1,0 @@
-{% extends 'core/sheet.html' %}
-{% block title %}{{ object.nome }}{% endblock %}
-{% block sheet_toolbar %}<a class="secondary-button" href="{{ list_url }}">Voltar para {{ title }}</a>{% if can_manage %}<a class="secondary-button" href="{% url update_url_name object.pk %}">Editar</a>{% endif %}{% endblock %}
-{% block sheet_content %}<h1>{{ object.nome }}</h1>{% if category == 'equipamentos' and object.foto %}<img class="equipment-detail-photo" src="{{ object.foto.url }}" alt="{{ object.nome }}">{% endif %}<dl class="inline-details"><div><dt>Status</dt><dd><span class="badge {% if object.status == 'disponivel' %}available{% else %}unavailable{% endif %}">{{ object.get_status_display }}</span></dd></div></dl><section class="description-block"><h2>Descrição</h2><p>{{ object.descricao|default:'Sem descrição.'|linebreaksbr }}</p></section>{% endblock %}

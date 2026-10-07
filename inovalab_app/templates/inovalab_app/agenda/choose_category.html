@@ -1,0 +1,29 @@
+{% extends booking_base|default:'inovalab_app/agenda/base.html' %}
+{% block content_class %}module-page detail-page{% endblock %}
+{% block content %}
+<div class="detail-sheet"{% if not booking_modal %} data-booking-create-page{% endif %}>
+  <div class="sheet-topbar">{% if not booking_modal %}{% if can_access_panel %}<a class="secondary-button" href="{% url 'agenda:list' %}">Voltar à agenda</a>{% else %}<a class="secondary-button" href="{% url 'agenda:mine' %}">Meus agendamentos</a>{% endif %}{% endif %}<span class="sheet-meta">{% include 'inovalab_app/shared/icon.html' with name='calendar' %}Agendamento</span></div>
+  <div class="sheet-content">
+    <h1>Novo agendamento</h1>
+    <p>Escolha o que você deseja agendar para preencher o formulário.</p>
+    {% if category_error %}<p class="errorlist" role="alert">{{ category_error }}</p>{% endif %}
+    <nav class="booking-type-grid" aria-label="Formas de agendamento">
+      <a class="booking-type-card" data-booking-step href="{% url 'agenda:visit-create' %}">
+        {% include 'inovalab_app/shared/icon.html' with name='users' %}
+        <strong>Visita</strong>
+        <span>Solicite uma visita ao laboratório.</span>
+      </a>
+      <a class="booking-type-card" data-booking-step href="{% url 'agenda:create' %}?categoria=equipamento">
+        {% include 'inovalab_app/shared/icon.html' with name='settings' %}
+        <strong>Equipamento</strong>
+        <span>Reserve um equipamento para uso.</span>
+      </a>
+      <a class="booking-type-card" data-booking-step href="{% url 'agenda:create' %}?categoria=servico">
+        {% include 'inovalab_app/shared/icon.html' with name='layers' %}
+        <strong>Serviços</strong>
+        <span>Solicite um serviço do laboratório.</span>
+      </a>
+    </nav>
+  </div>
+</div>
+{% endblock %}

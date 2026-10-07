@@ -7,7 +7,7 @@ from django.test import TestCase
 
 class UserPageTests(TestCase):
     def setUp(self):
-        self.enterContext(patch('core.views.load_events', return_value=([], False)))
+        self.enterContext(patch('inovalab_app.shared.views.load_events', return_value=([], False)))
 
     @classmethod
     def setUpTestData(cls):

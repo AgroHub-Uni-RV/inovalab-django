@@ -1,3 +1,4 @@
+from inovalab_app.tests.http import close_response
 from io import BytesIO
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
@@ -23,7 +24,7 @@ class ProfileTests(TestCase):
         self.assertNotContains(response, 'id="sidebar"')
 
     def setUp(self):
-        self.enterContext(patch('core.views.load_events', return_value=([], False)))
+        self.enterContext(patch('inovalab_app.shared.views.load_events', return_value=([], False)))
         self.media = TemporaryDirectory()
         self.addCleanup(self.media.cleanup)
         self.override = override_settings(MEDIA_ROOT=self.media.name)
@@ -67,7 +68,7 @@ class ProfileTests(TestCase):
         image = Image.open(BytesIO(b''.join(response.streaming_content)))
         self.assertEqual(image.format, 'WEBP')
         self.assertLessEqual(max(image.size), 512)
-        response.close()
+        close_response(response)
         self.assertRedirects(self.client.post('/perfil/', {'username':'ana', 'first_name':'Ana'}), '/perfil/')
         self.user.refresh_from_db()
         self.assertEqual(self.user.foto.name, filename)
@@ -101,4 +102,4 @@ class ProfileTests(TestCase):
         self.client.force_login(admin)
         response = self.client.get(f'/usuarios/{self.user.pk}/foto/')
         self.assertEqual(response.status_code, 200)
-        response.close()
+        close_response(response)

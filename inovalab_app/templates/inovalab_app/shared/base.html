@@ -1,0 +1,41 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Dashboard{% endblock %} | InovaLAB</title>
+  <link rel="icon" href="data:,">
+  <link rel="preload" href="{% static 'inovalab_app/shared/assets/Montserrat.ttf' %}" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="{% static 'inovalab_app/shared/ui.css' %}">
+  <link rel="stylesheet" href="{% static 'inovalab_app/shared/painel.css' %}">
+  <link rel="stylesheet" href="{% static 'inovalab_app/shared/modulos.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="panel-page">
+  <a class="skip-link" href="#main">Ir para o conteúdo</a>
+  {% include 'inovalab_app/shared/sidebar.html' %}
+  <div class="page-shell">
+    <header class="topbar">
+      <button class="mobile-menu" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Abrir menu">{% include 'inovalab_app/shared/icon.html' with name='menu' %}</button>
+      <div class="topbar-inner">
+        <div class="greeting"><h1>Olá, {{ user.first_name|default:user.username }}</h1><p>Bem-vindo ao painel do InovaLAB</p></div>
+        <div class="header-actions">
+          <span class="bell" aria-hidden="true">{% include 'inovalab_app/shared/icon.html' with name='bell' %}</span>
+          <details class="profile-menu">
+            <summary><span class="avatar" aria-hidden="true">{% if inovalab_identity.photo_url %}<img src="{{ inovalab_identity.photo_url }}" alt="">{% endif %}</span><span class="profile-copy"><strong>{{ user.get_full_name|default:user.username }}</strong><small>{% if is_business_admin %}Administrador{% else %}Usuário interno{% endif %}</small></span>{% include 'inovalab_app/shared/icon.html' with name='chevron' %}<span class="sr-only">Menu do perfil</span></summary>
+            <div class="profile-popover">{% if inovalab_identity.profile_url %}<a href="{{ inovalab_identity.profile_url }}">Meu perfil</a>{% endif %}<a href="{% url 'agenda:mine' %}">Meus agendamentos</a>{% if inovalab_identity.logout_url %}<form action="{{ inovalab_identity.logout_url }}" method="post">{% csrf_token %}<button type="submit">Sair</button></form>{% endif %}</div>
+          </details>
+        </div>
+      </div>
+    </header>
+    <main id="main" class="{% block main_class %}{% endblock %}" tabindex="-1"><div data-page-content class="{% block content_class %}{% endblock %}">
+      {% for message in messages %}<div class="flash-messages {{ message.tags }}" role="status"><p>{{ message }}</p></div>{% endfor %}
+      {% block content %}{% endblock %}
+    </div></main>
+    <div id="async-update-status" class="async-update-status" role="status" aria-live="polite" hidden></div>
+    <footer class="footer"><div class="footer-inner"><p>Razão Social: FESURV - UNIVERSIDADE DE RIO VERDE CNPJ: 01.815.216/0001-78</p><div class="partner-slots" aria-hidden="true"><span></span><span></span></div></div></footer>
+  </div>
+  <script src="{% static 'inovalab_app/shared/painel.js' %}"></script>
+  <script src="{% static 'inovalab_app/shared/auto-apply.js' %}"></script>
+  {% include 'inovalab_app/agenda/modal.html' %}
+</body>
+</html>

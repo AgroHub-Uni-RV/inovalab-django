@@ -66,14 +66,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'core',
     'accounts.apps.AccountsConfig',
-    'catalogo.apps.CatalogoConfig',
-    'tarefas.apps.TarefasConfig',
-    'agenda.apps.AgendaConfig',
-    'materiais.apps.MateriaisConfig',
-    'conteudo.apps.ConteudoConfig',
+    'inovalab_app.apps.InovalabConfig',
 ]
+
+INOVALAB_HOST_ADAPTER = 'accounts.inovalab_adapter.AgroHubHostAdapter'
+TEST_RUNNER = 'inovalab_app.tests.runner.SeededRunner'
 
 AUTH_USER_MODEL = 'accounts.User'
 AUTHENTICATION_BACKENDS = ['accounts.backends.AgroHubBackend']
@@ -109,7 +107,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'core.navigation.panel_navigation',
+                'inovalab_app.shared.navigation.panel_navigation',
+                'inovalab_app.adapters.host.identity_context',
             ],
         },
     },
