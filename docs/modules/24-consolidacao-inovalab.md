@@ -67,6 +67,8 @@ Os nomes físicos catalogo_*, materiais_*, tarefas_*, agenda_* e conteudo_banner
 
 O comando migrate do app verifica a primeira atualização inclusive quando chamado diretamente por um build. Verifica últimas migrações anteriores, presença integral das tabelas/colunas, tipos, nulabilidade, precisão quando suportada pelo banco, PKs, FKs, unicidade, índices e os nomes/definições dos 27 CHECKs congelados da versão anterior. SQLite não impõe precisão decimal como PostgreSQL. Tabelas aposentadas e conflitos de ContentType bloqueiam a transição. `--fake` não substitui esse procedimento.
 
+Após o registro da migração inicial, a verificação aceita também as duas representações de CHECK booleano geradas pelo Django 5.2 no SQLite. A adoção de um banco anterior continua exigindo exatamente as definições originais. O retorno após login preserva parâmetros já existentes na URL de autenticação do hospedeiro.
+
 A segunda migração atualiza o app_label dos ContentTypes preservando seus IDs. Permissões, vínculos com grupos/usuários e histórico do Admin continuam apontando para esses mesmos IDs. Os recibos antigos em django_migrations permanecem; o histórico das migrações anteriores continua no Git. Para permissões chamadas diretamente por string, o novo prefixo é `inovalab_app`, por exemplo `inovalab_app.change_servico`.
 
 O build Vercel conserva o lock PostgreSQL e usa a mesma validação antes de fake-initial. A primeira publicação da consolidação exige a preparação/backup/pausa acima; esta entrega não publica nem altera o Neon. Rollback após adoção restaura o backup e a revisão anterior; a migração de ContentTypes é irreversível por comandos de reversão.
@@ -75,6 +77,19 @@ O build Vercel conserva o lock PostgreSQL e usa a mesma validação antes de fak
 
 O baseline anterior passou com 541 testes. Os testes de migrações aposentadas foram substituídos por testes da adoção atual, incluindo igualdade integral dos dados, M2M, microssegundos, permissões e LogEntry. Os testes de fechamento de respostas streaming agora usam o fechamento seguro do cliente Django, preservando transações de teste no PostgreSQL. A captura de SQL identifica a transação pelo estado da conexão, pois PostgreSQL abre BEGIN pelo driver.
 
-Foram verificados instalação nova e atualização da versão anterior em SQLite e PostgreSQL, além de um hospedeiro sem Accounts com auth.User e prefixo de URL. Os resultados finais da suíte e navegador são registrados na entrega.
+Resultados de 07/10/2026:
+
+| Verificação | Comando ou cenário | Resultado |
+| --- | --- | --- |
+| Sistema independente | `python manage.py check` e `python manage.py makemigrations --check --dry-run` | Sem erros; nenhuma migração pendente de geração |
+| Suíte SQLite | `python manage.py test --noinput` | 545 testes passaram |
+| Suíte PostgreSQL 16.15 local | Mesmo comando, com DATABASE_URL do ambiente de teste isolado | 545 testes; dois específicos de SQLite ignorados; demais passaram |
+| Atualização real | Cópia SQLite atual e PostgreSQL criado pela revisão anterior; comparação integral antes/depois | 21 tabelas preservadas, incluindo IDs, M2M, arquivos, precisão temporal, permissões/grupos e histórico do Admin; somente labels dos ContentTypes e recibos novos mudaram |
+| Banco local do desenvolvimento | Backup, adoção com fake-initial e comparação integral | Mesma preservação das 21 tabelas; arquivos media comparados por SHA-256; servidor reiniciado |
+| Hospedeiro alternativo | `python manage.py test inovalab_app.tests.portability --settings=inovalab_app.tests.host_settings --noinput` | Seis testes passaram com auth.User, sem Accounts, sob /laboratorio/, no Django 6.1.1 e 5.2.18 |
+| Pacote instalável | Wheel instalado em diretório isolado, sem acesso ao código do checkout | Migração nova, carga inicial, validação do esquema, quatro páginas e static passaram no Django 5.2.18 |
+| Navegador Chrome | 43 verificações de páginas/fluxos, desktop e largura 360px | Imagens, sidebar/preferência, menu móvel, modal de visita, permissões, perfil, contato simulado e alternativa sem JavaScript passaram; zero erros de JavaScript |
+
+O fluxo de Accounts, eventos e contato foi exercitado com provedores HTTP controlados ou adaptadores de teste. O navegador não enviou mensagens ao provedor real. Backups e evidências locais ficam em `.private/consolidacao/`; downloads e ambientes descartáveis são removidos após a verificação. A depuração do responsável e a validação no ambiente publicado ficam para a próxima etapa, antes da incorporação ao monólito.
 
 A futura incorporação permanece separada: substituir o adaptador/identidade pelo Accounts central, associar autores/responsáveis pelo agrohub_id antigo, e definir a convivência com apps.inovalab/apps.labmaker. Não há transferência de contas nem alteração do monólito nesta consolidação. Ver [diretrizes de migração](../migracao-para-monolito.md).
