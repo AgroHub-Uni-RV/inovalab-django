@@ -154,6 +154,29 @@ class BookingWebTests(TestCase):
         for fields in ({'mes': '2026-13'}, {'categoria': 'outro'}):
             self.assertEqual(self.client.get('/agenda/', fields).status_code, 400)
 
+    def test_search_finds_creator_login_when_full_name_is_present(self):
+        self.user.username = 'ana.login'
+        self.user.first_name = 'Ana'
+        self.user.last_name = 'Silva'
+        self.user.save()
+        own = []
+        for category, target in [('servico', self.service), ('equipamento', self.equipment)]:
+            own.append(save_booking(actor=self.user, data={
+                'categoria': category, 'objeto': target.pk, 'motivo': 'Pedido da equipe',
+                'inicio': datetime.fromisoformat('2026-11-01T14:00:00-03:00'),
+                'fim': datetime.fromisoformat('2026-11-01T15:00:00-03:00'),
+            }))
+        self.create()
+        self.client.force_login(self.user)
+        response = self.client.get('/agenda/', {'mes': '2026-11', 'q': 'ana.login'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['paginator'].count, 2)
+        self.assertEqual([(row.categoria, row.pk) for row in response.context['object_list']],
+                         [('equipamento', own[1].pk), ('servico', own[0].pk)])
+        self.assertContains(response, 'Ana Silva')
+        for booking in own:
+            self.assertContains(response, booking.get_absolute_url())
+
     def test_unknown_fields_missing_version_and_get_cancellation_do_not_change_data(self):
         booking = self.create()
         self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/cancelar/')

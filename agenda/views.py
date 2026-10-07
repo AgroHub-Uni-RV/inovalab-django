@@ -71,7 +71,10 @@ class BookingListView(AgendaAccessMixin, ListView):
         remote, self.visits_unavailable = confirmed_visits(self.request)
         queryset = filter_bookings(sorted(super().get_queryset() + remote, key=lambda row: (row.inicio, row.categoria, row.pk)), month=self.month, category=self.category, situation=self.situation)
         if self.query:
-            queryset = [row for row in queryset if self.query.casefold() in ' '.join((row.criador_nome, row.objeto_nome, row.motivo, getattr(row, 'sala', ''))).casefold()]
+            queryset = [row for row in queryset if self.query.casefold() in ' '.join((
+                row.criador_nome, getattr(getattr(row, 'criado_por', None), 'username', ''),
+                row.objeto_nome, row.motivo, getattr(row, 'sala', ''),
+            )).casefold()]
         return queryset
 
     def get_context_data(self, **kwargs):
