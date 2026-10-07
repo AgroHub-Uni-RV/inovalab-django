@@ -1,5 +1,7 @@
 # Orientações do projeto
 
+- A solicitação seguinte de 07/10/2026 padroniza os horários dos formulários e telas de agendamentos, tarefas e banners em `hh:mm`, sem segundos. Campos nativos usam passo de 60 segundos; horários novos ou alterados pelo formulário são gravados em minutos. Ao editar outros dados e manter o minuto exibido, preservar a precisão dos registros existentes. Os modelos e contratos de API permanecem compatíveis, sem migração ou alteração das integrações. Ver `docs/modules/22-horarios-em-minutos.md`.
+
 - A solicitação seguinte de 07/10/2026 corrige a aparência do modal aberto após o login pelo banner Agendar visita. Ao mover a ficha da página para o diálogo, preservar o contêiner `module-page detail-page` usado pelos fragmentos. A estrutura institucional respeita `content_class` e os módulos públicos recebem as cores compartilhadas, incluindo formulários sem JavaScript. Preservar o retorno após login, abertura automática, categoria de visita, rascunhos, CSRF e gravação local. Ver `docs/modules/19-criacao-agendamentos-modal.md`.
 
 - A solicitação seguinte de 07/10/2026 remove Meus agendamentos da sidebar. Os acessos no perfil, cabeçalho da agenda e início institucional permanecem disponíveis; Agendamentos representa todas as rotas do módulo na seleção da sidebar.

@@ -175,11 +175,9 @@
           const next = nextForm.elements.namedItem(name);
           if (!input || !next) return;
           input.step = next.step;
-          // Preserva a digitação; somente segundos iguais a zero saem da exibição.
-          if (value === 'visita') {
-            const normalized = input.value.replace(/^(\d{2}:\d{2}):00(?:\.0+)?$/, '$1');
-            if (normalized !== input.value) input.value = normalized;
-          }
+          // Os horários das categorias usam minutos; mantenha a digitação existente.
+          const normalized = input.value.replace(/^(\d{2}:\d{2}):00(?:\.0+)?$/, '$1');
+          if (normalized !== input.value) input.value = normalized;
           const container = input.closest('[data-booking-field]');
           const help = container.querySelector('.field-help');
           const nextHelp = next.closest('[data-booking-field]').querySelector('.field-help');

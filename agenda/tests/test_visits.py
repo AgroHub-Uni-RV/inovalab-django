@@ -113,6 +113,22 @@ class LocalVisitTests(TestCase):
         self.assertEqual([row.pk for row in personal.context['object_list']], [booking.pk])
         self.assertContains(self.client.get(f'/agenda/meus/visitas/{booking.pk}/'), 'Cancelado')
 
+    def test_visit_form_hides_seconds_and_preserves_unchanged_legacy_period(self):
+        start, end = time(9, 0, 37, 123456), time(10, 0, 41, 654321)
+        booking = self.create(hora_inicio=start, hora_termino=end)
+        url = f'/agenda/visita/{booking.pk}/editar/'
+        response = self.client.get(url)
+        self.assertContains(response, 'value="09:00"')
+        self.assertContains(response, 'step="60"', count=2)
+        self.assertEqual(self.client.post(url, self.payload(versao='1', observacoes='Só observações')).status_code, 302)
+        booking.refresh_from_db()
+        self.assertEqual((booking.hora_inicio, booking.hora_termino), (start, end))
+        self.assertEqual(set(booking.eventos.get(acao='editar').alteracoes), {'observacoes'})
+        self.assertEqual(self.client.post(url, self.payload(versao='2', data='2099-11-11',
+                                                          observacoes='Só observações')).status_code, 302)
+        booking.refresh_from_db()
+        self.assertEqual((booking.hora_inicio, booking.hora_termino), (time(9), time(10)))
+
     def test_rejection_and_cancelled_requests_are_filterable_locally(self):
         rejected = self.create(actor=self.staff)
         review_booking(actor=self.admin, category='visita', booking_id=rejected.pk, expected_version=1, decision='rejeitar')

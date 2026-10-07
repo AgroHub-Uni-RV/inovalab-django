@@ -4,6 +4,7 @@ from django.db.models import Q
 
 from catalogo.models import Servico
 from tarefas.models import Tarefa
+from core.form_times import minute_value
 
 
 ACTION_LABELS = {
@@ -29,7 +30,7 @@ class TaskForm(StrictFormMixin, forms.ModelForm):
         fields = ['servico', 'descricao', 'responsavel', 'prazo']
         widgets = {
             'descricao': forms.Textarea(attrs={'rows': 4}),
-            'prazo': forms.DateTimeInput(format='%Y-%m-%dT%H:%M:%S', attrs={'type': 'datetime-local', 'step': '1'}),
+            'prazo': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local', 'step': '60'}),
         }
         help_texts = {'prazo': 'Opcional. Horário de Brasília; tarefas vencidas continuam executáveis.'}
 
@@ -50,12 +51,7 @@ class TaskForm(StrictFormMixin, forms.ModelForm):
         return version
 
     def clean_prazo(self):
-        value = self.cleaned_data.get('prazo')
-        original = self.instance.prazo
-        # The browser edits seconds; preserve finer API precision when this field is unchanged.
-        if original is not None and value == original.replace(microsecond=0):
-            return original
-        return value
+        return minute_value(self.cleaned_data.get('prazo'), self.instance.prazo)
 
 
 class TransitionForm(StrictFormMixin, forms.Form):

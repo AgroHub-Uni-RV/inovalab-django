@@ -10,6 +10,7 @@ from agenda.models import CATEGORIES
 from agenda.services import CATEGORY_MODELS, SERVICE_FIELDS
 from agenda.widgets import EquipmentCheckboxSelectMultiple, EquipmentRadioSelect
 from materiais.models import Material
+from core.form_times import minute_value
 
 
 class StrictFormMixin:
@@ -32,9 +33,9 @@ class BookingForm(StrictFormMixin, forms.Form):
                           widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}))
     hora_inicio = forms.TimeField(label='Hora de início', help_text='Horário de Brasília.',
                                  input_formats=['%H:%M', '%H:%M:%S'],
-                                 widget=forms.TimeInput(format='%H:%M:%S', attrs={'type': 'time', 'step': '1'}))
+                                 widget=forms.TimeInput(format='%H:%M', attrs={'type': 'time', 'step': '60'}))
     hora_termino = forms.TimeField(label='Hora de término', input_formats=['%H:%M', '%H:%M:%S'],
-                                  widget=forms.TimeInput(format='%H:%M:%S', attrs={'type': 'time', 'step': '1'}))
+                                  widget=forms.TimeInput(format='%H:%M', attrs={'type': 'time', 'step': '60'}))
     equipamentos = forms.ModelMultipleChoiceField(
         label='Equipamentos', queryset=CATEGORY_MODELS['equipamento'].objects.none(), required=False,
         widget=EquipmentCheckboxSelectMultiple, help_text='Selecione as máquinas utilizadas neste serviço (opcional).',
@@ -140,16 +141,17 @@ class BookingForm(StrictFormMixin, forms.Form):
 
     def _preserve_precision(self, name, value):
         original = getattr(self.booking, name) if self.booking else None
-        return original if original is not None and value == original.replace(microsecond=0) else value
+        return minute_value(value, original)
 
     def _clean_period(self, cleaned):
         day, start, end = (cleaned.get(name) for name in ('dia', 'hora_inicio', 'hora_termino'))
         if day is None or start is None or end is None:
             return
+        start, end = minute_value(start), minute_value(end)
         if self.booking:
             original_start, original_end = timezone.localtime(self.booking.inicio), timezone.localtime(self.booking.fim)
-            if (day, start, end) == (original_start.date(), original_start.time().replace(microsecond=0),
-                                      original_end.time().replace(microsecond=0)):
+            if (day, start, end) == (original_start.date(), minute_value(original_start.time()),
+                                      minute_value(original_end.time())):
                 cleaned.update(inicio=self.booking.inicio, fim=self.booking.fim)
                 return
         if end <= start:

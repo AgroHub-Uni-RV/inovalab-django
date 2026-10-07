@@ -2,6 +2,7 @@ from django import forms
 
 from conteudo.models import LocalBanner, StatusBanner
 from conteudo.services import PUBLIC_FIELDS
+from core.form_times import minute_value
 
 
 class BannerForm(forms.Form):
@@ -14,9 +15,9 @@ class BannerForm(forms.Form):
     local = forms.ChoiceField(choices=LocalBanner.choices, initial=LocalBanner.HOME)
     ordem = forms.IntegerField(min_value=0, max_value=2147483647, initial=0)
     inicio_exibicao = forms.DateTimeField(label='Início (Brasília)', required=False,
-        widget=forms.DateTimeInput(format='%Y-%m-%dT%H:%M:%S', attrs={'type': 'datetime-local', 'step': '1'}))
+        widget=forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local', 'step': '60'}))
     fim_exibicao = forms.DateTimeField(label='Fim (Brasília)', required=False,
-        widget=forms.DateTimeInput(format='%Y-%m-%dT%H:%M:%S', attrs={'type': 'datetime-local', 'step': '1'}))
+        widget=forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local', 'step': '60'}))
     versao = forms.IntegerField(min_value=1, max_value=9223372036854775806, widget=forms.HiddenInput)
 
     def __init__(self, *args, banner=None, **kwargs):
@@ -28,6 +29,16 @@ class BannerForm(forms.Form):
             self.fields['banner_img'].required = False
             self.initial.update({key: getattr(banner, key) for key in PUBLIC_FIELDS})
             self.initial['versao'] = banner.versao
+
+    def _clean_time(self, name):
+        original = getattr(self.banner, name) if self.banner else None
+        return minute_value(self.cleaned_data.get(name), original)
+
+    def clean_inicio_exibicao(self):
+        return self._clean_time('inicio_exibicao')
+
+    def clean_fim_exibicao(self):
+        return self._clean_time('fim_exibicao')
 
     def clean(self):
         data = super().clean()

@@ -104,13 +104,28 @@ class BookingWebTests(TestCase):
     def test_unchanged_web_dates_preserve_api_seconds_and_fractional_precision(self):
         booking = self.create(inicio='2026-11-01T14:00:37.123456', fim='2026-11-01T15:00:41.654321')
         response = self.client.get(f'/agenda/{booking.categoria}/{booking.pk}/editar/')
-        self.assertContains(response, 'value="14:00:37"')
+        self.assertContains(response, 'value="14:00"')
         response = self.client.post(f'/agenda/{booking.categoria}/{booking.pk}/editar/', {**self.data, 'versao': 1,
-                                   'hora_inicio': '14:00:37', 'hora_termino': '15:00:41', 'motivo': 'Editado'})
+                                   'hora_inicio': '14:00', 'hora_termino': '15:00', 'motivo': 'Editado'})
         self.assertEqual(response.status_code, 302)
         booking.refresh_from_db()
         self.assertEqual((booking.inicio.microsecond, booking.fim.microsecond), (123456, 654321))
+        self.assertEqual((booking.inicio.second, booking.fim.second), (37, 41))
         self.assertEqual(set(booking.eventos.get(acao='editar').alteracoes), {'motivo'})
+
+    def test_new_and_changed_web_periods_are_saved_with_minute_precision(self):
+        response = self.client.post('/agenda/novo/', {**self.data, 'hora_inicio': '14:05:37',
+                                                    'hora_termino': '15:05:41'})
+        self.assertEqual(response.status_code, 302)
+        booking = AgendaServico.objects.get()
+        self.assertEqual((booking.inicio.minute, booking.fim.minute), (5, 5))
+        self.assertEqual((booking.inicio.second, booking.fim.second), (0, 0))
+        response = self.client.post(f'/agenda/servico/{booking.pk}/editar/', {
+            **self.data, 'versao': 1, 'hora_inicio': '14:06', 'hora_termino': '15:06'})
+        self.assertEqual(response.status_code, 302)
+        booking.refresh_from_db()
+        self.assertEqual((booking.inicio.minute, booking.fim.minute), (6, 6))
+        self.assertEqual((booking.inicio.second, booking.fim.second), (0, 0))
 
     def test_refresh_options_keeps_stale_version_and_cannot_overwrite_other_session(self):
         booking = self.create()

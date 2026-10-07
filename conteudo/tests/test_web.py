@@ -58,6 +58,27 @@ class BannerWebTests(BannerFixtures, TestCase):
         self.assertEqual(stale.status_code, 409)
         self.assertEqual(stale.context['form']['versao'].value(), '1')
 
+    def test_minute_schedule_keeps_legacy_precision_until_the_time_is_changed(self):
+        start = datetime.fromisoformat('2026-11-01T10:22:37.123456-03:00')
+        end = datetime.fromisoformat('2026-11-01T11:33:41.654321-03:00')
+        save_banner(actor=self.admin, banner_id=self.banner.pk, expected_version=1, data={
+            'status': 'agendado', 'inicio_exibicao': start, 'fim_exibicao': end})
+        self.client.force_login(self.admin)
+        url = self.detail + 'editar/'
+        response = self.client.get(url)
+        self.assertContains(response, 'value="2026-11-01T10:22"')
+        self.assertContains(response, 'step="60"', count=2)
+        body = {**DATA, 'titulo': 'Somente título', 'status': 'agendado', 'versao': 2,
+                'inicio_exibicao': '2026-11-01T10:22', 'fim_exibicao': '2026-11-01T11:33'}
+        self.assertEqual(self.client.post(url, body).status_code, 302)
+        self.banner.refresh_from_db()
+        self.assertEqual((self.banner.inicio_exibicao, self.banner.fim_exibicao), (start, end))
+        self.assertEqual(self.client.post(url, {**body, 'versao': 3,
+            'inicio_exibicao': '2026-11-01T10:23', 'fim_exibicao': '2026-11-01T11:34'}).status_code, 302)
+        self.banner.refresh_from_db()
+        for value in (self.banner.inicio_exibicao, self.banner.fim_exibicao):
+            self.assertEqual((value.second, value.microsecond), (0, 0))
+
     def test_public_pages_only_show_eligible_local_images(self):
         hidden = save_banner(actor=self.admin, data={**DATA, 'titulo': 'Privado', 'status': 'inativo'}, image=image_upload())
         home = self.client.get('/publico/')

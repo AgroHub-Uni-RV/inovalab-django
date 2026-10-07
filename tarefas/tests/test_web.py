@@ -133,8 +133,14 @@ class TaskWebTests(TaskFixtures, TestCase):
         path = f'/tarefas/{task.pk}/editar/'
         html = self.client.get(path).content.decode()
         rendered_deadline = re.search(r'name="prazo"[^>]*value="([^"]+)"', html).group(1)
+        self.assertEqual(rendered_deadline, '2026-11-01T14:22')
         response = self.client.post(path, self.payload(descricao='Somente descrição', prazo=rendered_deadline, versao=2))
         self.assertEqual(response.status_code, 302)
         task.refresh_from_db()
         self.assertEqual(task.prazo, deadline)
         self.assertEqual(task.descricao, 'Somente descrição')
+        response = self.client.post(path, self.payload(descricao='Somente descrição',
+                                                      prazo='2026-11-01T14:23', versao=3))
+        self.assertEqual(response.status_code, 302)
+        task.refresh_from_db()
+        self.assertEqual((task.prazo.minute, task.prazo.second, task.prazo.microsecond), (23, 0, 0))
