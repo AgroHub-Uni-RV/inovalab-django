@@ -6,7 +6,7 @@
     <nav class="tabs" aria-label="Filtrar tarefas">{% for tab in task_tabs %}<a href="?{{ tab.query }}"{% if tab.key == task_tab %} class="selected" aria-current="page"{% endif %}>{{ tab.label }}</a>{% endfor %}</nav>
     <div class="card-list task-list" tabindex="0" aria-label="Lista de tarefas">
       {% for task in tasks %}
-      <a class="task-row{% if task.overdue %} overdue{% elif task.prazo %} scheduled{% endif %}" data-task-detail-trigger href="{% url 'tarefas:detail' task.pk %}">
+      <a class="task-row{% if task.overdue %} overdue{% elif task.prazo %} scheduled{% endif %}" href="{% url 'tarefas:detail' task.pk %}">
         <span class="task-number">{{ task.pk|stringformat:'03d' }}</span>
         <span class="task-copy"><strong>{{ task.servico.nome }}</strong><span>{{ task.responsaveis_nomes }}</span></span>
         <span class="task-date">{% include 'inovalab_app/shared/icon.html' with name='calendar' %}<span>{% if task.prazo %}{{ task.prazo|date:'d/m' }}{% else %}Sem prazo{% endif %}</span>{% if task.overdue %}<span class="sr-only">Prazo vencido</span>{% endif %}</span>

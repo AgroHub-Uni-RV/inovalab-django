@@ -106,7 +106,7 @@
 
       <div class="sheet-actions task-form-actions">
         <button type="submit">{% if object %}Salvar alterações{% else %}Criar tarefa{% endif %}</button>
-        <a class="secondary-button"{% if task_modal %}{% if object %} data-task-detail-trigger{% else %} data-task-close{% endif %}{% endif %} href="{% if object %}{% url 'tarefas:detail' object.pk %}{% else %}{% url 'tarefas:board' %}{% endif %}">Cancelar</a>
+        <a class="secondary-button"{% if task_modal %} data-task-close{% endif %} href="{% if object %}{% url 'tarefas:detail' object.pk %}{% else %}{% url 'tarefas:board' %}{% endif %}">Cancelar</a>
       </div>
     </form>
     <template id="task-material-template"><div class="task-material-row"><div class="task-material-row-heading"><h3 data-task-material-title>Novo material</h3></div><div class="form-grid"><div class="form-field">{{ form.material_formset.empty_form.material.label_tag }}{{ form.material_formset.empty_form.material }}</div><div class="form-field">{{ form.material_formset.empty_form.quantidade.label_tag }}{{ form.material_formset.empty_form.quantidade }}</div></div><label class="task-material-delete">{{ form.material_formset.empty_form.DELETE }} Remover este material ao salvar</label></div></template>

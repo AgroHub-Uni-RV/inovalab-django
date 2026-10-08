@@ -6,22 +6,19 @@
   const closeButton = dialog.querySelector('[data-task-close]');
   let trigger;
   let controller;
-  let sourceGeneration = 0;
   let saving = false;
   let standalone = false;
   let standaloneReturn = dialog.dataset.boardUrl;
-  const taskRoot = new URL(dialog.dataset.boardUrl, location.href).pathname;
-  const createPath = dialog.dataset.createUrl ? new URL(dialog.dataset.createUrl, location.href).pathname : `${taskRoot}nova/`;
+  const createPath = new URL(dialog.dataset.createUrl, location.href).pathname;
   const loginURL = new URL(dialog.dataset.loginUrl, location.href);
+  const taskRoot = createPath.slice(0, -'nova/'.length);
   const escapedRoot = taskRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const updatePath = new RegExp(`^${escapedRoot}\\d+/editar/$`);
   const detailPath = new RegExp(`^${escapedRoot}\\d+/$`);
-  const transitionPath = new RegExp(`^${escapedRoot}\\d+/transicoes/$`);
 
   const taskURL = value => {
     const url = new URL(value, location.href);
-    const allowed = url.pathname === createPath || updatePath.test(url.pathname) ||
-      detailPath.test(url.pathname) || transitionPath.test(url.pathname);
+    const allowed = url.pathname === createPath || updatePath.test(url.pathname);
     return url.origin === location.origin && allowed ? url : null;
   };
   const isLoginURL = value => {
@@ -36,7 +33,7 @@
   const render = content => {
     body.replaceChildren(content);
     body.querySelectorAll('.task-form-sheet').forEach(window.initializeTaskForm || (() => {}));
-    const focus = body.querySelector('.task-feedback, .form-error-summary, .errorlist, h1');
+    const focus = body.querySelector('.form-error-summary, .errorlist, h1');
     if (focus) {
       focus.tabIndex = -1;
       focus.focus({preventScroll: true});
@@ -45,23 +42,22 @@
   };
   const refreshSource = async () => {
     if (standalone || !document.querySelector('[data-page-content]')) return;
-    const generation = ++sourceGeneration;
     const url = location.href;
     try {
       const response = await fetch(url, {credentials: 'same-origin', cache: 'no-store'});
       if (!response.ok || response.url !== url) return;
       const page = new DOMParser().parseFromString(await response.text(), 'text/html');
       const next = page.querySelector('[data-page-content]');
-      if (!next || location.href !== url || generation !== sourceGeneration) return;
+      if (!next || location.href !== url) return;
       const active = document.activeElement;
       if (!dialog.open && active?.closest('form')) return;
       const restoreTrigger = !dialog.open && active === trigger;
       next.querySelectorAll('script').forEach(script => script.remove());
       document.querySelector('[data-page-content]').replaceWith(next);
-      if (restoreTrigger) [...document.querySelectorAll('a[data-task-modal-trigger][href], a[data-task-detail-trigger][href]')]
+      if (restoreTrigger) [...document.querySelectorAll('a[data-task-modal-trigger][href]')]
         .find(link => link.href === trigger.href)?.focus();
     } catch {
-      if (generation === sourceGeneration && dialog.open) announce('Tarefa salva. Atualize a página para atualizar os dados exibidos.');
+      if (dialog.open) announce('Tarefa salva. Atualize a página para atualizar os dados exibidos.');
     }
   };
   const showSuccess = result => {
@@ -83,7 +79,6 @@
     }
     details.href = url.href;
     details.className = 'secondary-button';
-    details.dataset.taskDetailTrigger = '';
     details.textContent = 'Ver tarefa';
     const done = document.createElement('button');
     done.type = 'button';
@@ -106,7 +101,6 @@
     const timeout = setTimeout(() => request.abort(new DOMException('Tempo de resposta excedido.', 'TimeoutError')), 20000);
     controller = request;
     saving = Boolean(form);
-    if (saving) sourceGeneration++;
     closeButton.disabled = saving;
     dialog.setAttribute('aria-busy', 'true');
     const buttons = form ? [...form.querySelectorAll('button[type=submit]')] : [];
@@ -123,11 +117,7 @@
       });
       if (controller !== request || !dialog.open) return;
       if (isLoginURL(response.url)) {
-        const login = new URL(response.url);
-        if (form && transitionPath.test(target.pathname)) {
-          login.searchParams.set('next', target.pathname.replace(/transicoes\/$/, ''));
-        }
-        location.assign(login.href);
+        location.assign(response.url);
         return;
       }
       if (!taskURL(response.url)) throw new Error('Não foi possível carregar a tarefa.');
@@ -143,16 +133,12 @@
       }
       const page = new DOMParser().parseFromString(await response.text(), 'text/html');
       const content = page.querySelector('[data-task-modal-content]');
-      if (!content || (!response.ok && ![400, 409].includes(response.status))) {
+      if (!content || (!response.ok && response.status !== 409)) {
         throw new Error('Não foi possível carregar a tarefa.');
       }
       content.querySelectorAll('script:not([type="application/json"])').forEach(script => script.remove());
       render(content);
-      if (form && response.ok && content.querySelector('[data-task-detail]')) {
-        document.dispatchEvent(new CustomEvent('task:saved', {detail: {detail_url: response.url}}));
-        refreshSource();
-      }
-      announce(response.status === 409 ? 'A tarefa foi alterada em outra tela. Confira os dados atualizados.' : '');
+      announce(response.status === 409 ? 'A tarefa foi alterada em outra tela. Confira os dados antes de tentar novamente.' : '');
     } catch (error) {
       if (controller !== request || error.name === 'AbortError') return;
       if (form) {
@@ -182,7 +168,7 @@
     }
   };
   const open = (url, source) => {
-    if (!dialog.contains(source)) trigger = source;
+    trigger = source;
     if (!dialog.open) dialog.showModal();
     document.body.classList.add('task-modal-open');
     load(url);
@@ -196,14 +182,14 @@
       close();
       return;
     }
-    const link = event.target.closest('a[data-task-modal-trigger][href], a[data-task-detail-trigger][href]');
+    const link = event.target.closest('a[data-task-modal-trigger][href]');
     if (!link || link.target || link.hasAttribute('download') || !taskURL(link.href)) return;
     event.preventDefault();
     open(link.href, link);
   });
   dialog.addEventListener('submit', event => {
     const form = event.target;
-    if (!form.matches('form.task-form, form[data-task-status-form]')) return;
+    if (!form.matches('form.task-form')) return;
     event.preventDefault();
     if (form.reportValidity()) load(form.action, form);
   });
@@ -236,7 +222,7 @@
     announce();
     if (standalone) location.assign(standaloneReturn);
     else if (trigger?.isConnected) trigger.focus();
-    else if (trigger) [...document.querySelectorAll('a[data-task-modal-trigger][href], a[data-task-detail-trigger][href]')]
+    else if (trigger) [...document.querySelectorAll('a[data-task-modal-trigger][href]')]
       .find(link => link.href === trigger.href)?.focus();
   });
 
