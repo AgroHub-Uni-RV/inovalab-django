@@ -2,11 +2,19 @@
 {% block content_class %}module-page detail-page{% endblock %}
 {% block content %}
 <div class="detail-sheet">
-  <div class="sheet-topbar">{% if is_business_admin and booking.categoria != 'equipamento' and not booking.recebido_agrohub %}<a class="primary-button" href="{% url 'agenda:update' booking.categoria booking.pk %}">Editar agendamento</a>{% endif %}<span class="sheet-meta booking-creator" aria-label="Criado por {{ creator_name }}"><span class="booking-creator-avatar" aria-hidden="true">{% if creator_has_photo %}<img src="{% url 'agenda:creator-photo' booking.categoria booking.pk %}" alt="">{% else %}{{ creator_name|slice:':1'|upper }}{% endif %}</span>{{ creator_name }}</span><span class="sheet-meta">{% include 'inovalab_app/shared/icon.html' with name='calendar' %}{{ booking.inicio|date:'d.m.Y' }}</span><span class="booking-category">{{ booking.categoria_display }}</span><a class="sheet-close" href="{% url 'agenda:list' %}" aria-label="Voltar à agenda">&times;</a></div>
+  <div class="sheet-topbar sheet-detail-topbar">
+    <div class="sheet-topbar-content">
+      {% if is_business_admin and booking.categoria != 'equipamento' and not booking.recebido_agrohub %}<a class="primary-button" href="{% url 'agenda:update' booking.categoria booking.pk %}">Editar agendamento</a>{% endif %}
+      <span class="sheet-meta booking-creator" aria-label="Criado por {{ creator_name }}"><span class="booking-creator-avatar" aria-hidden="true">{% if creator_has_photo %}<img src="{% url 'agenda:creator-photo' booking.categoria booking.pk %}" alt="">{% else %}{{ creator_name|slice:':1'|upper }}{% endif %}</span><span class="sheet-meta-text">{{ creator_name }}</span></span>
+      <span class="sheet-meta sheet-date">{% include 'inovalab_app/shared/icon.html' with name='calendar' %}{{ booking.inicio|date:'d.m.Y' }}</span>
+      <div class="sheet-topbar-tags"><span class="booking-category">{{ booking.categoria_display }}</span>{% if booking.categoria == 'servico' %}<span class="badge booking-status {{ booking.situacao }}"><span class="sr-only">Status do agendamento: </span>{{ booking.get_situacao_display }}</span>{% endif %}</div>
+    </div>
+    <a class="sheet-close" href="{% url 'agenda:list' %}" aria-label="Voltar à agenda">&times;</a>
+  </div>
   <div class="sheet-layout"><section class="sheet-content">
     <h1><span>#{{ booking.pk|stringformat:'03d' }}</span> {{ booking.objeto_nome }}</h1>
     {% if booking.categoria == 'equipamento' and booking.equipamento.foto %}<img class="equipment-detail-photo" src="{{ booking.equipamento.foto.url }}" alt="{{ booking.equipamento.nome }}">{% endif %}
-    <p>{% if agrohub_sync %}Situação no InovaLab: {% endif %}<span class="badge booking-status {{ booking.situacao }}">{{ booking.get_situacao_display }}</span>{% if booking.situacao == 'pendente' %} Aguardando confirmação administrativa no InovaLab{% if not agrohub_sync %}{% if booking.categoria != 'servico' %}; o horário ainda não está reservado{% endif %}{% endif %}.{% endif %}</p>
+    {% if booking.categoria != 'servico' or booking.situacao == 'pendente' or agrohub_sync %}<p>{% if agrohub_sync %}Situação no InovaLab: {% endif %}{% if booking.categoria != 'servico' %}<span class="badge booking-status {{ booking.situacao }}">{{ booking.get_situacao_display }}</span>{% endif %}{% if booking.situacao == 'pendente' %} Aguardando confirmação administrativa no InovaLab{% if not agrohub_sync %}{% if booking.categoria != 'servico' %}; o horário ainda não está reservado{% endif %}{% endif %}.{% endif %}</p>{% endif %}
     {% if booking.visita %}<dl class="inline-details"><div><dt>Quantidade de pessoas</dt><dd>{{ booking.quantidade_pessoas }}</dd></div></dl>{% endif %}
     {% if booking.avaliado_em %}<p>Avaliado por <strong>{% if booking.avaliado_por %}{{ booking.avaliado_por.get_full_name|default:booking.avaliado_por.username }}{% else %}Conta removida{% endif %}</strong> em {{ booking.avaliado_em|date:'d/m/Y H:i' }}.</p>{% endif %}
     <div class="sheet-metadata"><p>Criado por <strong>{{ creator_name }}</strong></p><p>Criado em <strong>{{ booking.criado_em|date:'d/m/Y H:i' }}</strong></p></div>

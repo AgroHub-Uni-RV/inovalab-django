@@ -40,6 +40,23 @@ class BookingServiceDetailsTests(TestCase):
         self.assertContains(response, 'class="booking-category">Serviços')
         self.assertNotContains(response, 'aria-label="Criado por Requerente distinto"')
 
+    def test_service_status_is_visible_once_in_header_and_pending_notice_is_preserved(self):
+        booking = self.create()
+        for status, label in (('confirmado', 'Confirmado'), ('pendente', 'Pendente'),
+                              ('rejeitado', 'Rejeitado')):
+            with self.subTest(status=status):
+                AgendaServico.objects.filter(pk=booking.pk).update(situacao=status)
+                response = self.client.get(f'/agenda/servico/{booking.pk}/')
+                self.assertEqual(response.status_code, 200)
+                header, content = response.content.decode().split('<div class="sheet-layout">', 1)
+                self.assertIn(f'booking-status {status}', header)
+                self.assertIn(label, header)
+                self.assertNotIn('booking-status', content)
+                if status == 'pendente':
+                    self.assertIn('Aguardando confirmação administrativa no InovaLab', content)
+                else:
+                    self.assertNotIn('Aguardando confirmação administrativa no InovaLab', content)
+
     def test_external_creator_falls_back_to_creation_history_name(self):
         booking = self.create()
         AgendaServico.objects.filter(pk=booking.pk).update(criado_por=None)
