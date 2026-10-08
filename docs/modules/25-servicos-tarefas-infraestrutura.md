@@ -26,6 +26,8 @@ Atualizações usam `PATCH /api/v1/agendamentos/servico/{id}/` com `versao` e os
 
 ## Tarefas
 
+Solicitação posterior: responsáveis, equipamentos e materiais passam a permitir múltiplas associações, com quantidade por material. A seleção unitária e o contrato inicial abaixo são substituídos conforme o [módulo 26](26-tarefas-multiplos-vinculos.md); o prazo herdado e o status por select permanecem.
+
 Toda tarefa tem FK obrigatória para `AgendaServico`, descrição e responsável. O serviço é derivado do agendamento; não existe uma segunda seleção de catálogo. Novos vínculos exigem agendamento confirmado e não cancelado e responsável ativo. Equipamento excluído e material indisponível não entram em novas atribuições. Vínculos existentes continuam editáveis em outros dados, preservando suas referências.
 
 Campos opcionais: `equipamento` (FK), `material_gasto` (FK para Material), `quantidade_material_gasto` (CharField de 150 caracteres). Material e quantidade são independentes. A quantidade aceita texto como `200 g`, `2 unidades` ou `meia bobina`; o registro não altera o estoque.

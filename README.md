@@ -4,6 +4,8 @@ O negócio está consolidado em **`inovalab_app`**, com pacotes internos para ag
 
 **Atualização de 08/10/2026:** cada solicitação define seu serviço com título, descrição e prazo; tarefas exigem agendamento de serviço e responsável, herdam o prazo do serviço e possuem recursos opcionais. O select mostra todos os status e permite aos administradores escolher qualquer um. Equipamentos ficam somente na Infraestrutura, com exclusão lógica; a sidebar desktop permanece expandida. Consulte o [novo fluxo, contratos e migração](docs/modules/25-servicos-tarefas-infraestrutura.md).
 
+**Tarefas com equipe e recursos:** selecione vários responsáveis e equipamentos; adicione materiais com quantidade gasta por item. Todos os responsáveis compartilham a tarefa, respeitando as permissões atuais. Consulte [uso, API e migração dos múltiplos vínculos](docs/modules/26-tarefas-multiplos-vinculos.md).
+
 **Banco existente:** pausar escrita e fazer backup. Bancos ainda não consolidados devem cumprir a preparação da versão anterior e adotar até `0002_preserva_contenttypes` com `--fake-initial`. Depois executar `0003`, aplicar um mapa explícito das tarefas para agendamentos e concluir `migrate`. Instalações vazias usam `migrate` seguido de `seed_inovalab`, que carrega somente equipamentos. As instruções históricas abaixo não substituem esse procedimento.
 
 A agenda utiliza **AgendaServico** e **AgendaVisita**, ambas locais. **AgendaEquipamento** permanece para consulta/cancelamento do legado. Solicitações inclui confirmadas. Ver [agenda de visitas local](docs/modules/17-agenda-visitas-local.md) e [alterações de serviços](docs/modules/25-servicos-tarefas-infraestrutura.md).
