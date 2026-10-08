@@ -32,7 +32,7 @@ class ServiceUpgradeTests(TransactionTestCase):
     def tearDown(self):
         from inovalab_app.tarefas.models import Tarefa
         Tarefa.objects.all().delete()
-        MigrationExecutor(connection).migrate([('inovalab_app', '0004_exige_agendamento_servico')])
+        MigrationExecutor(connection).migrate([('inovalab_app', '0005_tarefa_prazo_do_servico')])
         super().tearDown()
 
     def apply_map(self, value, **kwargs):

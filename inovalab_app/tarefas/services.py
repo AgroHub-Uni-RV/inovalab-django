@@ -13,11 +13,11 @@ from inovalab_app.adapters.host import is_business_admin
 from inovalab_app.catalogo.models import Equipamento
 from inovalab_app.agenda.models import AgendaServico
 from inovalab_app.materiais.models import Material
-from inovalab_app.tarefas.models import EventoTarefa, Tarefa
+from inovalab_app.tarefas.models import EventoTarefa, StatusTarefa, Tarefa
 from inovalab_app.tarefas.selectors import visible_tasks
 
 
-PUBLIC_FIELDS = {'agendamento_servico', 'descricao', 'responsavel', 'prazo', 'equipamento', 'material_gasto', 'quantidade_material_gasto'}
+PUBLIC_FIELDS = {'agendamento_servico', 'descricao', 'responsavel', 'equipamento', 'material_gasto', 'quantidade_material_gasto'}
 TRACKED_FIELDS = (*sorted(PUBLIC_FIELDS), 'status', 'inicio', 'conclusao', 'excluida_em')
 TRANSITIONS = {
     'iniciar': ('demanda', 'criacao'),
@@ -184,6 +184,8 @@ def delete_task(*, actor, task_id, expected_version):
 
 
 def allowed_statuses(actor, task):
+    if actor.is_authenticated and actor.is_active and not task.excluida_em and is_business_admin(actor):
+        return StatusTarefa.values
     return [task.status, *dict.fromkeys(TRANSITIONS[action][1] for action in allowed_actions(actor, task))]
 
 
@@ -193,6 +195,20 @@ def set_task_status(*, actor, task_id, status, expected_version):
         raise PermissionDenied('Esta tarefa pertence a outro responsável.')
     if status == task.status:
         return task
+    if is_business_admin(actor):
+        if status not in StatusTarefa.values:
+            raise ValidationError({'status': 'Selecione um status válido.'})
+        actions = [action for action in allowed_actions(actor, task) if TRANSITIONS[action][1] == status]
+        if actions:
+            return transition_task(actor=actor, task_id=task_id, action=actions[0], expected_version=expected_version)
+        before = _snapshot(task)
+        task.status = status
+        now = timezone.now()
+        if status != StatusTarefa.DEMANDA and task.inicio is None:
+            task.inicio = now
+        task.conclusao = now if status == StatusTarefa.CONCLUIDO else None
+        task.full_clean()
+        return _persist(actor, task, 'alterar_status', before, expected_version)
     if not is_business_admin(actor) and any(
         source == task.status and destination == status and action in ADMIN_ACTIONS
         for action, (source, destination) in TRANSITIONS.items()

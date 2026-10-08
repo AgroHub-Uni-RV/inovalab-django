@@ -28,6 +28,7 @@ class TaskSerializer(StrictPayloadMixin, serializers.ModelSerializer):
     versao = VersionField(min_value=1, required=False)
     servico_nome = serializers.CharField(source='servico.nome', read_only=True)
     responsavel_nome = serializers.CharField(source='responsavel.username', read_only=True)
+    prazo = serializers.DateTimeField(read_only=True)
     acoes_permitidas = serializers.SerializerMethodField()
 
     class Meta:
@@ -35,7 +36,7 @@ class TaskSerializer(StrictPayloadMixin, serializers.ModelSerializer):
         fields = ['id', 'agendamento_servico', 'servico', 'servico_nome', 'descricao', 'responsavel', 'responsavel_nome',
                   'equipamento', 'material_gasto', 'quantidade_material_gasto',
                   'status', 'inicio', 'prazo', 'conclusao', 'versao', 'acoes_permitidas']
-        read_only_fields = ['id', 'servico', 'status', 'inicio', 'conclusao']
+        read_only_fields = ['id', 'servico', 'status', 'inicio', 'prazo', 'conclusao']
 
     servico = serializers.IntegerField(source='servico_id', read_only=True)
 

@@ -128,21 +128,17 @@ class TaskWebTests(TaskFixtures, TestCase):
         self.client.force_login(self.owner)
         self.assertContains(self.client.get('/perfil/'), '/tarefas/')
 
-    def test_editing_description_preserves_existing_deadline_precision(self):
+    def test_editing_description_preserves_service_deadline_precision(self):
         deadline = datetime.fromisoformat('2026-11-01T14:22:59.123456-03:00')
-        task = save_task(actor=self.admin, task_id=self.mine.pk, expected_version=1, data={'prazo': deadline})
+        self.service.prazo = deadline
+        self.service.save(update_fields=['prazo'])
         self.client.force_login(self.admin)
-        path = f'/tarefas/{task.pk}/editar/'
-        html = self.client.get(path).content.decode()
-        rendered_deadline = re.search(r'name="prazo"[^>]*value="([^"]+)"', html).group(1)
-        self.assertEqual(rendered_deadline, '2026-11-01T14:22')
-        response = self.client.post(path, self.payload(descricao='Somente descrição', prazo=rendered_deadline, versao=2))
+        path = f'/tarefas/{self.mine.pk}/editar/'
+        response = self.client.get(path)
+        self.assertNotContains(response, 'name="prazo"')
+        self.assertContains(response, '01/11/2026 14:22')
+        response = self.client.post(path, self.payload(descricao='Somente descrição', versao=1))
         self.assertEqual(response.status_code, 302)
-        task.refresh_from_db()
-        self.assertEqual(task.prazo, deadline)
-        self.assertEqual(task.descricao, 'Somente descrição')
-        response = self.client.post(path, self.payload(descricao='Somente descrição',
-                                                      prazo='2026-11-01T14:23', versao=3))
-        self.assertEqual(response.status_code, 302)
-        task.refresh_from_db()
-        self.assertEqual((task.prazo.minute, task.prazo.second, task.prazo.microsecond), (23, 0, 0))
+        self.mine.refresh_from_db()
+        self.assertEqual(self.mine.prazo, deadline)
+        self.assertNotIn('prazo', self.mine.eventos.get(acao='editar').alteracoes)

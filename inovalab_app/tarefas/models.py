@@ -20,7 +20,7 @@ class Tarefa(models.Model):
     responsavel = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='responsável')
     status = models.CharField('status', max_length=10, choices=StatusTarefa.choices, default=StatusTarefa.DEMANDA)
     inicio = models.DateTimeField('início', null=True, blank=True, editable=False)
-    prazo = models.DateTimeField('prazo', null=True, blank=True)
+    prazo_legado = models.DateTimeField('prazo anterior', db_column='prazo', null=True, blank=True, editable=False)
     conclusao = models.DateTimeField('conclusão', null=True, blank=True, editable=False)
     versao = models.PositiveBigIntegerField(default=1, editable=False)
     excluida_em = models.DateTimeField(null=True, blank=True, editable=False)
@@ -60,6 +60,10 @@ class Tarefa(models.Model):
     @property
     def servico_id(self):
         return self.agendamento_servico.servico_id
+
+    @property
+    def prazo(self):
+        return self.servico.prazo
 
 
 class EventoTarefa(models.Model):

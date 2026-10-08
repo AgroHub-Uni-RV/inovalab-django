@@ -31,7 +31,7 @@ class TaskApiTests(TaskFixtures, TestCase):
 
     def test_admin_creates_and_edits_metadata_without_staff(self):
         self.client.force_login(self.admin)
-        response = self.client.post('/api/v1/tarefas/', self.payload(prazo='2026-11-01T14:00:00-03:00'), content_type='application/json')
+        response = self.client.post('/api/v1/tarefas/', self.payload(), content_type='application/json')
         self.assertEqual(response.status_code, 201)
         task_id = response.json()['id']
         self.assertEqual(response.json()['status'], 'demanda')

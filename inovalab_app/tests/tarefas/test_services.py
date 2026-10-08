@@ -40,7 +40,7 @@ class TaskServiceTests(TestCase):
         self.assertEqual(task.descricao, 'Produzir protótipo')
         self.assertEqual((task.status, task.versao), ('demanda', 1))
         self.assertIsNone(task.inicio)
-        self.assertIsNone(task.prazo)
+        self.assertEqual(task.prazo, self.service.prazo)
         self.assertIsNone(task.conclusao)
         event = task.eventos.get()
         self.assertEqual((event.acao, event.ator_id, event.status_novo), ('criar', self.admin.pk, 'demanda'))
@@ -199,6 +199,8 @@ class TaskServiceTests(TestCase):
 
     def test_overdue_deadline_is_allowed_and_does_not_block_starting(self):
         deadline = timezone.now() - timedelta(days=1)
-        task = self.move(self.create_task(prazo=deadline), 'iniciar', self.owner)
+        self.service.prazo = deadline
+        self.service.save(update_fields=['prazo'])
+        task = self.move(self.create_task(), 'iniciar', self.owner)
         self.assertEqual(task.prazo, deadline)
         self.assertGreater(task.inicio, deadline)

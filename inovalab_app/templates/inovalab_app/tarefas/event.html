@@ -7,6 +7,7 @@
         {% elif event.acao == 'aprovar' %}Aprovou a entrega
         {% elif event.acao == 'recusar' %}Devolveu para criação
         {% elif event.acao == 'reabrir' %}Reabriu a tarefa
+        {% elif event.acao == 'alterar_status' %}Alterou o status: {{ event.status_anterior }} → {{ event.status_novo }}
         {% elif event.acao == 'excluir' %}Excluiu a tarefa{% endif %}
     </p>
 {% if event.acao == 'editar' %}<dl>{% for name, change in event.alteracoes.items %}<div><dt>{% if name == 'agendamento_servico' %}Agendamento de serviço{% elif name == 'equipamento' %}Equipamento{% elif name == 'material_gasto' %}Material gasto{% elif name == 'quantidade_material_gasto' %}Quantidade de material gasto{% elif name == 'responsavel' %}Responsável{% elif name == 'descricao' %}Descrição{% elif name == 'prazo' %}Prazo{% elif name == 'status' %}Status{% elif name == 'inicio' %}Início{% elif name == 'conclusao' %}Conclusão{% else %}{{ name }}{% endif %}</dt><dd>{{ change.anterior|default_if_none:'—' }} → {{ change.novo|default_if_none:'—' }}</dd></div>{% endfor %}</dl>{% endif %}</article>

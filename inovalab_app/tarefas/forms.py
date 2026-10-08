@@ -1,12 +1,12 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.utils import timezone
 
 from inovalab_app.agenda.models import AgendaServico
 from inovalab_app.catalogo.models import Equipamento
 from inovalab_app.materiais.models import Material
 from inovalab_app.tarefas.models import Tarefa
-from inovalab_app.shared.form_times import minute_value
 
 
 class StrictFormMixin:
@@ -23,12 +23,11 @@ class TaskForm(StrictFormMixin, forms.ModelForm):
 
     class Meta:
         model = Tarefa
-        fields = ['agendamento_servico', 'descricao', 'responsavel', 'prazo', 'equipamento', 'material_gasto', 'quantidade_material_gasto']
+        fields = ['agendamento_servico', 'descricao', 'responsavel', 'equipamento', 'material_gasto', 'quantidade_material_gasto']
         widgets = {
             'descricao': forms.Textarea(attrs={'rows': 4}),
-            'prazo': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local', 'step': '60'}),
         }
-        help_texts = {'prazo': 'Opcional. Horário de Brasília; tarefas vencidas continuam executáveis.'}
+        help_texts = {'agendamento_servico': 'A tarefa usa o prazo do serviço vinculado. Horário de Brasília.'}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -51,12 +50,28 @@ class TaskForm(StrictFormMixin, forms.ModelForm):
             raise forms.ValidationError('A versão inicial é definida pelo sistema.')
         return version
 
-    def clean_prazo(self):
-        return minute_value(self.cleaned_data.get('prazo'), self.instance.prazo)
+    @property
+    def service_deadlines(self):
+        return {str(booking.pk): timezone.localtime(booking.servico.prazo).strftime('%d/%m/%Y %H:%M')
+                for booking in self.fields['agendamento_servico'].queryset}
+
+    @property
+    def selected_service_deadline(self):
+        return self.service_deadlines.get(str(self['agendamento_servico'].value()), 'Selecione um agendamento de serviço.')
+
+
+class StatusSelect(forms.Select):
+    allowed_values = None
+
+    def create_option(self, *args, **kwargs):
+        option = super().create_option(*args, **kwargs)
+        if self.allowed_values is not None and option['value'] not in self.allowed_values:
+            option['attrs']['disabled'] = True
+        return option
 
 
 class TransitionForm(StrictFormMixin, forms.Form):
-    status = forms.ChoiceField(choices=Tarefa._meta.get_field('status').choices)
+    status = forms.ChoiceField(choices=Tarefa._meta.get_field('status').choices, widget=StatusSelect)
     versao = forms.IntegerField(min_value=1, widget=forms.HiddenInput)
 
 

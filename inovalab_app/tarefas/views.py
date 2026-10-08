@@ -84,7 +84,7 @@ class TaskDetailView(LoginRequiredMixin, TaskContextMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['status_form'] = TransitionForm(initial={'status': self.object.status, 'versao': self.object.versao})
-        context['status_form'].fields['status'].choices = [(value, label) for value, label in StatusTarefa.choices if value in allowed_statuses(self.request.user, self.object)]
+        context['status_form'].fields['status'].widget.allowed_values = allowed_statuses(self.request.user, self.object)
         context['can_transition'] = bool(allowed_actions(self.request.user, self.object))
         context['events'] = self.object.eventos.all()[:5]
         context['created_event'] = self.object.eventos.filter(acao='criar').first()
