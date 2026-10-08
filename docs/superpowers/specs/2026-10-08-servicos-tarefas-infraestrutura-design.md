@@ -1,6 +1,6 @@
 # Serviços por solicitação, tarefas e infraestrutura
 
-Data: 08/10/2026. Documento preparado para revisão do responsável; implementação ainda não iniciada.
+Data: 08/10/2026. Especificação aprovada pelo responsável com a resposta “certo”, incluindo o mapa das tarefas 2 e 3 para o agendamento 7. Implementação ainda não iniciada.
 
 ## Resultado esperado
 
