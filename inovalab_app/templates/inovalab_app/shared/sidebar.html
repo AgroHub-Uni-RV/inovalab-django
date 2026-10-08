@@ -1,5 +1,5 @@
 {% load static %}<aside class="sidebar" id="sidebar" aria-label="Menu principal">
-  <div class="brand-slot"><a class="sidebar-brand" href="{% url 'core:dashboard' %}" aria-label="InovaLab, Dashboard"><img class="sidebar-logo-icon" src="{% static 'inovalab_app/shared/assets/logo_icone_rbg.png' %}" alt="InovaLab" width="460" height="473"><img class="sidebar-logo-full" src="{% static 'inovalab_app/shared/assets/logo_texto_branco.png' %}" alt="InovaLab" width="350" height="130"></a></div>
+  <div class="brand-slot"><a class="sidebar-brand" href="{% url 'conteudo:inicio' %}" aria-label="InovaLab, Início"><img class="sidebar-logo-full" src="{% static 'inovalab_app/shared/assets/logo_texto_branco.png' %}" alt="InovaLab" width="350" height="130"></a></div>
   <nav class="sidebar-nav">
     {% for item in nav_items %}
     <a class="nav-item{% if item.current %} current{% endif %}" href="{{ item.href }}" aria-label="{{ item.label }}" title="{{ item.label }}"{% if item.current %} aria-current="page"{% endif %}>
@@ -8,9 +8,7 @@
     {% endfor %}
   </nav>
   <div class="sidebar-bottom">
-    <button class="sidebar-toggle nav-item" type="button" aria-expanded="false" aria-controls="sidebar" aria-label="Expandir menu" title="Expandir menu">
-      {% include 'inovalab_app/shared/icon.html' with name='expand' %}<span class="nav-label">Recolher menu</span>
-    </button>
+
     {% if inovalab_identity.logout_url %}<form action="{{ inovalab_identity.logout_url }}" method="post">
       {% csrf_token %}<button class="nav-item logout" type="submit" aria-label="Sair" title="Sair">{% include 'inovalab_app/shared/icon.html' with name='logout' %}<span class="nav-label">Sair</span></button>
     </form>{% endif %}

@@ -28,7 +28,7 @@ class FrontendRoutesTests(AccountsProviderMixin, TestCase):
 
     def test_shared_layout_menu_marks_current_module(self):
         self.client.force_login(self.user)
-        for path in ('/index/', '/tarefas/', '/materiais/', '/catalogo/servicos/', '/perfil/'):
+        for path in ('/index/', '/tarefas/', '/materiais/', '/catalogo/equipamentos/', '/perfil/'):
             with self.subTest(path=path):
                 response = self.client.get(path)
                 self.assertEqual(response.status_code, 200)
@@ -56,10 +56,10 @@ class FrontendRoutesTests(AccountsProviderMixin, TestCase):
 
     def test_catalog_menu_remains_current_for_all_categories(self):
         self.client.force_login(self.user)
-        for path in ('/catalogo/servicos/', '/catalogo/equipamentos/'):
+        for path in ('/catalogo/equipamentos/',):
             response = self.client.get(path)
             selected = [item['label'] for item in response.context['nav_items'] if item['current']]
-            self.assertEqual(selected, ['Estrutura'])
+            self.assertEqual(selected, ['Infraestrutura'])
 
     def test_logout_returns_to_root_and_public_remains_public(self):
         self.client.force_login(self.user)

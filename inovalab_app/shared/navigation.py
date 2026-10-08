@@ -24,7 +24,7 @@ def panel_navigation(request):
     routes.extend([('Estoque/materiais', 'materiais:list', 'box'), ('Tarefas', 'tarefas:board', 'task')])
     if admin:
         routes.append(('Banners', 'conteudo:list', 'image'))
-    routes.extend([('Páginas', 'conteudo:inicio', 'layers'), ('Estrutura', 'catalogo:servicos-list', 'building')])
+    routes.append(('Infraestrutura', 'catalogo:equipamentos-list', 'building'))
     items = []
     for label, route, icon in routes:
         href = reverse(route)
@@ -34,7 +34,7 @@ def panel_navigation(request):
         elif route == 'conteudo:inicio':
             current = bool(match and match.namespace == 'conteudo' and
                            match.url_name in {'inicio', 'sobre', 'servicos', 'contato', 'regimento', 'calendario-funcionamento'})
-        elif route == 'catalogo:servicos-list':
+        elif route == 'catalogo:equipamentos-list':
             current = bool(match and match.namespace == 'catalogo')
         items.append({'label': label, 'href': href, 'icon': icon, 'current': current})
     identity = get_adapter().identity_context(request)
