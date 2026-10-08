@@ -7,6 +7,8 @@ class ConsolidationRegistryTests(SimpleTestCase):
         expected = {
             'Servico': 'inovalab_servico_solicitado', 'ServicoLegado': 'catalogo_servico', 'Equipamento': 'catalogo_equipamento',
             'Material': 'materiais_material', 'Tarefa': 'tarefas_tarefa',
+            'TarefaResponsavel': 'tarefas_responsavel', 'TarefaEquipamento': 'tarefas_equipamento',
+            'TarefaMaterial': 'tarefas_material',
             'EventoTarefa': 'tarefas_eventotarefa', 'Banner': 'conteudo_banner',
             'AgendaServico': 'agenda_agendaservico',
             'AgendaEquipamento': 'agenda_agendaequipamento',

@@ -47,8 +47,8 @@ class TaskBoardView(LoginRequiredMixin, TaskContextMixin, ListView):
         self.selected_service = value if value.isascii() and value.isdecimal() and len(value) <= 12 else ''
         if self.query:
             queryset = queryset.filter(Q(descricao__icontains=self.query) | Q(agendamento_servico__servico__titulo__icontains=self.query)
-                                       | Q(responsavel__username__icontains=self.query)
-                                       | Q(responsavel__first_name__icontains=self.query))
+                                       | Q(responsaveis__username__icontains=self.query)
+                                       | Q(responsaveis__first_name__icontains=self.query)).distinct()
         if self.selected_service:
             queryset = queryset.filter(agendamento_servico__servico_id=self.selected_service)
         return queryset
@@ -62,13 +62,13 @@ class TaskBoardView(LoginRequiredMixin, TaskContextMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        counts = dict(self.get_queryset().order_by().values('status').annotate(total=Count('pk')).values_list('status', 'total'))
+        counts = dict(self.get_queryset().order_by().values('status').annotate(total=Count('pk', distinct=True)).values_list('status', 'total'))
         context['columns'] = [
             {'label': label, 'status': status, 'count': counts.get(status, 0),
              'tasks': [task for task in context['object_list'] if task.status == status]}
             for status, label in StatusTarefa.choices
         ]
-        totals = dict(self.filtered_tasks().order_by().values('status').annotate(total=Count('pk')).values_list('status', 'total'))
+        totals = dict(self.filtered_tasks().order_by().values('status').annotate(total=Count('pk', distinct=True)).values_list('status', 'total'))
         context.update(stat_counts={status: totals.get(status, 0) for status in StatusTarefa.values},
                        query=self.query, selected_service=self.selected_service, selected_status=self.selected_status,
                        services=Servico.objects.filter(pk__in=visible_tasks(self.request.user).values(
@@ -96,11 +96,25 @@ class TaskWriteMixin(TaskContextMixin):
     form_class = TaskForm
     template_name = 'inovalab_app/tarefas/form.html'
 
+    def post(self, request, *args, **kwargs):
+        if 'adicionar_material' in request.POST:
+            self.object = self.get_object() if 'pk' in kwargs else None
+            data = request.POST.copy()
+            try:
+                total = int(data.get('materiais-TOTAL_FORMS', '0'))
+            except ValueError:
+                total = 0
+            if 0 <= total < 1000:
+                data['materiais-TOTAL_FORMS'] = str(total + 1)
+            form = self.form_class(data=data, instance=self.object)
+            return self.render_to_response(self.get_context_data(form=form))
+        return super().post(request, *args, **kwargs)
+
     def form_valid(self, form):
         try:
             self.object = save_task(
                 actor=self.request.user, task_id=self.object.pk if self.object else None,
-                data={key: form.cleaned_data[key] for key in PUBLIC_FIELDS},
+                data={key: form.cleaned_data[key] for key in PUBLIC_FIELDS if key in form.cleaned_data},
                 expected_version=form.cleaned_data.get('versao'),
             )
         except TaskConflict as error:

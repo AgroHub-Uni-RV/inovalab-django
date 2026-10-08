@@ -38,7 +38,9 @@ class TaskFrontendTests(TaskFixtures, TestCase):
             self.assertEqual(response.context['selected_status'], '')
 
     def test_pagination_preserves_filters_and_detail_history_is_real(self):
-        Tarefa.objects.bulk_create([Tarefa(agendamento_servico=self.booking, responsavel=self.owner, descricao='Busca teste') for _ in range(26)])
+        for _ in range(26):
+            save_task(actor=self.admin, data={'agendamento_servico': self.booking, 'responsavel': self.owner,
+                                             'descricao': 'Busca teste'})
         self.client.force_login(self.owner)
         response = self.client.get('/tarefas/', {'q': 'Busca teste', 'status': 'demanda'})
         self.assertEqual(len(response.context['object_list']), 25)

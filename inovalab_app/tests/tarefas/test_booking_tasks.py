@@ -25,8 +25,8 @@ class BookingTaskTests(TestCase):
             'responsavel': self.owner, 'descricao': 'Original', 'equipamento': equipment})
         delete_equipment(actor=self.admin, equipment_id=equipment.pk)
         delete_equipment(actor=self.admin, equipment_id=equipment.pk)
-        self.assertIn(equipment, TaskForm(instance=task).fields['equipamento'].queryset)
-        self.assertNotIn(equipment, TaskForm().fields['equipamento'].queryset)
+        self.assertIn(equipment, TaskForm(instance=task).fields['equipamentos'].queryset)
+        self.assertNotIn(equipment, TaskForm().fields['equipamentos'].queryset)
         saved = save_task(actor=self.admin, task_id=task.pk, expected_version=1, data={'descricao': 'Retido'})
         self.assertEqual(saved.equipamento_id, equipment.pk)
         with self.assertRaises(ValidationError):

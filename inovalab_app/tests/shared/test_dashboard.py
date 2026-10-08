@@ -28,10 +28,12 @@ class DashboardTests(TestCase):
         cls.task_booking = make_booking(service=cls.service, actor=cls.admin, cancelado_em=NOW)
 
     def task(self, responsible=None, status='demanda', **kwargs):
-        return Tarefa.objects.create(agendamento_servico=self.task_booking, descricao='Descrição real',
+        task = Tarefa.objects.create(agendamento_servico=self.task_booking, descricao='Descrição real',
             responsavel=responsible or self.user, status=status,
             inicio=NOW-timedelta(days=1) if status != 'demanda' else None,
             conclusao=NOW if status == 'concluido' else None, **kwargs)
+        task.responsaveis.add(responsible or self.user)
+        return task
 
     def booking(self, start=None, end=None, **kwargs):
         return make_booking(actor=kwargs.pop('criado_por', self.admin), service=make_service(titulo='Serviço real', prazo=end or start or NOW+timedelta(hours=1)), **kwargs)

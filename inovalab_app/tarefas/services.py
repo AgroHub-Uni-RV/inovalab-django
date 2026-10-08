@@ -2,23 +2,23 @@ import sqlite3
 from functools import wraps
 from datetime import datetime
 
-from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import OperationalError, connection, transaction
-from django.db.models import F
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from inovalab_app.adapters.host import is_business_admin
-from inovalab_app.catalogo.models import Equipamento
 from inovalab_app.agenda.models import AgendaServico
-from inovalab_app.materiais.models import Material
 from inovalab_app.tarefas.models import EventoTarefa, StatusTarefa, Tarefa
 from inovalab_app.tarefas.selectors import visible_tasks
+from inovalab_app.tarefas.links import (
+    LINK_FIELDS, LEGACY_LINK_FIELDS, apply_legacy_aliases, link_snapshot,
+    lock_and_validate_links, normalize_links, persist_links,
+)
 
 
-PUBLIC_FIELDS = {'agendamento_servico', 'descricao', 'responsavel', 'equipamento', 'material_gasto', 'quantidade_material_gasto'}
-TRACKED_FIELDS = (*sorted(PUBLIC_FIELDS), 'status', 'inicio', 'conclusao', 'excluida_em')
+PUBLIC_FIELDS = {'agendamento_servico', 'descricao'} | LINK_FIELDS | LEGACY_LINK_FIELDS
+TRACKED_FIELDS = (*sorted(PUBLIC_FIELDS - LINK_FIELDS), 'status', 'inicio', 'conclusao', 'excluida_em')
 TRANSITIONS = {
     'iniciar': ('demanda', 'criacao'),
     'enviar': ('criacao', 'avaliacao'),
@@ -58,7 +58,7 @@ def _snapshot(task):
     for name in TRACKED_FIELDS:
         value = getattr(task, task._meta.get_field(name).attname)
         values[name] = value.isoformat() if isinstance(value, datetime) else value
-    return values
+    return {**values, **link_snapshot(task)}
 
 
 def _record(actor, task, action, before):
@@ -72,7 +72,7 @@ def _record(actor, task, action, before):
 
 
 @transaction.atomic
-def _persist(actor, task, action, before, expected_version):
+def _persist(actor, task, action, before, expected_version, links=None):
     # A conditional UPDATE provides version protection on SQLite too.
     values = {name: getattr(task, task._meta.get_field(name).attname) for name in TRACKED_FIELDS}
     values['versao'] = expected_version + 1
@@ -80,6 +80,8 @@ def _persist(actor, task, action, before, expected_version):
     if not changed:
         raise TaskConflict('A tarefa foi alterada. Atualize a página antes de tentar novamente.')
     task.versao = expected_version + 1
+    if links is not None:
+        persist_links(task, links)
     _record(actor, task, action, before)
     return task
 
@@ -88,7 +90,7 @@ def allowed_actions(actor, task):
     if not actor.is_authenticated or not actor.is_active or task.excluida_em:
         return []
     admin = is_business_admin(actor)
-    if not admin and task.responsavel_id != actor.pk:
+    if not admin and not task.responsaveis.filter(pk=actor.pk).exists():
         return []
     return [action for action, (source, _) in TRANSITIONS.items()
             if source == task.status and (admin or action not in ADMIN_ACTIONS)]
@@ -113,12 +115,6 @@ def _lock_references(task):
     from inovalab_app.agenda.services import _lock_targets
     if task.agendamento_servico_id is not None:
         _lock_targets(('servico', task.agendamento_servico.servico_id))
-    for name, model, field in (('equipamento', Equipamento, 'status'),
-                               ('material_gasto', Material, 'quantidade'),
-                               ('responsavel', get_user_model(), 'is_active')):
-        pk = getattr(task, name + '_id')
-        if pk is not None and not model.objects.filter(pk=pk).update(**{field: F(field)}):
-            raise ValidationError({name: 'Selecione um cadastro válido.'})
 
 
 @_busy_as_task_conflict
@@ -130,31 +126,28 @@ def save_task(*, actor, data, task_id=None, expected_version=None):
     if unknown:
         raise ValidationError({name: 'Este campo não pode ser alterado.' for name in unknown})
     before = _snapshot(task) if task_id is not None else {}
-    references = {'agendamento_servico': AgendaServico, 'responsavel': get_user_model(),
-                  'equipamento': Equipamento, 'material_gasto': Material}
-    for name, value in data.items():
-        if name in references and not (value is None and name in ('equipamento', 'material_gasto')):
-            if not isinstance(value, references[name]) or value.pk is None:
-                raise ValidationError({name: 'Selecione um cadastro válido.'})
+    links = normalize_links(task, data)
+    for name in ('agendamento_servico', 'descricao'):
+        if name not in data:
+            continue
+        value = data[name]
+        if name == 'agendamento_servico' and (not isinstance(value, AgendaServico) or value.pk is None):
+            raise ValidationError({name: 'Selecione um cadastro válido.'})
         setattr(task, name, value)
+    apply_legacy_aliases(task, links, data)
     with transaction.atomic():
         _lock_references(task)
-        for name, model in references.items():
-            pk = getattr(task, name + '_id')
-            if pk is None or (task_id is not None and pk == before[name]):
-                continue
-            criteria = {'agendamento_servico': {'situacao': 'confirmado', 'cancelado_em__isnull': True},
-                        'responsavel': {'is_active': True}, 'equipamento': {'excluido_em__isnull': True},
-                        'material_gasto': {'status': 'disponivel'}}[name]
-            if not model.objects.filter(pk=pk, **criteria).exists():
-                raise ValidationError({name: 'Selecione um agendamento confirmado e não cancelado.' if name == 'agendamento_servico'
-                                       else 'Selecione um cadastro ativo e disponível.'})
+        if task.agendamento_servico_id is not None and task.agendamento_servico_id != before.get('agendamento_servico'):
+            if not AgendaServico.objects.filter(pk=task.agendamento_servico_id, situacao='confirmado', cancelado_em__isnull=True).exists():
+                raise ValidationError({'agendamento_servico': 'Selecione um agendamento confirmado e não cancelado.'})
+        lock_and_validate_links(links, before)
         task.full_clean()
         if task_id is None:
             task.save()
+            persist_links(task, links)
             _record(actor, task, 'criar', before)
             return task
-        return _persist(actor, task, 'editar', before, expected_version)
+        return _persist(actor, task, 'editar', before, expected_version, links=links)
 
 
 def transition_task(*, actor, task_id, action, expected_version):
@@ -191,7 +184,7 @@ def allowed_statuses(actor, task):
 
 def set_task_status(*, actor, task_id, status, expected_version):
     task = _load(actor, task_id, expected_version)
-    if not is_business_admin(actor) and task.responsavel_id != actor.pk:
+    if not is_business_admin(actor) and not task.responsaveis.filter(pk=actor.pk).exists():
         raise PermissionDenied('Esta tarefa pertence a outro responsável.')
     if status == task.status:
         return task

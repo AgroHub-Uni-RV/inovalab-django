@@ -1,6 +1,9 @@
 from collections.abc import Mapping
 
 from rest_framework import serializers
+from django.contrib.auth import get_user_model
+from inovalab_app.catalogo.models import Equipamento
+from inovalab_app.materiais.models import Material
 
 from inovalab_app.tarefas.models import EventoTarefa, Tarefa
 from inovalab_app.tarefas.services import TRANSITIONS, allowed_actions, save_task
@@ -24,19 +27,29 @@ class VersionField(serializers.IntegerField):
         return super().to_internal_value(data)
 
 
+class TaskMaterialSerializer(StrictPayloadMixin, serializers.Serializer):
+    material = serializers.PrimaryKeyRelatedField(queryset=Material.objects.all())
+    quantidade = serializers.CharField(max_length=150, required=False, allow_blank=True, default='')
+
+
 class TaskSerializer(StrictPayloadMixin, serializers.ModelSerializer):
     versao = VersionField(min_value=1, required=False)
     servico_nome = serializers.CharField(source='servico.nome', read_only=True)
     responsavel_nome = serializers.CharField(source='responsavel.username', read_only=True)
     prazo = serializers.DateTimeField(read_only=True)
+    responsaveis = serializers.PrimaryKeyRelatedField(queryset=get_user_model().objects.all(), many=True, required=False)
+    equipamentos = serializers.PrimaryKeyRelatedField(queryset=Equipamento.objects.all(), many=True, required=False)
+    materiais_gastos = TaskMaterialSerializer(many=True, required=False)
     acoes_permitidas = serializers.SerializerMethodField()
 
     class Meta:
         model = Tarefa
         fields = ['id', 'agendamento_servico', 'servico', 'servico_nome', 'descricao', 'responsavel', 'responsavel_nome',
                   'equipamento', 'material_gasto', 'quantidade_material_gasto',
+                  'responsaveis', 'equipamentos', 'materiais_gastos',
                   'status', 'inicio', 'prazo', 'conclusao', 'versao', 'acoes_permitidas']
         read_only_fields = ['id', 'servico', 'status', 'inicio', 'prazo', 'conclusao']
+        extra_kwargs = {'responsavel': {'required': False}}
 
     servico = serializers.IntegerField(source='servico_id', read_only=True)
 

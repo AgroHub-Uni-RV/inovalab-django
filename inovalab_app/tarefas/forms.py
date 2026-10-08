@@ -1,18 +1,19 @@
 from django import forms
+import re
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils import timezone
 
 from inovalab_app.agenda.models import AgendaServico
 from inovalab_app.catalogo.models import Equipamento
-from inovalab_app.materiais.models import Material
 from inovalab_app.tarefas.models import Tarefa
+from inovalab_app.tarefas.material_forms import TaskMaterialFormSet
 
 
 class StrictFormMixin:
     def clean(self):
         cleaned = super().clean()
-        unknown = set(self.data) - set(self.fields) - {'csrfmiddlewaretoken'}
+        unknown = set(self.data) - set(self.fields) - {'csrfmiddlewaretoken'} - getattr(self, 'allowed_extra_keys', set())
         if unknown:
             raise forms.ValidationError('Foram enviados campos que não podem ser alterados.')
         return cleaned
@@ -23,11 +24,17 @@ class TaskForm(StrictFormMixin, forms.ModelForm):
 
     class Meta:
         model = Tarefa
-        fields = ['agendamento_servico', 'descricao', 'responsavel', 'equipamento', 'material_gasto', 'quantidade_material_gasto']
+        fields = ['agendamento_servico', 'descricao', 'responsaveis', 'equipamentos']
         widgets = {
             'descricao': forms.Textarea(attrs={'rows': 4}),
+            'responsaveis': forms.SelectMultiple(attrs={'size': 5}),
+            'equipamentos': forms.SelectMultiple(attrs={'size': 5}),
         }
-        help_texts = {'agendamento_servico': 'A tarefa usa o prazo do serviço vinculado. Horário de Brasília.'}
+        help_texts = {
+            'agendamento_servico': 'A tarefa usa o prazo do serviço vinculado. Horário de Brasília.',
+            'responsaveis': 'Selecione uma ou mais pessoas. No computador, use Ctrl ou Command para selecionar várias.',
+            'equipamentos': 'Opcional. Use Ctrl ou Command para selecionar vários equipamentos.',
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -35,20 +42,41 @@ class TaskForm(StrictFormMixin, forms.ModelForm):
             Q(situacao='confirmado', cancelado_em__isnull=True) | Q(pk=self.instance.agendamento_servico_id),
         ).select_related('servico', 'criado_por')
         self.fields['agendamento_servico'].label_from_instance = lambda booking: f'#{booking.pk} · {booking.objeto_nome}'
-        self.fields['equipamento'].queryset = Equipamento.objects.filter(Q(excluido_em__isnull=True) | Q(pk=self.instance.equipamento_id))
-        self.fields['material_gasto'].queryset = Material.objects.filter(Q(status='disponivel') | Q(pk=self.instance.material_gasto_id))
-        self.fields['responsavel'].queryset = get_user_model().objects.filter(
-            Q(is_active=True) | Q(pk=self.instance.responsavel_id),
+        existing_equipment = self.instance.equipamentos.values_list('pk', flat=True) if self.instance.pk else []
+        existing_users = self.instance.responsaveis.values_list('pk', flat=True) if self.instance.pk else []
+        self.fields['equipamentos'].queryset = Equipamento.objects.filter(Q(excluido_em__isnull=True) | Q(pk__in=existing_equipment))
+        self.fields['responsaveis'].queryset = get_user_model().objects.filter(
+            Q(is_active=True) | Q(pk__in=existing_users),
         ).order_by('username', 'pk')
+        initial = [{'material': entry.material_id, 'quantidade': entry.quantidade}
+                   for entry in self.instance.materiais_gastos.all()] if self.instance.pk else []
+        self.material_formset = TaskMaterialFormSet(self.data if self.is_bound else None, prefix='materiais',
+                                                   initial=initial, task=self.instance)
+        self.allowed_extra_keys = {'adicionar_material'} | {
+            key for key in self.data if re.fullmatch(r'materiais-(TOTAL_FORMS|INITIAL_FORMS|MIN_NUM_FORMS|MAX_NUM_FORMS|\d+-(material|quantidade|DELETE))', key)
+        }
         if self.instance.pk:
             self.fields['versao'].required = True
             self.fields['versao'].initial = self.instance.versao
+
+    def clean(self):
+        cleaned = super().clean()
+        if not self.material_formset.is_valid():
+            raise forms.ValidationError('Confira os materiais e suas quantidades.')
+        cleaned['materiais_gastos'] = self.material_formset.task_materials()
+        return cleaned
 
     def clean_versao(self):
         version = self.cleaned_data.get('versao')
         if not self.instance.pk and version is not None:
             raise forms.ValidationError('A versão inicial é definida pelo sistema.')
         return version
+
+    def clean_responsaveis(self):
+        return list(self.cleaned_data['responsaveis'])
+
+    def clean_equipamentos(self):
+        return list(self.cleaned_data['equipamentos'])
 
     @property
     def service_deadlines(self):

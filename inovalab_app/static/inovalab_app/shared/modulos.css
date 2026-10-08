@@ -185,6 +185,13 @@
 .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--space-6); }
 .form-field { min-width:0; }
 .form-field.full-width { grid-column:1/-1; }
+.task-materials { min-width:0; padding:0; border:0; margin:var(--space-6) 0; }
+.task-materials legend { font-size:var(--font-label); font-weight:600; margin-bottom:var(--space-2); }
+.task-material-row { min-width:0; padding:var(--space-4) 0; border-bottom:1px solid #ddd; margin-bottom:var(--space-4); }
+.task-material-row > button, .task-material-delete { margin-top:var(--space-3); }
+.task-material-delete { display:flex; align-items:center; gap:var(--space-2); }
+.task-material-delete[hidden], .task-material-row[hidden] { display:none; }
+.sheet-form select[multiple] { min-height:150px; }
 .form-field label { display:block; margin-bottom:var(--space-2); font-size:var(--font-label); }
 .booking-equipment-options input { flex-shrink:0; }
 .equipment-picker-field { min-width:0; border:0; padding:0; margin:0; }

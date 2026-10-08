@@ -19,11 +19,13 @@ class TaskMaterialTests(TaskFixtures, TestCase):
         return save_task(actor=self.admin, data={'agendamento_servico': self.booking,
             'responsavel': self.owner, 'descricao': 'Protótipo', **fields})
 
-    def test_material_and_free_text_quantity_are_independently_optional(self):
-        for fields in ({}, {'material_gasto': self.material}, {'quantidade_material_gasto': 'Meia bobina'},
+    def test_material_is_optional_and_quantity_belongs_to_selected_material(self):
+        for fields in ({}, {'material_gasto': self.material},
                        {'material_gasto': self.material, 'quantidade_material_gasto': '12,125 g'}):
             task = self.create(**fields)
             self.assertEqual(task.quantidade_material_gasto, fields.get('quantidade_material_gasto', ''))
+        with self.assertRaises(ValidationError):
+            self.create(quantidade_material_gasto='Meia bobina')
         self.material.refresh_from_db()
         self.assertEqual(self.material.quantidade, 500)
 
@@ -35,8 +37,9 @@ class TaskMaterialTests(TaskFixtures, TestCase):
         task = self.create(material_gasto=self.material, quantidade_material_gasto='12 g')
         Material.objects.filter(pk=self.material.pk).update(status='indisponivel')
         form = TaskForm(instance=task)
-        self.assertIn(self.material, form.fields['material_gasto'].queryset)
-        self.assertNotIn(self.other_material, form.fields['material_gasto'].queryset)
+        material_field = form.material_formset.forms[0].fields['material']
+        self.assertIn(self.material, material_field.queryset)
+        self.assertNotIn(self.other_material, material_field.queryset)
         changed = save_task(actor=self.admin, task_id=task.pk, expected_version=1,
                             data={'descricao': 'Corrigido'})
         self.assertEqual(changed.material_gasto_id, self.material.pk)

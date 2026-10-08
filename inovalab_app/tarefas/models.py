@@ -16,6 +16,10 @@ class Tarefa(models.Model):
     equipamento = models.ForeignKey('inovalab_app.Equipamento', on_delete=models.PROTECT, null=True, blank=True, verbose_name='equipamento')
     material_gasto = models.ForeignKey('inovalab_app.Material', on_delete=models.PROTECT, null=True, blank=True, verbose_name='material gasto')
     quantidade_material_gasto = models.CharField('quantidade de material gasto', max_length=150, blank=True, default='')
+    responsaveis = models.ManyToManyField(settings.AUTH_USER_MODEL, through='TarefaResponsavel',
+                                         related_name='tarefas_atribuidas', verbose_name='responsáveis')
+    equipamentos = models.ManyToManyField('inovalab_app.Equipamento', through='TarefaEquipamento',
+                                         related_name='tarefas_associadas', blank=True, verbose_name='equipamentos')
     descricao = models.TextField('descrição')
     responsavel = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='responsável')
     status = models.CharField('status', max_length=10, choices=StatusTarefa.choices, default=StatusTarefa.DEMANDA)
@@ -65,6 +69,10 @@ class Tarefa(models.Model):
     def prazo(self):
         return self.servico.prazo
 
+    @property
+    def responsaveis_nomes(self):
+        return ', '.join(user.get_full_name() or user.username for user in self.responsaveis.all())
+
 
 class EventoTarefa(models.Model):
     tarefa = models.ForeignKey(Tarefa, on_delete=models.CASCADE, related_name='eventos')
@@ -81,3 +89,32 @@ class EventoTarefa(models.Model):
         ordering = ['-pk']
         verbose_name = 'evento de tarefa'
         verbose_name_plural = 'eventos de tarefas'
+
+
+class TarefaResponsavel(models.Model):
+    tarefa = models.ForeignKey(Tarefa, on_delete=models.CASCADE, related_name='vinculos_responsaveis')
+    responsavel = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+    class Meta:
+        db_table = 'tarefas_responsavel'
+        constraints = [models.UniqueConstraint(fields=['tarefa', 'responsavel'], name='tarefa_responsavel_unico')]
+
+
+class TarefaEquipamento(models.Model):
+    tarefa = models.ForeignKey(Tarefa, on_delete=models.CASCADE, related_name='vinculos_equipamentos')
+    equipamento = models.ForeignKey('inovalab_app.Equipamento', on_delete=models.PROTECT)
+
+    class Meta:
+        db_table = 'tarefas_equipamento'
+        constraints = [models.UniqueConstraint(fields=['tarefa', 'equipamento'], name='tarefa_equipamento_unico')]
+
+
+class TarefaMaterial(models.Model):
+    tarefa = models.ForeignKey(Tarefa, on_delete=models.CASCADE, related_name='materiais_gastos')
+    material = models.ForeignKey('inovalab_app.Material', on_delete=models.PROTECT)
+    quantidade = models.CharField('quantidade gasta', max_length=150, blank=True, default='')
+
+    class Meta:
+        db_table = 'tarefas_material'
+        ordering = ['material_id']
+        constraints = [models.UniqueConstraint(fields=['tarefa', 'material'], name='tarefa_material_unico')]

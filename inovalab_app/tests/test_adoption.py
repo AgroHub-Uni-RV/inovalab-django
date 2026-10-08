@@ -38,7 +38,7 @@ class ExistingDatabaseAdoptionTests(TransactionTestCase):
                 ContentType.objects.filter(app_label=old_label, model=model).update(app_label='inovalab_app')
         ContentType.objects.clear_cache()
         self.old.get_model('inovalab_app', 'Tarefa').objects.all().delete()
-        MigrationExecutor(connection).migrate([('inovalab_app', '0005_tarefa_prazo_do_servico')])
+        MigrationExecutor(connection).migrate([('inovalab_app', '0006_tarefas_multiplos_vinculos')])
         super().tearDown()
     def test_adoption_preserves_data_m2m_microseconds_permissions_and_admin_history(self):
         Servico = self.old.get_model('inovalab_app', 'Servico')

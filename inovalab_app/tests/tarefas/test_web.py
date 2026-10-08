@@ -34,10 +34,10 @@ class TaskWebTests(TaskFixtures, TestCase):
 
     def test_admin_creates_edits_reassigns_and_deletes_with_confirmation(self):
         self.client.force_login(self.admin)
-        response = self.client.post('/tarefas/nova/', self.payload(), follow=False)
+        response = self.client.post('/tarefas/nova/', self.form_payload(), follow=False)
         task = Tarefa.objects.get(descricao='Nova tarefa')
         self.assertRedirects(response, f'/tarefas/{task.pk}/', fetch_redirect_response=False)
-        response = self.client.post(f'/tarefas/{task.pk}/editar/', self.payload(descricao='Reatribuída', responsavel=self.other.pk, versao=1))
+        response = self.client.post(f'/tarefas/{task.pk}/editar/', self.form_payload(descricao='Reatribuída', responsavel=self.other.pk, versao=1))
         self.assertEqual(response.status_code, 302)
         task.refresh_from_db()
         self.assertEqual((task.responsavel_id, task.versao), (self.other.pk, 2))
@@ -51,7 +51,7 @@ class TaskWebTests(TaskFixtures, TestCase):
             self.client.force_login(actor)
             for path in ('/tarefas/nova/', f'/tarefas/{task.pk}/editar/', f'/tarefas/{task.pk}/excluir/'):
                 self.assertEqual(self.client.get(path).status_code, 403)
-                self.assertEqual(self.client.post(path, self.payload(versao=1)).status_code, 403)
+                self.assertEqual(self.client.post(path, self.form_payload(versao=1)).status_code, 403)
 
     def test_owner_can_start_and_submit_but_not_approve(self):
         self.client.force_login(self.owner)
@@ -74,7 +74,7 @@ class TaskWebTests(TaskFixtures, TestCase):
 
     def test_protected_fields_submitted_in_admin_form_are_rejected(self):
         self.client.force_login(self.admin)
-        response = self.client.post(f'/tarefas/{self.mine.pk}/editar/', self.payload(versao=1, status='concluido'))
+        response = self.client.post(f'/tarefas/{self.mine.pk}/editar/', self.form_payload(versao=1, status='concluido'))
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['form'].errors)
         self.mine.refresh_from_db()
@@ -83,7 +83,7 @@ class TaskWebTests(TaskFixtures, TestCase):
     def test_stale_edit_and_transition_render_409_without_changes(self):
         save_task(actor=self.admin, task_id=self.mine.pk, expected_version=1, data={'descricao': 'Nova versão'})
         self.client.force_login(self.admin)
-        response = self.client.post(f'/tarefas/{self.mine.pk}/editar/', self.payload(descricao='Antiga', versao=1))
+        response = self.client.post(f'/tarefas/{self.mine.pk}/editar/', self.form_payload(descricao='Antiga', versao=1))
         self.assertEqual(response.status_code, 409)
         self.assertContains(response, 'alterada', status_code=409)
         response = self.client.post(f'/tarefas/{self.mine.pk}/transicoes/', {'status': 'criacao', 'versao': 1})
@@ -114,14 +114,14 @@ class TaskWebTests(TaskFixtures, TestCase):
 
     def test_create_form_errors_keep_input_and_existing_inactive_refs_remain_editable(self):
         self.client.force_login(self.admin)
-        response = self.client.post('/tarefas/nova/', self.payload(descricao='   '))
+        response = self.client.post('/tarefas/nova/', self.form_payload(descricao='   '))
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['form'].errors)
         self.owner.is_active = False
         self.owner.save()
         self.service.status = 'indisponivel'
         self.service.save()
-        response = self.client.post(f'/tarefas/{self.mine.pk}/editar/', self.payload(descricao='Mantida', versao=1))
+        response = self.client.post(f'/tarefas/{self.mine.pk}/editar/', self.form_payload(descricao='Mantida', versao=1))
         self.assertEqual(response.status_code, 302)
 
     def test_home_has_task_navigation(self):
@@ -137,7 +137,7 @@ class TaskWebTests(TaskFixtures, TestCase):
         response = self.client.get(path)
         self.assertNotContains(response, 'name="prazo"')
         self.assertContains(response, '01/11/2026 14:22')
-        response = self.client.post(path, self.payload(descricao='Somente descrição', versao=1))
+        response = self.client.post(path, self.form_payload(descricao='Somente descrição', versao=1))
         self.assertEqual(response.status_code, 302)
         self.mine.refresh_from_db()
         self.assertEqual(self.mine.prazo, deadline)

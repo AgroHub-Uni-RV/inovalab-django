@@ -24,3 +24,11 @@ class TaskFixtures:
 
     def payload(self, **overrides):
         return {'agendamento_servico': self.booking.pk, 'responsavel': self.owner.pk, 'descricao': 'Nova tarefa', **overrides}
+
+    def form_payload(self, **overrides):
+        payload = self.payload(**overrides)
+        payload['responsaveis'] = [payload.pop('responsavel')]
+        payload['equipamentos'] = []
+        payload.update({'materiais-TOTAL_FORMS': '1', 'materiais-INITIAL_FORMS': '0',
+                        'materiais-0-material': '', 'materiais-0-quantidade': ''})
+        return payload
