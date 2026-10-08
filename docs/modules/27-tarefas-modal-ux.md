@@ -6,6 +6,8 @@ Entrega de 08/10/2026, solicitada pelo responsável. Esta etapa trata somente o 
 
 Adicionar Tarefa no quadro e Nova tarefa no dashboard abrem um `dialog` sem mudar a URL de origem. Editar dados no detalhe reutiliza o mesmo componente. A criação e a edição exibem carregamento, bloqueiam fechamento e reenvio durante a gravação, mantêm os valores em erros de validação ou conflito e apresentam a confirmação com Ver tarefa e Concluir. Depois de salvar, o quadro, dashboard ou detalhe de origem é atualizado sem recarregar toda a página.
 
+A entrega seguinte de [detalhes de tarefas](28-detalhes-tarefas-modal.md) atualiza esse fluxo: salvar ou cancelar uma edição retorna ao detalhe dentro do diálogo; a confirmação com Ver tarefa e Concluir permanece na criação.
+
 O modal fecha pelo botão, Cancelar, Escape ou clique no fundo e devolve o foco ao acionador. O foco permanece contido enquanto o diálogo está aberto. Enquanto um POST está em andamento, todas essas saídas ficam bloqueadas, inclusive Cancelar acionado pelo teclado. Falhas de carregamento permitem tentar novamente. Quando a resposta de um POST é incerta, a interface não reenvia automaticamente e orienta consultar o quadro para evitar duplicidade.
 
 As URLs `/tarefas/nova/` e `/tarefas/{id}/editar/` continuam servindo páginas completas e aceitando POST tradicional. Com JavaScript, o acesso direto move o formulário para o modal; sem JavaScript, o mesmo formulário permanece funcional na página. O JavaScript deriva as rotas das URLs geradas pelo Django e funciona quando o app está montado sob um prefixo, como `/laboratorio/`.
@@ -20,9 +22,9 @@ Materiais aparecem em cartões numerados, cada um com material e quantidade text
 
 ## Contrato HTTP
 
-Requisições do modal enviam `X-Task-Modal: 1`. GET e formulários inválidos retornam somente o fragmento marcado por `data-task-modal-content`, com `Cache-Control: no-store` e `Vary: X-Task-Modal`. Conflitos conservam HTTP 409. Um POST válido retorna JSON com `saved`, `message` e `detail_url`: HTTP 201 na criação e HTTP 200 na edição. Sem o cabeçalho, o redirecionamento tradicional ao detalhe é preservado.
+Requisições do modal enviam `X-Task-Modal: 1`. GET e formulários inválidos retornam somente o fragmento marcado por `data-task-modal-content`, com `Cache-Control: no-store` e `Vary: X-Task-Modal`. Conflitos conservam HTTP 409. A criação válida retorna JSON com `saved`, `message` e `detail_url`, em HTTP 201. A entrega seguinte de [detalhes em modal](28-detalhes-tarefas-modal.md) substitui a confirmação JSON da edição por detalhe HTML atualizado, em HTTP 200. Sem o cabeçalho, o redirecionamento tradicional ao detalhe é preservado.
 
-Somente administradores recebem o componente e seus acionadores. As views continuam protegidas no servidor, e sessão, CSRF, campos estritos, concorrência otimista e gravação transacional mantêm as regras existentes. Se a sessão expirar, o modal reconhece a URL de login fornecida pelo hospedeiro, inclusive prefixo e parâmetros, tanto no carregamento quanto no envio.
+Criar e editar permanecem exclusivos de administradores. A entrega seguinte permite que responsáveis recebam o componente para visualizar e atualizar o status de suas tarefas. As views continuam protegidas no servidor, e sessão, CSRF, campos estritos, concorrência otimista e gravação transacional mantêm as regras existentes. Se a sessão expirar, o modal reconhece a URL de login fornecida pelo hospedeiro, inclusive prefixo e parâmetros, tanto no carregamento quanto no envio.
 
 ## Verificação
 

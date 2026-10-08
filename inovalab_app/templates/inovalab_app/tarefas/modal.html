@@ -1,7 +1,7 @@
 {% load static %}
-{% if is_business_admin %}
-<dialog id="task-modal" class="task-modal" aria-label="Tarefa" data-board-url="{% url 'tarefas:board' %}" data-create-url="{% url 'tarefas:create' %}" data-login-url="{{ inovalab_identity.login_url }}">
-  <button type="button" class="task-modal-close" data-task-close aria-label="Fechar formulário de tarefa">&times;</button>
+{% if can_access_panel %}
+<dialog id="task-modal" class="task-modal" aria-label="Tarefa" data-board-url="{% url 'tarefas:board' %}"{% if is_business_admin %} data-create-url="{% url 'tarefas:create' %}"{% endif %} data-login-url="{{ inovalab_identity.login_url }}">
+  <button type="button" class="task-modal-close" data-task-close aria-label="Fechar tarefa">&times;</button>
   <div class="task-modal-status" role="status" aria-live="polite" hidden></div>
   <div class="task-modal-body"></div>
 </dialog>

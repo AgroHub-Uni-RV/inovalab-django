@@ -1,6 +1,72 @@
-{% extends 'inovalab_app/tarefas/base.html' %}
+{% extends task_base|default:'inovalab_app/tarefas/base.html' %}
 {% block content_class %}module-page detail-page{% endblock %}
 {% block content %}
-<div class="detail-sheet"><div class="sheet-topbar"><div class="task-actions"><form action="{% url 'tarefas:transition' task.pk %}" method="post">{% csrf_token %}{{ status_form.versao }}{{ status_form.status.label_tag }}{{ status_form.status }}<button type="submit"{% if not can_transition %} disabled{% endif %}>Salvar status</button></form></div><span class="sheet-meta">{% include 'inovalab_app/shared/icon.html' with name='profile' %}{{ task.responsaveis_nomes }}</span><span class="sheet-meta">{% include 'inovalab_app/shared/icon.html' with name='calendar' %}{{ task.prazo|date:'d.m.Y'|default:'Sem prazo' }}</span><span class="badge {{ task.status }}">{{ task.get_status_display }}</span><a class="sheet-close" href="{% url 'tarefas:board' %}" aria-label="Voltar ao quadro">&times;</a></div>
-<div class="sheet-layout"><section class="sheet-content"><h1><span>#{{ task.pk|stringformat:'03d' }}</span> {{ task.servico.nome }}</h1><div class="sheet-metadata"><p>Criado por <strong>{{ created_event.ator_nome|default:'Não registrado' }}</strong></p><p>Criado em <strong>{{ created_event.instante|date:'d \d\e F \d\e Y'|default:'Não registrado' }}</strong></p></div><dl class="inline-details"><div><dt>Agendamento de serviço</dt><dd>#{{ task.agendamento_servico_id }} · {{ task.servico.titulo }}</dd></div><div><dt>Equipamentos</dt><dd>{% for equipment in task.equipamentos.all %}{{ equipment.nome }}{% if not forloop.last %}<br>{% endif %}{% empty %}Não informados{% endfor %}</dd></div><div><dt>Materiais gastos</dt><dd>{% for entry in task.materiais_gastos.all %}{{ entry.material.nome }} · {{ entry.quantidade|default:'Quantidade não informada' }}{% if not forloop.last %}<br>{% endif %}{% empty %}Não informados{% endfor %}</dd></div><div><dt>Responsáveis</dt><dd>{{ task.responsaveis_nomes }}</dd></div><div><dt>Início</dt><dd>{{ task.inicio|date:'d/m/Y H:i'|default:'Não iniciado' }}</dd></div><div><dt>Prazo</dt><dd>{{ task.prazo|date:'d/m/Y H:i'|default:'Não definido' }}</dd></div><div><dt>Conclusão</dt><dd>{{ task.conclusao|date:'d/m/Y H:i'|default:'Não concluído' }}</dd></div></dl><section class="description-block"><h2>Descrição</h2><p>{{ task.descricao|linebreaksbr }}</p></section>{% if can_manage %}<div class="sheet-actions"><a class="secondary-button" data-task-modal-trigger href="{% url 'tarefas:update' task.pk %}">Editar dados</a><a class="secondary-button" href="{% url 'tarefas:delete' task.pk %}">Excluir tarefa</a></div>{% endif %}</section><aside class="sheet-sidebar"><h2>Histórico</h2>{% for event in events %}{% include 'inovalab_app/tarefas/event.html' %}{% empty %}<p>Nenhuma alteração registrada.</p>{% endfor %}<a class="history-link" href="{% url 'tarefas:history' task.pk %}">Ver histórico completo</a></aside></div></div>
+<article class="detail-sheet task-detail-sheet" data-task-detail data-task-id="{{ task.pk }}">
+  <header class="sheet-topbar task-detail-toolbar">
+    <div class="task-detail-identity">
+      <p class="form-eyebrow">Tarefa #{{ task.pk|stringformat:'03d' }}</p>
+      <h1>{{ task.servico.nome }}</h1>
+    </div>
+    <span class="badge {{ task.status }}">{{ task.get_status_display }}</span>
+    {% if not task_modal %}<a class="sheet-close" href="{% url 'tarefas:board' %}" aria-label="Voltar ao quadro">&times;</a>{% endif %}
+  </header>
+
+  {% if task_action_message %}<div class="task-feedback{% if task_action_error %} task-feedback-error{% endif %}" role="{% if task_action_error %}alert{% else %}status{% endif %}" tabindex="-1">{{ task_action_message }}</div>{% endif %}
+
+  <section class="task-detail-summary" aria-label="Resumo da tarefa">
+    <article><span>Prazo do serviço</span><strong>{{ task.prazo|date:'d/m/Y H:i'|default:'Não definido' }}</strong></article>
+    <article><span>Agendamento vinculado</span><strong>#{{ task.agendamento_servico_id }} · {{ task.servico.titulo }}</strong></article>
+    <article><span>Criada por</span><strong>{{ created_event.ator_nome|default:'Não registrado' }}</strong><small>{{ created_event.instante|date:'d/m/Y H:i'|default:'Data não registrada' }}</small></article>
+  </section>
+
+  <div class="sheet-layout task-detail-layout">
+    <section class="sheet-content task-detail-main">
+      <section class="task-status-panel" aria-labelledby="task-status-title">
+        <div><h2 id="task-status-title">Andamento</h2><p>Atualize o estágio conforme a execução da tarefa.</p></div>
+        <form action="{% url 'tarefas:transition' task.pk %}" method="post" data-task-status-form>
+          {% csrf_token %}{{ status_form.versao }}
+          {{ status_form.status.label_tag }}{{ status_form.status }}
+          <button type="submit"{% if not can_transition %} disabled{% endif %}>Salvar status</button>
+        </form>
+      </section>
+
+      <section class="description-block task-description-panel">
+        <h2>Descrição</h2>
+        <p>{{ task.descricao|linebreaksbr }}</p>
+      </section>
+
+      <section class="task-lifecycle" aria-labelledby="task-lifecycle-title">
+        <h2 id="task-lifecycle-title">Linha do tempo</h2>
+        <dl>
+          <div><dt>Início</dt><dd>{{ task.inicio|date:'d/m/Y H:i'|default:'Não iniciado' }}</dd></div>
+          <div><dt>Prazo</dt><dd>{{ task.prazo|date:'d/m/Y H:i'|default:'Não definido' }}</dd></div>
+          <div><dt>Conclusão</dt><dd>{{ task.conclusao|date:'d/m/Y H:i'|default:'Não concluído' }}</dd></div>
+        </dl>
+      </section>
+
+      <div class="task-resources" role="group" aria-label="Equipe e recursos">
+        <section class="task-resource-section">
+          <h2>Responsáveis</h2>
+          <div class="task-resource-list">{% for person in task.responsaveis.all %}<span>{{ person.get_full_name|default:person.username }}</span>{% empty %}<p>Não informados.</p>{% endfor %}</div>
+        </section>
+        <section class="task-resource-section">
+          <h2>Equipamentos</h2>
+          <div class="task-resource-list">{% for equipment in task.equipamentos.all %}<span>{{ equipment.nome }}</span>{% empty %}<p>Nenhum equipamento informado.</p>{% endfor %}</div>
+        </section>
+        <section class="task-resource-section">
+          <h2>Materiais gastos</h2>
+          <ul class="task-material-list">{% for entry in task.materiais_gastos.all %}<li><strong>{{ entry.material.nome }}</strong><span>{{ entry.quantidade|default:'Quantidade não informada' }}</span></li>{% empty %}<li>Nenhum material informado.</li>{% endfor %}</ul>
+        </section>
+      </div>
+
+      {% if can_manage %}<div class="sheet-actions task-detail-actions"><a class="primary-button" data-task-modal-trigger href="{% url 'tarefas:update' task.pk %}">Editar dados</a><a class="secondary-button" href="{% url 'tarefas:delete' task.pk %}">Excluir tarefa</a></div>{% endif %}
+    </section>
+
+    <aside class="sheet-sidebar task-history-panel">
+      <div class="task-history-heading"><p class="form-eyebrow">Registro</p><h2>Histórico recente</h2></div>
+      <div class="task-history-timeline">{% for event in events %}{% include 'inovalab_app/tarefas/event.html' %}{% empty %}<p>Nenhuma alteração registrada.</p>{% endfor %}</div>
+      <a class="history-link" href="{% url 'tarefas:history' task.pk %}">Ver histórico completo</a>
+    </aside>
+  </div>
+</article>
 {% endblock %}

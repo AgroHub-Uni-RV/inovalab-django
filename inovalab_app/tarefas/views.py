@@ -27,6 +27,31 @@ class TaskContextMixin:
         return context
 
 
+def task_detail_context(request, task, *, message='', error=False):
+    status_form = TransitionForm(initial={'status': task.status, 'versao': task.versao})
+    status_form.fields['status'].widget.allowed_values = allowed_statuses(request.user, task)
+    return {
+        'task': task,
+        'object': task,
+        'can_manage': is_business_admin(request.user),
+        'status_form': status_form,
+        'can_transition': bool(allowed_actions(request.user, task)),
+        'events': task.eventos.all()[:5],
+        'created_event': task.eventos.filter(acao='criar').first(),
+        'task_action_message': message,
+        'task_action_error': error,
+    }
+
+
+def render_task_detail(request, task, *, message='', status=200):
+    return render_task_form(
+        request,
+        'inovalab_app/tarefas/detail.html',
+        task_detail_context(request, task, message=message, error=status >= 400),
+        status=status,
+    )
+
+
 class AdminRequiredMixin:
     def dispatch(self, request, *args, **kwargs):
         if not is_business_admin(request.user):
@@ -84,12 +109,16 @@ class TaskDetailView(LoginRequiredMixin, TaskContextMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['status_form'] = TransitionForm(initial={'status': self.object.status, 'versao': self.object.versao})
-        context['status_form'].fields['status'].widget.allowed_values = allowed_statuses(self.request.user, self.object)
-        context['can_transition'] = bool(allowed_actions(self.request.user, self.object))
-        context['events'] = self.object.eventos.all()[:5]
-        context['created_event'] = self.object.eventos.filter(acao='criar').first()
+        context.update(task_detail_context(self.request, self.object))
         return context
+
+    def render_to_response(self, context, **response_kwargs):
+        return render_task_form(
+            self.request,
+            self.template_name,
+            context,
+            status=response_kwargs.get('status', 200),
+        )
 
 
 class TaskWriteMixin(TaskContextMixin):
@@ -136,6 +165,8 @@ class TaskWriteMixin(TaskContextMixin):
             for field, errors in error.message_dict.items():
                 form.add_error(field if field in form.fields else None, errors)
             return self.form_invalid(form)
+        if not creating and self.request.headers.get('X-Task-Modal') == '1':
+            return render_task_detail(self.request, self.object, message='Tarefa atualizada com sucesso.')
         return task_saved(self.request, self.object, creating=creating)
 
 
@@ -157,14 +188,23 @@ def transition_view(request, pk):
     task = get_object_or_404(visible_tasks(request.user), pk=pk)
     form = TransitionForm(request.POST)
     if not form.is_valid():
+        if request.headers.get('X-Task-Modal') == '1':
+            return render_task_detail(request, task, message='Confira o status, a versão e os campos enviados.', status=400)
         return operation_error(request, task, 'Confira a ação, a versão e os campos enviados.')
     try:
-        set_task_status(actor=request.user, task_id=pk, status=form.cleaned_data['status'],
-                        expected_version=form.cleaned_data['versao'])
+        task = set_task_status(actor=request.user, task_id=pk, status=form.cleaned_data['status'],
+                               expected_version=form.cleaned_data['versao'])
     except TaskConflict as error:
+        if request.headers.get('X-Task-Modal') == '1':
+            task = get_object_or_404(visible_tasks(request.user), pk=pk)
+            return render_task_detail(request, task, message=str(error), status=409)
         return operation_error(request, task, str(error), 409)
     except ValidationError as error:
+        if request.headers.get('X-Task-Modal') == '1':
+            return render_task_detail(request, task, message=' '.join(error.messages), status=400)
         return operation_error(request, task, ' '.join(error.messages))
+    if request.headers.get('X-Task-Modal') == '1':
+        return render_task_detail(request, task, message='Tarefa atualizada com sucesso.')
     messages.success(request, 'Status da tarefa atualizado.')
     return redirect('tarefas:detail', pk=pk)
 
