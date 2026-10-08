@@ -1,5 +1,7 @@
 # Módulo 4 — Agenda interna
 
+> Atualização de 08/10/2026: serviços com prazo e bloqueio de novas reservas de equipamento. Consulte [25-servicos-tarefas-infraestrutura.md](25-servicos-tarefas-infraestrutura.md); os contratos anteriores abaixo permanecem como histórico.
+
 > Atualização de 07/10/2026: o módulo de integradores, seus recibos e metadados associados foram removidos. As referências a esse recebimento abaixo descrevem entregas anteriores. Agendamentos e eventos históricos permanecem. Ver [remoção](23-remocao-integracoes.md).
 
 **Solicitação mais recente de 07/10/2026:** Recusar usa a API do AgroHub; confirmadas saem do quadro de solicitações e viram agendamentos locais, vinculados sem duplicação. Ver [recusa e confirmações na agenda](13-recusa-e-confirmacoes-na-agenda.md). A autorização atual permite o registro local das confirmadas.

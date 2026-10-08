@@ -6,7 +6,7 @@ Implementação do plano aprovado em 07/10/2026. O pacote instalável chama-se `
 
 `setup` configura o sistema independente; `accounts` mantém o usuário local e a autenticação atual pela API. Somente `inovalab_app.apps.InovalabConfig` registra o negócio. Seus pacotes internos são shared, catalogo, materiais, tarefas, agenda e conteudo, sem outros AppConfigs.
 
-Shared mantém layout, navegação, dashboard e utilitários de horários. Os demais pacotes conservam models, forms, services, selectors, views e APIs por domínio. O pacote models importa os dez modelos concretos; as três agendas continuam independentes. Templates/static usam o prefixo `inovalab_app`, inclusive as imagens institucionais e fotos iniciais de equipamentos. Há wrappers dos templates de erro padrão para o hospedeiro independente.
+Shared mantém layout, navegação, dashboard e utilitários de horários. Os demais pacotes conservam models, forms, services, selectors, views e APIs por domínio. O pacote models importa os modelos concretos; as três agendas continuam independentes. Templates/static usam o prefixo `inovalab_app`, inclusive as imagens institucionais e fotos iniciais de equipamentos. Há wrappers dos templates de erro padrão para o hospedeiro independente.
 
 URLs e namespaces anteriores continuam válidos: core, catalogo, tarefas, agenda, materiais e conteudo. Namespaces HTTP não são labels de modelos. A proteção das APIs usa marcações explícitas dos callbacks de rota, sem identificar classes por seu caminho Python. Criação e ações pessoais continuam abertas às contas ativas autenticadas, com proteção adicional nos serviços.
 
@@ -43,7 +43,7 @@ python manage.py check
 python manage.py runserver
 ```
 
-A carga inicial é um comando separado, idempotente e por código estável. Os comandos carregar_servicos_iniciais e carregar_recursos_iniciais continuam disponíveis. Migrações novas não cadastram dados de negócio. O test runner executa explicitamente a carga inicial no banco de testes; o build executa a carga apenas quando não havia tabelas de negócio.
+A carga inicial é um comando separado, idempotente e por código estável. Desde 08/10/2026, seed_inovalab carrega somente equipamentos; carregar_servicos_iniciais explica o novo fluxo sem cadastrar serviços. Ver [25-servicos-tarefas-infraestrutura.md](25-servicos-tarefas-infraestrutura.md). carregar_recursos_iniciais continua disponível. Migrações novas não cadastram dados de negócio. O test runner executa explicitamente a carga inicial no banco de testes; o build executa a carga apenas quando não havia tabelas de negócio.
 
 Para gerar o pacote: `python -m pip wheel . --no-deps`. O wheel inclui somente inovalab_app, seus recursos e metadados de validação; Accounts/setup/testes ficam no repositório hospedeiro. As dependências do pacote aceitam Django 5.2 até 6.1 e DRF 3.17/3.18; requirements.txt conserva as versões do sistema independente.
 
@@ -56,12 +56,12 @@ Para gerar o pacote: `python -m pip wheel . --no-deps`. O wheel inclui somente i
 
 ```powershell
 python manage.py check_inovalab_upgrade
-python manage.py migrate --fake-initial --noinput
+python manage.py migrate inovalab_app 0002_preserva_contenttypes --fake-initial --noinput
 python manage.py check
 python manage.py makemigrations --check --dry-run
 ```
 
-5. Comparar os dados e arquivos com o backup, testar acessos e só então retomar escrita. Não executar seed_inovalab para transportar dados existentes.
+5. Na versão de 08/10/2026, concluir as migrações de serviços/tarefas usando o mapa explícito descrito em [25-servicos-tarefas-infraestrutura.md](25-servicos-tarefas-infraestrutura.md). Somente depois comparar dados e arquivos com o backup, testar acessos e retomar escrita. Não executar seed_inovalab para transportar dados existentes.
 
 Os nomes físicos catalogo_*, materiais_*, tarefas_*, agenda_* e conteudo_banner são explícitos, incluindo agenda_agendaservico_equipamentos. Não há cópia, renumeração ou recriação das tabelas na adoção. A migração inicial representa esse esquema; fake-initial registra somente sua adoção.
 

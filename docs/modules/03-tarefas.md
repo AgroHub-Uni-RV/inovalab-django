@@ -1,5 +1,7 @@
 # Módulo 3 — Tarefas
 
+> Atualização de 08/10/2026: vínculo obrigatório ao agendamento de serviço, recursos opcionais e select de status. Consulte [25-servicos-tarefas-infraestrutura.md](25-servicos-tarefas-infraestrutura.md); os contratos anteriores abaixo permanecem como histórico.
+
 Implementação de 01/10/2026: quadro único com quatro colunas, detalhe, criação/edição/exclusão administrativa, transições e histórico. As telas usam formulários e botões simples; interface e API chamam as mesmas operações de negócio.
 
 ## Executar

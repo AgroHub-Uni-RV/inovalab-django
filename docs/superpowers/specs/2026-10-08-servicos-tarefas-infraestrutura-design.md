@@ -1,6 +1,6 @@
 # Serviços por solicitação, tarefas e infraestrutura
 
-Data: 08/10/2026. Especificação aprovada pelo responsável com a resposta “certo”, incluindo o mapa das tarefas 2 e 3 para o agendamento 7. Implementação ainda não iniciada.
+Data: 08/10/2026. Especificação aprovada pelo responsável com a resposta “certo”, incluindo o mapa das tarefas 2 e 3 para o agendamento 7. Implementação autorizada com “implemente” e concluída com testes e migração local; ver docs/modules/25-servicos-tarefas-infraestrutura.md.
 
 ## Resultado esperado
 
@@ -82,4 +82,4 @@ A abordagem recomendada conserva a separação existente entre serviço e contro
 - Suíte completa com `python manage.py test --noinput`, `python manage.py check` e `python manage.py makemigrations --check --dry-run` usando o Python do ambiente virtual.
 - Navegador: criar serviço pelo modal, criar tarefa vinculada, preencher campos opcionais, mudar status pelo select, excluir equipamento e conferir desktop/celular, logo e ausência do atalho Páginas.
 
-Após aprovação deste documento, preparar o plano de implementação e suas verificações. Commits importantes seguem o formato em português indicado no AGENTS.md.
+O plano aprovado foi executado; as evidências da entrega estão documentadas no módulo 25. Commits importantes seguem o formato em português indicado no AGENTS.md.

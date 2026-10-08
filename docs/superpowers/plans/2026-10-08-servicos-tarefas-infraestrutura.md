@@ -1,6 +1,6 @@
 # Plano de implementação: serviços, tarefas e infraestrutura
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Substituir o catálogo operacional de serviços por serviços definidos em cada solicitação, exigir vínculo das tarefas com agendamentos de serviço e atualizar equipamentos e navegação.
 
@@ -49,9 +49,9 @@
 
 **Interfaces:** nenhuma alteração de produto; produzir baseline e identificação do banco local antes das mudanças.
 
-- [ ] Conferir checkout limpo e isolamento usando a skill `using-git-worktrees`. Preservar a forma de trabalho escolhida pelo responsável.
+- [x] Conferir checkout limpo e isolamento usando a skill `using-git-worktrees`. Preservar a forma de trabalho escolhida pelo responsável.
 - [x] Executar `& .\venv\Scripts\python.exe manage.py test --noinput`; registrar total e resultado. Executar `check` e `makemigrations --check --dry-run`. Baseline de 08/10/2026: **545 testes passaram em 56,831 s**, `check` sem problemas e nenhuma alteração de migração detectada.
-- [ ] Identificar a configuração efetiva do banco sem exibir credenciais. Operações de migração desta entrega só atingem cópia e SQLite local autorizado.
+- [x] Identificar a configuração efetiva do banco sem exibir credenciais. Operações de migração desta entrega só atingem cópia e SQLite local autorizado.
 
 ### Tarefa 2: modelos e migração com mapa explícito
 
@@ -59,15 +59,15 @@
 
 **Interfaces:** `Servico(titulo, descricao, prazo)`; `AgendaServico.servico` OneToOne; `Tarefa.agendamento_servico` FK PROTECT; `Equipamento.excluido_em`; `Tarefa.equipamento`, `material_gasto` e `quantidade_material_gasto` (`max_length=150`, `blank=True`, padrão vazio).
 
-- [ ] Criar testes com `MigrationExecutor`: dois agendamentos que reutilizam um catálogo produzem dois serviços distintos; IDs/eventos/legado permanecem; tarefas sem mapa bloqueiam a etapa final.
-- [ ] Rodar `manage.py test inovalab_app.tests.test_service_upgrade --noinput`; confirmar falha por ausência da nova migração/comando.
-- [ ] Criar `0003`: renomear o modelo antigo para `ServicoLegado`, preservar sua tabela e ContentType histórico; criar o novo serviço; renomear vínculos antigos para `servico_legado`; adicionar o novo vínculo de agenda e o vínculo temporariamente nulo de tarefa.
-- [ ] Converter cada agendamento existente: título do catálogo, descrição do motivo, prazo do término. Renomear o período e o motivo antigos para `inicio_legado`, `fim_legado` e `motivo_legado`, preservando valores e permitindo ausência em registros novos; retirar as constraints de intervalo que não correspondem ao novo serviço. Conservar material e equipamentos anteriores como legado sem presença nos formulários. Não editar `0001` nem `0002`.
-- [ ] Implementar `vincular_tarefas_servicos --mapa arquivo.json [--database default] [--dry-run]`, aceitando objeto como `{"2": 7, "3": 7}`. Validar tipos, existência, ausência de reassociação conflitante e compatibilidade com o serviço antigo; validar todos os registros antes de gravar. Ser idempotente e não criar eventos de ação humana retroativos.
-- [ ] Criar `0004`: verificar todas as tarefas, inclusive excluídas, e rejeitar as sem vínculo com mensagem de IDs e instrução do comando; depois tornar a FK NOT NULL. Instalação nova vazia aplica ambas normalmente.
-- [ ] Ajustar a validação de esquema para obter os modelos históricos de `0001_initial` na adoção e da última migração aplicada nos bancos consolidados, incluindo o estado intermediário `0003`. Preservar o manifesto de CHECKs da adoção e os bloqueios de esquema divergente; testar atualização de banco antigo sem exigir a tabela nova antes de executar suas migrações.
-- [ ] Fazer `seed_inovalab` carregar somente equipamentos. `carregar_servicos_iniciais` passa a explicar que serviços são definidos por solicitação, sem fabricar solicitações. Cadastros antigos permanecem disponíveis apenas como legado interno; retirar sua manutenção também do Django Admin.
-- [ ] Verificar testes de migração, registro, adoção e carga inicial; `makemigrations --check --dry-run` sem diferenças. Commit: `refactor (modelos): define serviços por solicitação e vínculos obrigatórios das tarefas.`
+- [x] Criar testes com `MigrationExecutor`: dois agendamentos que reutilizam um catálogo produzem dois serviços distintos; IDs/eventos/legado permanecem; tarefas sem mapa bloqueiam a etapa final.
+- [x] Rodar `manage.py test inovalab_app.tests.test_service_upgrade --noinput`; confirmar falha por ausência da nova migração/comando.
+- [x] Criar `0003`: renomear o modelo antigo para `ServicoLegado`, preservar sua tabela e ContentType histórico; criar o novo serviço; renomear vínculos antigos para `servico_legado`; adicionar o novo vínculo de agenda e o vínculo temporariamente nulo de tarefa.
+- [x] Converter cada agendamento existente: título do catálogo, descrição do motivo, prazo do término. Renomear o período e o motivo antigos para `inicio_legado`, `fim_legado` e `motivo_legado`, preservando valores e permitindo ausência em registros novos; retirar as constraints de intervalo que não correspondem ao novo serviço. Conservar material e equipamentos anteriores como legado sem presença nos formulários. Não editar `0001` nem `0002`.
+- [x] Implementar `vincular_tarefas_servicos --mapa arquivo.json [--database default] [--dry-run]`, aceitando objeto como `{"2": 7, "3": 7}`. Validar tipos, existência, ausência de reassociação conflitante e compatibilidade com o serviço antigo; validar todos os registros antes de gravar. Ser idempotente e não criar eventos de ação humana retroativos.
+- [x] Criar `0004`: verificar todas as tarefas, inclusive excluídas, e rejeitar as sem vínculo com mensagem de IDs e instrução do comando; depois tornar a FK NOT NULL. Instalação nova vazia aplica ambas normalmente.
+- [x] Ajustar a validação de esquema para obter os modelos históricos de `0001_initial` na adoção e da última migração aplicada nos bancos consolidados, incluindo o estado intermediário `0003`. Preservar o manifesto de CHECKs da adoção e os bloqueios de esquema divergente; testar atualização de banco antigo sem exigir a tabela nova antes de executar suas migrações.
+- [x] Fazer `seed_inovalab` carregar somente equipamentos. `carregar_servicos_iniciais` passa a explicar que serviços são definidos por solicitação, sem fabricar solicitações. Cadastros antigos permanecem disponíveis apenas como legado interno; retirar sua manutenção também do Django Admin.
+- [x] Verificar testes de migração, registro, adoção e carga inicial; `makemigrations --check --dry-run` sem diferenças. Commit: `refactor (modelos): define serviços por solicitação e vínculos obrigatórios das tarefas.`
 
 ### Tarefa 3: fluxo de solicitação de serviço e agenda
 
@@ -75,13 +75,13 @@
 
 **Interfaces:** `save_service_request(*, actor, data, booking_id=None, expected_version=None) -> AgendaServico`; entrada pública: `categoria='servico'`, `titulo`, `descricao`, `prazo`, `observacoes` opcional. A fachada `save_booking` continua atendendo visitas e delega serviço; criação/edição de equipamento retorna erro de validação.
 
-- [ ] Criar testes de solicitação isolada, prazo obrigatório e coincidência de título/prazo; payload de equipamento e campos antigos são rejeitados. Testar retorno do modal, formulário sem JavaScript, contas externas, CSRF e conflito de versão; rodar e observar falhas do contrato antigo.
-- [ ] Implementar gravação atômica de serviço e agendamento, com versão condicional e evento no mesmo bloco. Reutilizar autorização de criação/avaliação/cancelamento; novos pedidos comuns são pendentes e pedidos administrativos confirmados.
-- [ ] Atualizar formulário de serviço para título, descrição, `prazo_data`, `prazo_hora` e observações. Combinar prazo com fuso e preservar segundos/microssegundos ao editar outros dados mantendo o minuto exibido.
-- [ ] Retirar equipamento da seleção do modal e bloquear GET/POST de criação/edição dessa categoria. Manter consulta, histórico e cancelamento do legado; não alterar o fluxo de visita.
-- [ ] Atualizar serialização para campos novos, autor/controle/versão. Retirar manutenção operacional do catálogo de serviços; URLs antigas de cadastro não devem continuar criando serviços sem agendamento.
-- [ ] Ajustar consultas, buscas, cartões, detalhes e filtros: usar título/descrição/prazo de serviço. Calendários e dashboard tratam serviço como ocorrência pontual; testar meia-noite, primeiro/último dia do mês e igualdade ao horário atual.
-- [ ] Rodar testes dos pacotes agenda/shared e portabilidade. Commit: `feat (agenda): solicita serviços com título, descrição e prazo.`
+- [x] Criar testes de solicitação isolada, prazo obrigatório e coincidência de título/prazo; payload de equipamento e campos antigos são rejeitados. Testar retorno do modal, formulário sem JavaScript, contas externas, CSRF e conflito de versão; rodar e observar falhas do contrato antigo.
+- [x] Implementar gravação atômica de serviço e agendamento, com versão condicional e evento no mesmo bloco. Reutilizar autorização de criação/avaliação/cancelamento; novos pedidos comuns são pendentes e pedidos administrativos confirmados.
+- [x] Atualizar formulário de serviço para título, descrição, `prazo_data`, `prazo_hora` e observações. Combinar prazo com fuso e preservar segundos/microssegundos ao editar outros dados mantendo o minuto exibido.
+- [x] Retirar equipamento da seleção do modal e bloquear GET/POST de criação/edição dessa categoria. Manter consulta, histórico e cancelamento do legado; não alterar o fluxo de visita.
+- [x] Atualizar serialização para campos novos, autor/controle/versão. Retirar manutenção operacional do catálogo de serviços; URLs antigas de cadastro não devem continuar criando serviços sem agendamento.
+- [x] Ajustar consultas, buscas, cartões, detalhes e filtros: usar título/descrição/prazo de serviço. Calendários e dashboard tratam serviço como ocorrência pontual; testar meia-noite, primeiro/último dia do mês e igualdade ao horário atual.
+- [x] Rodar testes dos pacotes agenda/shared e portabilidade. Commit: `feat (agenda): solicita serviços com título, descrição e prazo.`
 
 ### Tarefa 4: tarefas vinculadas e select de status
 
@@ -89,12 +89,12 @@
 
 **Interfaces:** `save_task` aceita `agendamento_servico`, `descricao`, `responsavel`, `prazo`, `equipamento`, `material_gasto`, `quantidade_material_gasto`. `set_task_status(*, actor, task_id, status, expected_version) -> Tarefa` resolve o destino para uma transição permitida e reutiliza `transition_task`.
 
-- [ ] Criar testes para vínculo obrigatório, responsável obrigatório, rejeição de agenda pendente/cancelada em novas atribuições, campos opcionais independentes, quantidade textual e estoque intacto; rodar e observar falhas.
-- [ ] Adaptar gravação e snapshots: validar novo agendamento confirmado não cancelado, responsável ativo e recursos válidos não excluídos. Ao manter referências existentes, permitir edição de outros dados mesmo depois de cancelamento/exclusão; novas associações permanecem bloqueadas.
-- [ ] Atualizar forms e API: seleção de agendamento com título/ID, campos opcionais; `servico` e título derivados na saída, sem segunda FK operacional. Atualizar filtros/busca via `agendamento_servico__servico__titulo`, quadro, detalhe, dashboard e eventos legíveis.
-- [ ] Implementar select de destinos permitidos com status atual e botão Salvar status. Sem mudança de status, não incrementar versão nem gerar evento; conferir versão e acesso antes de responder.
-- [ ] Expor atualização por status no endpoint de transições mantendo `acao` para compatibilidade. Rejeitar envio de ambos e status inválido/proibido. Preservar restrição administrativa de aprovação/recusa/reabertura, datas automáticas e conflito 409.
-- [ ] Rodar testes de tarefas e dashboard com tentativas adulteradas, ator sem permissão, versão antiga, falha ao registrar evento e edição de vínculo preservado. Commit: `feat (tarefas): vincula agendamentos e adiciona recursos e seleção de status.`
+- [x] Criar testes para vínculo obrigatório, responsável obrigatório, rejeição de agenda pendente/cancelada em novas atribuições, campos opcionais independentes, quantidade textual e estoque intacto; rodar e observar falhas.
+- [x] Adaptar gravação e snapshots: validar novo agendamento confirmado não cancelado, responsável ativo e recursos válidos não excluídos. Ao manter referências existentes, permitir edição de outros dados mesmo depois de cancelamento/exclusão; novas associações permanecem bloqueadas.
+- [x] Atualizar forms e API: seleção de agendamento com título/ID, campos opcionais; `servico` e título derivados na saída, sem segunda FK operacional. Atualizar filtros/busca via `agendamento_servico__servico__titulo`, quadro, detalhe, dashboard e eventos legíveis.
+- [x] Implementar select de destinos permitidos com status atual e botão Salvar status. Sem mudança de status, não incrementar versão nem gerar evento; conferir versão e acesso antes de responder.
+- [x] Expor atualização por status no endpoint de transições mantendo `acao` para compatibilidade. Rejeitar envio de ambos e status inválido/proibido. Preservar restrição administrativa de aprovação/recusa/reabertura, datas automáticas e conflito 409.
+- [x] Rodar testes de tarefas e dashboard com tentativas adulteradas, ator sem permissão, versão antiga, falha ao registrar evento e edição de vínculo preservado. Commit: `feat (tarefas): vincula agendamentos e adiciona recursos e seleção de status.`
 
 ### Tarefa 5: infraestrutura e exclusão de equipamentos
 
@@ -102,11 +102,11 @@
 
 **Interfaces:** `delete_equipment(*, actor, equipment_id) -> Equipamento`; exclusão define `excluido_em` com autorização administrativa e sem apagar fotos/FKs.
 
-- [ ] Criar testes de exclusão por admin, rejeição para usuário comum, CSRF, GET sem mutação e API; verificar tarefa/legado/foto e repetição da operação. Rodar e observar falta da operação.
-- [ ] Implementar confirmação e POST, DELETE na API de equipamento, exclusão lógica atômica e retirada de listagens/opções de nova atribuição. Cadastros excluídos não aceitam edição pela gestão normal; o Django Admin não oferece exclusão física que contorne a retenção.
-- [ ] Tornar a entrada do catálogo uma listagem apenas de equipamentos com título Infraestrutura. Remover abas e ações de serviços; incluir Excluir nas ações administrativas.
-- [ ] Preservar a idempotência da carga inicial: equipamento excluído com código inicial não deve reaparecer após seed.
-- [ ] Rodar testes de catálogo e referências em tarefas. Commit: `feat (infraestrutura): mantém equipamentos e permite exclusão com histórico preservado.`
+- [x] Criar testes de exclusão por admin, rejeição para usuário comum, CSRF, GET sem mutação e API; verificar tarefa/legado/foto e repetição da operação. Rodar e observar falta da operação.
+- [x] Implementar confirmação e POST, DELETE na API de equipamento, exclusão lógica atômica e retirada de listagens/opções de nova atribuição. Cadastros excluídos não aceitam edição pela gestão normal; o Django Admin não oferece exclusão física que contorne a retenção.
+- [x] Tornar a entrada do catálogo uma listagem apenas de equipamentos com título Infraestrutura. Remover abas e ações de serviços; incluir Excluir nas ações administrativas.
+- [x] Preservar a idempotência da carga inicial: equipamento excluído com código inicial não deve reaparecer após seed.
+- [x] Rodar testes de catálogo e referências em tarefas. Commit: `feat (infraestrutura): mantém equipamentos e permite exclusão com histórico preservado.`
 
 ### Tarefa 6: sidebar completa e navegação
 
@@ -114,10 +114,10 @@
 
 **Interfaces:** desktop sempre expandido; estado `sidebar-open` exclusivamente móvel; logo resolve `conteudo:inicio`; Infraestrutura resolve `catalogo:equipamentos-list`.
 
-- [ ] Adaptar as verificações existentes de navegação para ausência de Páginas, rótulo Infraestrutura e logo de início. Não criar testes que apenas reproduzam declarações de CSS.
-- [ ] Retirar controle estreito, logo de ícone e leitura/gravação da preferência antiga de largura. Ajustar layout desktop com largura completa, texto e foco visível.
-- [ ] Preservar no móvel o botão, backdrop, Escape, foco inicial/de retorno e contenção de Tab; menu fechado deve ser inacessível por teclado. Mudança para desktop restaura o conteúdo interativo e sidebar completa.
-- [ ] Rodar testes frontend e verificar no navegador em desktop e 360 px, incluindo recarga/navegação e localStorage antigo igual a false. Commit: `refactor (sidebar): mantém menu expandido e simplifica navegação.`
+- [x] Adaptar as verificações existentes de navegação para ausência de Páginas, rótulo Infraestrutura e logo de início. Não criar testes que apenas reproduzam declarações de CSS.
+- [x] Retirar controle estreito, logo de ícone e leitura/gravação da preferência antiga de largura. Ajustar layout desktop com largura completa, texto e foco visível.
+- [x] Preservar no móvel o botão, backdrop, Escape, foco inicial/de retorno e contenção de Tab; menu fechado deve ser inacessível por teclado. Mudança para desktop restaura o conteúdo interativo e sidebar completa.
+- [x] Rodar testes frontend e verificar no navegador em desktop e 360 px, incluindo recarga/navegação e localStorage antigo igual a false. Commit: `refactor (sidebar): mantém menu expandido e simplifica navegação.`
 
 ### Tarefa 7: migração local, verificação final e documentação
 
@@ -125,15 +125,15 @@
 
 **Interfaces:** entrega integrada validada; banco local migrado com IDs e histórico preservados; nenhum push/deploy implícito.
 
-- [ ] Executar suíte completa, `check`, `makemigrations --check --dry-run` e teste de portabilidade no hospedeiro alternativo. Resolver regressões do contrato antigo sem reduzir a cobertura de autorização, concorrência e histórico.
-- [ ] Identificar processos que escrevem no SQLite local, pausá-los para obter backup consistente e guardar banco/media. Criar o mapa aprovado; validar migração primeiro numa cópia: `migrate inovalab_app 0003`, `vincular_tarefas_servicos --mapa ... --dry-run`, aplicar mapa e executar `migrate` até `0004`.
-- [ ] Comparar IDs, relações, eventos e arquivos antes/depois; confirmar tarefas 2 e 3 no agendamento 7. Aplicar o mesmo procedimento ao banco local e reiniciar somente processos de desenvolvimento afetados.
-- [ ] Navegador: serviço pelo modal e sem JS, aprovação, tarefa com/sem opcionais, select de status, cancelamento, exclusão de equipamento, logo, sidebar desktop e móvel, foco/teclado e ausência de overflow. Usar identidade/provedor controlados quando necessário, sem mensagens a terceiros.
-- [ ] Aplicar skills de verificação e revisão de código; conferir implementação requisito a requisito. Se houver delegação autorizada, revisão independente; caso contrário, registrar revisão inline e essa limitação.
-- [ ] Documentar novos payloads e passos de atualização para bancos com tarefas antigas, comandos/resultados de testes e cenários de depuração restantes. Commit: `docs (servicos): registra migração e verificações do novo fluxo.`
+- [x] Executar suíte completa, `check`, `makemigrations --check --dry-run` e teste de portabilidade no hospedeiro alternativo. Resolver regressões do contrato antigo sem reduzir a cobertura de autorização, concorrência e histórico.
+- [x] Identificar processos que escrevem no SQLite local, pausá-los para obter backup consistente e guardar banco/media. Criar o mapa aprovado; validar migração primeiro numa cópia: `migrate inovalab_app 0003`, `vincular_tarefas_servicos --mapa ... --dry-run`, aplicar mapa e executar `migrate` até `0004`.
+- [x] Comparar IDs, relações, eventos e arquivos antes/depois; confirmar tarefas 2 e 3 no agendamento 7. Aplicar o mesmo procedimento ao banco local e reiniciar somente processos de desenvolvimento afetados.
+- [x] Navegador: serviço pelo modal e sem JS, aprovação, tarefa com/sem opcionais, select de status, cancelamento, exclusão de equipamento, logo, sidebar desktop e móvel, foco/teclado e ausência de overflow. Usar identidade/provedor controlados quando necessário, sem mensagens a terceiros.
+- [x] Aplicar skills de verificação e revisão de código; conferir implementação requisito a requisito. Se houver delegação autorizada, revisão independente; caso contrário, registrar revisão inline e essa limitação.
+- [x] Documentar novos payloads e passos de atualização para bancos com tarefas antigas, comandos/resultados de testes e cenários de depuração restantes. Commit: `docs (servicos): registra migração e verificações do novo fluxo.`
 
 ## Revisão e escolha de execução
 
 Plano preparado a partir da especificação aprovada. Recomenda-se execução nesta sessão pelo agente principal: as mudanças compartilham modelos, migração e contratos de API e devem ser integradas em sequência. A execução com subagentes permanece uma alternativa se o responsável a escolher explicitamente.
 
-Aguardar a revisão deste plano e a escolha do método de execução antes de alterar código de produto.
+Execução inline autorizada com “implemente”. Entrega concluída: 527 testes Django e 6 de portabilidade passaram, check/makemigrations limpos, navegador validado em cópia isolada e SQLite local migrado com mapa aprovado. Revisão independente realizada conforme executing-plans/requesting-code-review; os três achados foram reproduzidos e corrigidos. Para manter commits coerentes no refactor integrado, os passos 2–5 foram reunidos em um commit de negócio; sidebar e documentação têm commits próprios. Branch mantida no checkout compartilhado para depuração, sem push/deploy.
