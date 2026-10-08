@@ -2,6 +2,8 @@
 
 Data: 08/10/2026. Especificação aprovada pelo responsável com a resposta “certo”, incluindo o mapa das tarefas 2 e 3 para o agendamento 7. Implementação autorizada com “implemente” e concluída com testes e migração local; ver docs/modules/25-servicos-tarefas-infraestrutura.md.
 
+Ajuste posterior autorizado em 08/10/2026: o prazo da tarefa passa a ser o mesmo do serviço vinculado, sem edição independente. O select contempla todos os status e administradores podem escolher diretamente qualquer um. Essas decisões substituem abaixo a previsão de prazo próprio opcional e de limitar as opções administrativas às transições anteriores. Ver o contrato atualizado no guia do módulo 25.
+
 ## Resultado esperado
 
 Equipamentos deixam de ser agendáveis e permanecem na Infraestrutura. Cada solicitação define seu próprio serviço, com título, descrição e prazo. Toda tarefa pertence a um agendamento de serviço e possui responsável. Equipamento e consumo de material são informados opcionalmente na tarefa.

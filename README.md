@@ -2,7 +2,7 @@
 
 O negócio está consolidado em **`inovalab_app`**, com pacotes internos para agenda, catálogo, materiais, tarefas, conteúdo e suporte compartilhado. Accounts continua no hospedeiro e mantém a autenticação atual. Consulte a [arquitetura e os procedimentos de instalação/atualização](docs/modules/24-consolidacao-inovalab.md).
 
-**Atualização de 08/10/2026:** cada solicitação define seu serviço com título, descrição e prazo; tarefas exigem agendamento de serviço e responsável, com recursos opcionais e status por select. Equipamentos ficam somente na Infraestrutura, com exclusão lógica; a sidebar desktop permanece expandida. Consulte o [novo fluxo, contratos e migração](docs/modules/25-servicos-tarefas-infraestrutura.md).
+**Atualização de 08/10/2026:** cada solicitação define seu serviço com título, descrição e prazo; tarefas exigem agendamento de serviço e responsável, herdam o prazo do serviço e possuem recursos opcionais. O select mostra todos os status e permite aos administradores escolher qualquer um. Equipamentos ficam somente na Infraestrutura, com exclusão lógica; a sidebar desktop permanece expandida. Consulte o [novo fluxo, contratos e migração](docs/modules/25-servicos-tarefas-infraestrutura.md).
 
 **Banco existente:** pausar escrita e fazer backup. Bancos ainda não consolidados devem cumprir a preparação da versão anterior e adotar até `0002_preserva_contenttypes` com `--fake-initial`. Depois executar `0003`, aplicar um mapa explícito das tarefas para agendamentos e concluir `migrate`. Instalações vazias usam `migrate` seguido de `seed_inovalab`, que carrega somente equipamentos. As instruções históricas abaixo não substituem esse procedimento.
 

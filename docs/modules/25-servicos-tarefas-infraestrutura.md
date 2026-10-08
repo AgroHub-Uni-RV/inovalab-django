@@ -28,7 +28,9 @@ Atualizações usam `PATCH /api/v1/agendamentos/servico/{id}/` com `versao` e os
 
 Toda tarefa tem FK obrigatória para `AgendaServico`, descrição e responsável. O serviço é derivado do agendamento; não existe uma segunda seleção de catálogo. Novos vínculos exigem agendamento confirmado e não cancelado e responsável ativo. Equipamento excluído e material indisponível não entram em novas atribuições. Vínculos existentes continuam editáveis em outros dados, preservando suas referências.
 
-Campos opcionais: `equipamento` (FK), `material_gasto` (FK para Material), `quantidade_material_gasto` (CharField de 150 caracteres). Material e quantidade são independentes. A quantidade aceita texto como `200 g`, `2 unidades` ou `meia bobina`; o registro não altera o estoque. O prazo próprio da tarefa permanece opcional.
+Campos opcionais: `equipamento` (FK), `material_gasto` (FK para Material), `quantidade_material_gasto` (CharField de 150 caracteres). Material e quantidade são independentes. A quantidade aceita texto como `200 g`, `2 unidades` ou `meia bobina`; o registro não altera o estoque.
+
+A solicitação posterior de 08/10/2026 substitui o prazo próprio opcional: `Tarefa.prazo` deriva diretamente de `agendamento_servico.servico.prazo`. Alterar o serviço ou o vínculo atualiza o prazo mostrado, sem uma cópia que possa divergir. O formulário exibe o prazo do serviço em `dd/mm/aaaa hh:mm`, sem campo de edição. A API retorna o prazo exato, incluindo a precisão existente, e rejeita seu envio na criação/edição da tarefa. Valores e eventos anteriores permanecem preservados; somente o serviço controla o prazo operacional.
 
 Exemplo de `POST /api/v1/tarefas/`, administrativo:
 
@@ -45,7 +47,9 @@ Exemplo de `POST /api/v1/tarefas/`, administrativo:
 
 Os campos opcionais podem ser omitidos; FKs opcionais também aceitam null. Edições exigem `versao`. A saída conserva `servico` e `servico_nome` derivados, ambos somente leitura. Filtros e consultas de tarefas respeitam o responsável, incluindo os títulos disponíveis no filtro de serviço.
 
-O detalhe apresenta um select com o status atual e os destinos permitidos, acompanhado de **Salvar status**. `POST /api/v1/tarefas/{id}/transicoes/` aceita `{"status":"criacao","versao":1}`. A entrada anterior por `acao` continua disponível; enviar ação e status juntos é inválido. O servidor valida permissão, transição e versão; aprovar, recusar e reabrir continuam administrativos. Manter o status atual não gera evento nem aumenta a versão. Início/conclusão continuam automáticos.
+O detalhe apresenta um select com **Demanda, Criação, Avaliação e Concluído**, acompanhado de **Salvar status**. Conforme esclarecimento posterior do responsável, administradores podem escolher diretamente qualquer status. Para os demais responsáveis, destinos sem permissão aparecem desabilitados e o servidor conserva as regras de execução/envio e aprovação administrativa. `POST /api/v1/tarefas/{id}/transicoes/` aceita `{"status":"criacao","versao":1}` com as mesmas permissões. A entrada anterior por `acao` continua disponível com suas transições originais; enviar ação e status juntos é inválido. Manter o status atual não gera evento nem aumenta a versão.
+
+Mudanças diretas fora das transições anteriores registram `alterar_status`, ator, estado anterior/novo e alterações de datas. Ao sair de Demanda, preencher início se ausente; ao concluir, preencher conclusão; ao sair de Concluído, limpar conclusão. O início existente é preservado nas mudanças diretas. Históricos e proteção contra versão antiga permanecem ativos.
 
 A gravação valida e bloqueia as referências na mesma transação da tarefa e do evento, usando o bloqueio de serviço compartilhado com cancelamento/avaliação e os registros dos recursos. Isso impede criar uma tarefa depois de um cancelamento/exclusão concorrente já confirmado. Conflitos de escrita SQLite são devolvidos como conflito de tarefa. O Django Admin oferece somente consulta das tarefas; a escrita usa o fluxo que registra histórico e versão.
 
@@ -74,6 +78,8 @@ O mapa JSON tem IDs explícitos de tarefa para agendamento, por exemplo `{"2":7,
 
 `0004_exige_agendamento_servico` bloqueia tarefas sem mapa, inclusive excluídas, exibindo seus IDs, e torna as novas relações NOT NULL. Instalação nova vazia aplica as duas migrações normalmente e carrega somente equipamentos por `seed_inovalab`. `carregar_servicos_iniciais` apenas informa o novo fluxo. O verificador de atualização usa o estado da migração aplicada, incluindo a etapa intermediária, conservando as verificações da adoção anterior.
 
+`0005_tarefa_prazo_do_servico` renomeia o campo antigo para `prazo_legado` no estado do Django, conservando `db_column='prazo'`, sem alteração física ou atualização de dados. O prazo operacional passa a ser uma propriedade do serviço. Bancos já em `0004` aplicam `migrate --noinput` após backup e validação em cópia, sem refazer o mapa de tarefas. O SQLite local foi validado e atualizado; todas as linhas, IDs, eventos e arquivos ficaram iguais. Backup adicional: `.private/servicos-tarefas/backup-before-task-deadline.sqlite3` e `.private/servicos-tarefas/media-before-task-deadline/`.
+
 O SQLite local foi atualizado depois de validar a cópia. Compararam-se 18 tabelas, campos antigos, IDs, eventos, arquivos e vínculos de permissões. Tarefas 2 e 3 apontam para agendamento 7. Backup: `.private/servicos-tarefas/backup-before.sqlite3`; arquivos conservados em `media/` e copiados para `.private/servicos-tarefas/media-copy/`. Esses dados privados não entram no Git. Recuperação exige restaurar banco/arquivos e código compatível do backup; não usar migração reversa para descartar solicitações novas. Nenhum banco remoto foi atualizado nesta entrega.
 
 ## Verificação
@@ -82,7 +88,7 @@ Os testes cobrem o contrato novo, autorização, escopo, CSRF, histórico, vers�
 
 | Verificação | Resultado |
 | --- | --- |
-| `.\venv\Scripts\python.exe manage.py test --noinput` | 527 testes passaram após as correções da revisão |
+| `.\venv\Scripts\python.exe manage.py test --noinput` | 540 testes passaram, incluindo prazo herdado e mudanças administrativas diretas |
 | `.\venv\Scripts\python.exe manage.py test inovalab_app.tests.portability --settings=inovalab_app.tests.host_settings --noinput` | 6 testes passaram com auth.User, sem Accounts, sob `/laboratorio/` |
 | `manage.py check` | Nenhum problema |
 | `manage.py makemigrations --check --dry-run` | Nenhuma migração pendente |
@@ -90,6 +96,8 @@ Os testes cobrem o contrato novo, autorização, escopo, CSRF, histórico, vers�
 | SQLite em cópia e original | `0003`, dry-run/mapa explícito, `0004` e verificação de esquema passaram; comparação de 18 tabelas e arquivos aprovada |
 | Chrome/Playwright em cópia isolada | Modal com rascunho, serviço sem JavaScript, aprovação/cancelamento, tarefas com/sem opcionais, select de status, exclusão preservando referência e sidebar/teclado passaram |
 | Layout | 1366, 900 e 360 px sem overflow nas telas verificadas; nenhum erro JavaScript |
+
+A conferência posterior no Chrome/Playwright verificou o prazo ao selecionar outro serviço, sua atualização depois de editar o serviço, precisão preservada na API e exibição sem JavaScript. Verificou também as quatro opções habilitadas para administradores, mudanças diretas, histórico/versão/datas, restrições do responsável e layout móvel sem overflow. Capturas: `deadline-form-desktop.png` e `deadline-status-mobile.png` na pasta privada de evidências.
 
 A revisão independente identificou três problemas, reproduzidos por testes antes da correção: escrita de tarefas fora do domínio pelo Django Admin, coletor de exclusão física bloqueando equipamentos utilizados e janela de concorrência ao validar referências da tarefa. Os quatro testes de regressão passaram após as correções; a suíte completa foi executada novamente. Evidências e capturas ficam em `.private/servicos-tarefas/`, sem dados de teste no banco original.
 
