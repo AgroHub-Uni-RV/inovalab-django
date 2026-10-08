@@ -1,3 +1,4 @@
+from inovalab_app.tests.agenda.helpers import service_data, service_web_data
 from datetime import datetime
 
 from django.contrib.auth import get_user_model
@@ -26,11 +27,7 @@ class NormalBookingAccessTests(TestCase):
         if category == 'visita':
             return {'quantidade_pessoas': '3', 'data': '2099-12-10',
                     'hora_inicio': '09:00', 'hora_termino': '10:00', 'observacoes': 'Visita própria'}
-        data = {'categoria': category, 'objeto': self.service.pk if category == 'servico' else self.equipment.pk,
-                'motivo': 'Pedido próprio', 'dia': '2099-12-10', 'hora_inicio': '09:00', 'hora_termino': '10:00'}
-        if category == 'servico':
-            data['material_proprio'] = 'sim'
-        return data
+        return service_web_data(prazo_data='2099-12-10', prazo_hora='10:00', titulo='Pedido próprio')
 
     def create(self, category, *, actor=None):
         data = self.payload(category)
@@ -39,19 +36,14 @@ class NormalBookingAccessTests(TestCase):
             data.update(quantidade_pessoas=3, data=datetime(2099, 12, 10).date(),
                         hora_inicio=datetime(2099, 12, 10, 9).time(), hora_termino=datetime(2099, 12, 10, 10).time())
         else:
-            data['inicio'] = datetime.fromisoformat('2099-12-10T09:00:00-03:00')
-            data['fim'] = datetime.fromisoformat('2099-12-10T10:00:00-03:00')
-            for key in ('dia', 'hora_inicio', 'hora_termino'):
-                data.pop(key)
-            if category == 'servico':
-                data['material_proprio'] = True
+            data = service_data(prazo=datetime.fromisoformat('2099-12-10T10:00:00-03:00'), titulo='Pedido próprio')
         return save_booking(actor=actor or self.user, data=data)
 
     def test_active_normal_user_can_create_all_categories_in_modal_and_read_own_result(self):
         response = self.client.get('/agenda/meus/')
         self.assertContains(response, 'Novo agendamento')
         self.assertContains(response, 'data-page-content')
-        for category, model in BOOKING_MODELS.items():
+        for category, model in [(category, model) for category, model in BOOKING_MODELS.items() if category != 'equipamento']:
             with self.subTest(category=category):
                 url = '/agenda/visitas/novo/' if category == 'visita' else '/agenda/novo/'
                 fragment = self.client.get(url, {'categoria': category}, HTTP_X_BOOKING_MODAL='1')
@@ -64,7 +56,7 @@ class NormalBookingAccessTests(TestCase):
                 self.assertEqual(booking.eventos.get().ator_id, self.user.pk)
 
     def test_creation_without_javascript_uses_public_layout_and_personal_redirect(self):
-        for category in BOOKING_MODELS:
+        for category in ('servico', 'visita'):
             with self.subTest(category=category):
                 url = '/agenda/visitas/novo/' if category == 'visita' else '/agenda/novo/'
                 page = self.client.get(url, {'categoria': category})
@@ -76,7 +68,7 @@ class NormalBookingAccessTests(TestCase):
                 self.assertEqual(self.client.get(response.url).status_code, 200)
 
     def test_owner_cancels_each_category_with_version_and_history_preserved(self):
-        for category in BOOKING_MODELS:
+        for category in ('servico', 'visita'):
             with self.subTest(category=category):
                 booking = self.create(category)
                 url = f'/agenda/meus/{category}/{booking.pk}/cancelar/'
@@ -99,7 +91,7 @@ class NormalBookingAccessTests(TestCase):
         api = APIClient()
         api.force_login(self.other)
         self.client.force_login(self.other)
-        for category in BOOKING_MODELS:
+        for category in ('servico', 'visita'):
             with self.subTest(category=category):
                 booking = self.create(category)
                 url = f'/agenda/meus/{category}/{booking.pk}/cancelar/'
@@ -123,16 +115,12 @@ class NormalBookingAccessTests(TestCase):
     def test_normal_user_api_creation_and_own_cancellation_keep_other_api_actions_protected(self):
         api = APIClient()
         api.force_login(self.user)
-        for category in BOOKING_MODELS:
+        for category in ('servico', 'visita'):
             data = self.payload(category)
             if category == 'visita':
                 data['quantidade_pessoas'] = 3
-            if category != 'visita':
-                for name in ('dia', 'hora_inicio', 'hora_termino'):
-                    data.pop(name)
-                data.update(inicio='2099-12-10T09:00:00-03:00', fim='2099-12-10T10:00:00-03:00')
-                if category == 'servico':
-                    data['material_proprio'] = True
+            if category == 'servico':
+                data = service_data(prazo='2099-12-10T10:00:00-03:00')
             data['categoria'] = category
             created = api.post('/api/v1/agendamentos/', data, format='json')
             self.assertEqual(created.status_code, 201, created.content)
@@ -143,7 +131,7 @@ class NormalBookingAccessTests(TestCase):
             self.assertEqual(self.client.get(url).status_code, 403)
 
     def test_admin_can_cancel_another_users_booking_and_owner_cannot_edit_or_approve(self):
-        for category in BOOKING_MODELS:
+        for category in ('servico', 'visita'):
             booking = self.create(category)
             with self.assertRaises(PermissionDenied):
                 save_booking(actor=self.user, category=category, booking_id=booking.pk, expected_version=1, data={})
@@ -190,7 +178,7 @@ class NormalBookingAccessTests(TestCase):
         api = APIClient()
         api.force_login(self.admin)
         self.client.force_login(self.admin)
-        for category, model in BOOKING_MODELS.items():
+        for category, model in [(category, model) for category, model in BOOKING_MODELS.items() if category != 'equipamento']:
             for status in ('pendente', 'rejeitado'):
                 for owner in (self.user, self.admin):
                     with self.subTest(category=category, status=status, owner=owner.username):
@@ -216,7 +204,7 @@ class NormalBookingAccessTests(TestCase):
 
     def test_requests_offer_admin_cancel_only_for_confirmed_cards(self):
         bookings = []
-        for category, model in BOOKING_MODELS.items():
+        for category, model in [(category, model) for category, model in BOOKING_MODELS.items() if category != 'equipamento']:
             for status in ('pendente', 'rejeitado', 'confirmado'):
                 booking = self.create(category)
                 model.objects.filter(pk=booking.pk).update(situacao=status)

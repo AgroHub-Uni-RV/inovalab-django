@@ -7,7 +7,6 @@ from inovalab_app.catalogo.models import Equipamento, Servico
 
 
 CASES = (
-    ('servicos', Servico, {'nome': 'Novo serviço', 'descricao': 'Descrição', 'status': 'disponivel'}),
     ('equipamentos', Equipamento, {'nome': 'Impressora', 'descricao': 'Descrição', 'status': 'ocupado'}),
 )
 
@@ -89,21 +88,21 @@ class CatalogWebTests(TestCase):
     def test_catalog_writes_enforce_csrf(self):
         client = Client(enforce_csrf_checks=True)
         client.force_login(self.admin)
-        client.get('/catalogo/servicos/novo/')
+        client.get('/catalogo/equipamentos/novo/')
         data = {'nome': 'CSRF', 'status': 'disponivel'}
-        self.assertEqual(client.post('/catalogo/servicos/novo/', data).status_code, 403)
-        self.assertFalse(Servico.objects.filter(nome='CSRF').exists())
+        self.assertEqual(client.post('/catalogo/equipamentos/novo/', data).status_code, 403)
+        self.assertFalse(Equipamento.objects.filter(nome='CSRF').exists())
         data['csrfmiddlewaretoken'] = client.cookies['csrftoken'].value
-        self.assertEqual(client.post('/catalogo/servicos/novo/', data).status_code, 302)
+        self.assertEqual(client.post('/catalogo/equipamentos/novo/', data).status_code, 302)
 
     def test_list_paginates_25_with_stable_ordering(self):
-        Servico.objects.bulk_create([Servico(nome=f'Página {i:02}') for i in range(30)])
+        Equipamento.objects.bulk_create([Equipamento(nome=f'Página {i:02}') for i in range(30)])
         self.client.force_login(self.user)
-        response = self.client.get('/catalogo/servicos/')
+        response = self.client.get('/catalogo/equipamentos/')
         self.assertEqual(len(response.context['object_list']), 25)
         self.assertContains(response, '?page=2')
-        second = self.client.get('/catalogo/servicos/?page=2')
-        expected = list(Servico.objects.order_by('nome', 'pk').values_list('pk', flat=True))
+        second = self.client.get('/catalogo/equipamentos/?page=2')
+        expected = list(Equipamento.objects.order_by('nome', 'pk').values_list('pk', flat=True))
         actual = [entry.pk for entry in response.context['object_list']] + [entry.pk for entry in second.context['object_list']]
         self.assertEqual(actual, expected)
 
@@ -115,10 +114,10 @@ class CatalogWebTests(TestCase):
         self.client.force_login(self.admin)
         self.admin.is_active = False
         self.admin.save(update_fields=['is_active'])
-        self.assertRedirects(self.client.get('/catalogo/servicos/'), '/entrar/?next=/catalogo/servicos/', fetch_redirect_response=False)
+        self.assertRedirects(self.client.get('/catalogo/equipamentos/'), '/entrar/?next=/catalogo/equipamentos/', fetch_redirect_response=False)
 
     def test_home_offers_catalog_without_changing_identity_content(self):
         self.client.force_login(self.user)
         response = self.client.get('/perfil/')
         self.assertContains(response, 'leitor')
-        self.assertContains(response, '/catalogo/servicos/')
+        self.assertContains(response, '/catalogo/equipamentos/')

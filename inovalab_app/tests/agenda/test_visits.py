@@ -1,3 +1,4 @@
+from inovalab_app.tests.agenda.helpers import make_booking
 from datetime import date, time
 from unittest.mock import patch
 
@@ -156,7 +157,7 @@ class LocalVisitTests(TestCase):
             with self.assertRaises(IntegrityError), transaction.atomic():
                 AgendaVisita.objects.create(**{**base, **changes})
         visit = self.create()
-        service = AgendaServico.objects.create(servico=Servico.objects.first(), motivo='Serviço', inicio=visit.inicio, fim=visit.fim)
+        service = make_booking(prazo=visit.fim, descricao='Serviço')
         with self.assertRaises(IntegrityError), transaction.atomic():
             EventoAgendamento.objects.create(agenda_servico=service, agenda_visita=visit, ator_nome='Inválido', acao='criar')
 
@@ -188,8 +189,7 @@ class LocalVisitTests(TestCase):
 
     def test_calendar_local_counts_without_provider_and_preserves_equal_ids(self):
         visit = self.create()
-        service = AgendaServico.objects.create(pk=visit.pk, servico=Servico.objects.first(), motivo='Serviço diferente',
-                                               criado_por=self.admin, inicio=visit.inicio, fim=visit.fim)
+        service = make_booking(pk=visit.pk, actor=self.admin, titulo='Serviço diferente', prazo=visit.fim)
         response = self.client.get('/agenda/', {'mes': '2099-11'})
         self.assertEqual(response.context['category_counts'], {'servico': 1, 'equipamento': 0, 'visita': 1})
         day = next(day for week in response.context['weeks'] for day in week if day['in_month'] and day['date'].day == 10)
@@ -199,8 +199,7 @@ class LocalVisitTests(TestCase):
 
     def test_changing_service_category_cannot_edit_visit_with_same_id(self):
         visit = self.create()
-        service = AgendaServico.objects.create(pk=visit.pk, servico=Servico.objects.first(), motivo='Serviço',
-                                               criado_por=self.admin, inicio=visit.inicio, fim=visit.fim)
+        service = make_booking(pk=visit.pk, actor=self.admin, descricao='Serviço', prazo=visit.fim)
         response = self.client.post(f'/agenda/servico/{service.pk}/editar/',
                                     self.payload(categoria='visita', versao='1', quantidade_pessoas='25'))
         self.assertEqual(response.status_code, 200)

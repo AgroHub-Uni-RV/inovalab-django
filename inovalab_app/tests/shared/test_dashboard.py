@@ -1,3 +1,4 @@
+from inovalab_app.tests.agenda.helpers import make_service, make_booking
 from datetime import datetime, timedelta, timezone as dt_timezone
 from unittest.mock import patch
 
@@ -23,17 +24,17 @@ class DashboardTests(TestCase):
         cls.admin = User.objects.create_superuser('painel-admin')
         cls.user = User.objects.create_user('painel-interno', first_name='Ana', last_name='Silva', is_staff=True)
         cls.staff = User.objects.create_user('painel-staff', is_staff=True)
-        cls.service = Servico.objects.create(nome='Serviço real')
+        cls.service = make_service(titulo='Serviço real')
+        cls.task_booking = make_booking(service=cls.service, actor=cls.admin, cancelado_em=NOW)
 
     def task(self, responsible=None, status='demanda', **kwargs):
-        return Tarefa.objects.create(servico=self.service, descricao='Descrição real',
+        return Tarefa.objects.create(agendamento_servico=self.task_booking, descricao='Descrição real',
             responsavel=responsible or self.user, status=status,
             inicio=NOW-timedelta(days=1) if status != 'demanda' else None,
             conclusao=NOW if status == 'concluido' else None, **kwargs)
 
     def booking(self, start=None, end=None, **kwargs):
-        return AgendaServico.objects.create(servico=self.service, motivo='Motivo',
-            inicio=start or NOW, fim=end or NOW+timedelta(hours=1), criado_por=self.admin, **kwargs)
+        return make_booking(actor=kwargs.pop('criado_por', self.admin), service=make_service(titulo='Serviço real', prazo=end or start or NOW+timedelta(hours=1)), **kwargs)
 
     def panel(self, path='/painel/', user=None):
         self.client.force_login(user or self.admin)
@@ -78,10 +79,8 @@ class DashboardTests(TestCase):
 
     def test_normal_index_has_booking_card_with_only_own_confirmed_bookings(self):
         foreign = self.booking()
-        own = AgendaServico.objects.create(servico=self.service, motivo='Meu projeto',
-                                         inicio=NOW, fim=NOW+timedelta(hours=1), criado_por=self.user)
-        AgendaServico.objects.create(servico=self.service, motivo='Pedido',
-            inicio=NOW, fim=NOW+timedelta(hours=1), criado_por=self.user, situacao='pendente')
+        own = make_booking(actor=self.user, service=make_service(titulo='Meu projeto', prazo=NOW+timedelta(hours=1)))
+        make_booking(actor=self.user, situacao='pendente', prazo=NOW+timedelta(hours=1))
         response = self.panel(user=self.user)
         self.assertEqual([booking.pk for booking in response.context['bookings']], [own.pk])
         self.assertContains(response, 'id="bookings-title"')
@@ -136,15 +135,15 @@ class DashboardTests(TestCase):
         today = [d for w in months[0]['weeks'] for d in w if d['today']]
         self.assertEqual([d['date'].isoformat() for d in today], ['2026-12-30'])
 
-    def test_midnight_end_and_cancelled_do_not_color_next_day(self):
+    def test_service_deadline_at_midnight_marks_only_its_day_and_ignores_cancelled(self):
         self.booking(datetime(2026, 12, 30, 22, tzinfo=dt_timezone.utc),
                      datetime(2026, 12, 31, 3, tzinfo=dt_timezone.utc))
         self.booking(datetime(2026, 12, 31, 12, tzinfo=dt_timezone.utc),
                      datetime(2026, 12, 31, 13, tzinfo=dt_timezone.utc), cancelado_em=NOW)
         response = self.panel()
         days = {d['date'].isoformat(): d for w in response.context['months'][0]['weeks'] for d in w if d['in_month']}
-        self.assertEqual(days['2026-12-30']['reservations'], 1)
-        self.assertEqual(days['2026-12-31']['reservations'], 0)
+        self.assertEqual(days['2026-12-30']['reservations'], 0)
+        self.assertEqual(days['2026-12-31']['reservations'], 1)
 
     def test_panels_limit_ten_but_offer_full_lists(self):
         for _ in range(12):

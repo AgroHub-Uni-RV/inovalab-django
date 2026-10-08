@@ -13,7 +13,7 @@ from rest_framework.viewsets import ModelViewSet
 from inovalab_app.adapters.host import is_business_admin
 from inovalab_app.tarefas.selectors import visible_tasks
 from inovalab_app.tarefas.serializers import DeleteSerializer, EventSerializer, TaskSerializer, TransitionSerializer
-from inovalab_app.tarefas.services import TaskConflict, delete_task, transition_task
+from inovalab_app.tarefas.services import TaskConflict, delete_task, transition_task, set_task_status
 
 
 class TaskPagination(PageNumberPagination):
@@ -67,8 +67,9 @@ class TaskViewSet(ModelViewSet):
         task = self.get_object()
         payload = TransitionSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
-        task = transition_task(actor=request.user, task_id=task.pk, action=payload.validated_data['acao'],
-                               expected_version=payload.validated_data['versao'])
+        operation = set_task_status if 'status' in payload.validated_data else transition_task
+        argument = {'status': payload.validated_data['status']} if 'status' in payload.validated_data else {'action': payload.validated_data['acao']}
+        task = operation(actor=request.user, task_id=task.pk, expected_version=payload.validated_data['versao'], **argument)
         return Response(self.get_serializer(task).data)
 
     @action(detail=True, methods=['get'])

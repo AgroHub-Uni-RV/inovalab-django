@@ -1,18 +1,23 @@
+import sqlite3
+from functools import wraps
 from datetime import datetime
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import transaction
+from django.db import OperationalError, connection, transaction
+from django.db.models import F
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from inovalab_app.adapters.host import is_business_admin
-from inovalab_app.catalogo.models import Servico
+from inovalab_app.catalogo.models import Equipamento
+from inovalab_app.agenda.models import AgendaServico
+from inovalab_app.materiais.models import Material
 from inovalab_app.tarefas.models import EventoTarefa, Tarefa
 from inovalab_app.tarefas.selectors import visible_tasks
 
 
-PUBLIC_FIELDS = {'servico', 'descricao', 'responsavel', 'prazo'}
+PUBLIC_FIELDS = {'agendamento_servico', 'descricao', 'responsavel', 'prazo', 'equipamento', 'material_gasto', 'quantidade_material_gasto'}
 TRACKED_FIELDS = (*sorted(PUBLIC_FIELDS), 'status', 'inicio', 'conclusao', 'excluida_em')
 TRANSITIONS = {
     'iniciar': ('demanda', 'criacao'),
@@ -89,6 +94,34 @@ def allowed_actions(actor, task):
             if source == task.status and (admin or action not in ADMIN_ACTIONS)]
 
 
+def _busy_as_task_conflict(operation):
+    @wraps(operation)
+    def wrapped(*args, **kwargs):
+        try:
+            return operation(*args, **kwargs)
+        except OperationalError as error:
+            code = getattr(error.__cause__, 'sqlite_errorcode', 0)
+            if connection.vendor == 'sqlite' and (code & 255) in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED):
+                raise TaskConflict('Os registros estão sendo alterados. Atualize e tente novamente.') from error
+            raise
+    return wrapped
+
+
+def _lock_references(task):
+    # Use the same service-row lock as approval/cancellation. No-op writes also
+    # acquire the SQLite write lock before validation reads (select_for_update does not).
+    from inovalab_app.agenda.services import _lock_targets
+    if task.agendamento_servico_id is not None:
+        _lock_targets(('servico', task.agendamento_servico.servico_id))
+    for name, model, field in (('equipamento', Equipamento, 'status'),
+                               ('material_gasto', Material, 'quantidade'),
+                               ('responsavel', get_user_model(), 'is_active')):
+        pk = getattr(task, name + '_id')
+        if pk is not None and not model.objects.filter(pk=pk).update(**{field: F(field)}):
+            raise ValidationError({name: 'Selecione um cadastro válido.'})
+
+
+@_busy_as_task_conflict
 def save_task(*, actor, data, task_id=None, expected_version=None):
     _require_active(actor)
     task = _load(actor, task_id, expected_version) if task_id is not None else Tarefa()
@@ -97,24 +130,31 @@ def save_task(*, actor, data, task_id=None, expected_version=None):
     if unknown:
         raise ValidationError({name: 'Este campo não pode ser alterado.' for name in unknown})
     before = _snapshot(task) if task_id is not None else {}
+    references = {'agendamento_servico': AgendaServico, 'responsavel': get_user_model(),
+                  'equipamento': Equipamento, 'material_gasto': Material}
     for name, value in data.items():
-        if name in ('servico', 'responsavel'):
-            model = Servico if name == 'servico' else get_user_model()
-            if not isinstance(value, model):
+        if name in references and not (value is None and name in ('equipamento', 'material_gasto')):
+            if not isinstance(value, references[name]) or value.pk is None:
                 raise ValidationError({name: 'Selecione um cadastro válido.'})
-            if task_id is None or value.pk != before[name]:
-                criteria = {'status': 'disponivel'} if name == 'servico' else {'is_active': True}
-                if not model.objects.filter(pk=value.pk, **criteria).exists():
-                    raise ValidationError({name: 'Selecione um serviço disponível.' if name == 'servico'
-                                           else 'Selecione um responsável ativo.'})
         setattr(task, name, value)
-    task.full_clean()
-    if task_id is None:
-        with transaction.atomic():
+    with transaction.atomic():
+        _lock_references(task)
+        for name, model in references.items():
+            pk = getattr(task, name + '_id')
+            if pk is None or (task_id is not None and pk == before[name]):
+                continue
+            criteria = {'agendamento_servico': {'situacao': 'confirmado', 'cancelado_em__isnull': True},
+                        'responsavel': {'is_active': True}, 'equipamento': {'excluido_em__isnull': True},
+                        'material_gasto': {'status': 'disponivel'}}[name]
+            if not model.objects.filter(pk=pk, **criteria).exists():
+                raise ValidationError({name: 'Selecione um agendamento confirmado e não cancelado.' if name == 'agendamento_servico'
+                                       else 'Selecione um cadastro ativo e disponível.'})
+        task.full_clean()
+        if task_id is None:
             task.save()
             _record(actor, task, 'criar', before)
-        return task
-    return _persist(actor, task, 'editar', before, expected_version)
+            return task
+        return _persist(actor, task, 'editar', before, expected_version)
 
 
 def transition_task(*, actor, task_id, action, expected_version):
@@ -141,3 +181,24 @@ def delete_task(*, actor, task_id, expected_version):
     before = _snapshot(task)
     task.excluida_em = timezone.now()
     return _persist(actor, task, 'excluir', before, expected_version)
+
+
+def allowed_statuses(actor, task):
+    return [task.status, *dict.fromkeys(TRANSITIONS[action][1] for action in allowed_actions(actor, task))]
+
+
+def set_task_status(*, actor, task_id, status, expected_version):
+    task = _load(actor, task_id, expected_version)
+    if not is_business_admin(actor) and task.responsavel_id != actor.pk:
+        raise PermissionDenied('Esta tarefa pertence a outro responsável.')
+    if status == task.status:
+        return task
+    if not is_business_admin(actor) and any(
+        source == task.status and destination == status and action in ADMIN_ACTIONS
+        for action, (source, destination) in TRANSITIONS.items()
+    ):
+        _require_admin(actor)
+    actions = [action for action in allowed_actions(actor, task) if TRANSITIONS[action][1] == status]
+    if not actions:
+        raise ValidationError({'status': 'Esta alteração não é permitida no estado atual.'})
+    return transition_task(actor=actor, task_id=task_id, action=actions[0], expected_version=expected_version)

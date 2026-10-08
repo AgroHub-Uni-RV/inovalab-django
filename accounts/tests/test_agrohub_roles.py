@@ -7,7 +7,7 @@ from django.test import TestCase, override_settings
 from accounts.policies import is_business_admin
 from accounts.tests.agrohub_stub import AccountsStub, PASSWORD
 from inovalab_app.agenda.models import AgendaVisita
-from inovalab_app.catalogo.models import Servico
+from inovalab_app.catalogo.models import Equipamento
 
 
 class AgroHubRolesTests(TestCase):
@@ -41,7 +41,7 @@ class AgroHubRolesTests(TestCase):
         user = get_user_model().objects.get(agrohub_id=42)
         self.assertTrue(is_business_admin(user))
         self.assertFalse(user.is_superuser)
-        self.assertEqual(self.client.get('/catalogo/servicos/novo/').status_code, 200)
+        self.assertEqual(self.client.get('/catalogo/equipamentos/novo/').status_code, 200)
         self.assertEqual(self.client.get('/banners/').status_code, 200)
 
     def test_staff_is_internal_user_and_cannot_use_administrative_functions(self):
@@ -51,7 +51,7 @@ class AgroHubRolesTests(TestCase):
         for path in ('/index/', '/painel/', '/agenda/', '/agenda/novo/', '/tarefas/', '/materiais/'):
             with self.subTest(path=path):
                 self.assertEqual(self.client.get(path).status_code, 200)
-        self.assertEqual(self.client.get('/catalogo/servicos/novo/').status_code, 403)
+        self.assertEqual(self.client.get('/catalogo/equipamentos/novo/').status_code, 403)
         self.assertEqual(self.client.get('/banners/').status_code, 403)
 
     def test_regular_user_can_return_to_booking_creation_without_access_to_other_internal_routes(self):
@@ -63,7 +63,7 @@ class AgroHubRolesTests(TestCase):
                 response = self.client.get(path)
                 self.assertEqual(response.status_code, 403)
                 self.assertNotContains(response, 'id="sidebar"', status_code=403)
-        for path in ('/api/v1/agendamentos/', '/api/v1/servicos/', '/api/v1/tarefas/',
+        for path in ('/api/v1/agendamentos/', '/api/v1/equipamentos/', '/api/v1/tarefas/',
                      '/api/v1/materiais/', '/api/v1/banners/'):
             with self.subTest(path=path):
                 response = self.client.get(path)
@@ -72,9 +72,9 @@ class AgroHubRolesTests(TestCase):
 
     def test_regular_user_cannot_write_to_internal_api(self):
         self.login([])
-        response = self.client.post('/api/v1/servicos/', {'nome': 'Não autorizado'})
+        response = self.client.post('/api/v1/equipamentos/', {'nome': 'Não autorizado'})
         self.assertEqual(response.status_code, 403)
-        self.assertFalse(Servico.objects.filter(nome='Não autorizado').exists())
+        self.assertFalse(Equipamento.objects.filter(nome='Não autorizado').exists())
 
     def test_regular_linked_account_can_request_and_cancel_own_booking_with_synced_roles(self):
         self.assertRedirects(self.login(['student'], next='/agenda/visitas/novo/'), '/agenda/visitas/novo/')
@@ -114,7 +114,7 @@ class AgroHubRolesTests(TestCase):
         self.assertEqual(self.client.get('/index/').status_code, 403)
         user.refresh_from_db()
         self.assertFalse(is_business_admin(user))
-        self.assertEqual(self.client.get('/api/v1/servicos/').status_code, 403)
+        self.assertEqual(self.client.get('/api/v1/equipamentos/').status_code, 403)
 
     def test_role_change_from_staff_to_admin_is_applied_without_new_login(self):
         self.login(['staff'])
@@ -155,7 +155,7 @@ class AgroHubRolesTests(TestCase):
         self.login(['admin'])
         self.stub.state['responses'][('GET', '/api/v1/accounts/me/')] = (503, {})
         self.assertEqual(self.client.get('/index/').status_code, 503)
-        self.assertEqual(self.client.get('/api/v1/servicos/').status_code, 503)
+        self.assertEqual(self.client.get('/api/v1/equipamentos/').status_code, 503)
         self.assertEqual(self.client.get('/regimento/').status_code, 200)
 
     def test_public_banner_api_remains_available_to_regular_users(self):

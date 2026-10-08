@@ -86,9 +86,13 @@ class AgendaBase(AgendaControle):
             raise ValidationError(errors)
 
 
-class AgendaServico(AgendaBase):
+class AgendaServico(AgendaControle):
     categoria = 'servico'
-    servico = models.ForeignKey('inovalab_app.Servico', on_delete=models.PROTECT)
+    servico = models.OneToOneField('inovalab_app.Servico', on_delete=models.PROTECT, related_name='agendamento')
+    servico_legado = models.ForeignKey('inovalab_app.ServicoLegado', on_delete=models.PROTECT, null=True, blank=True, editable=False)
+    inicio_legado = models.DateTimeField(null=True, blank=True, editable=False)
+    fim_legado = models.DateTimeField(null=True, blank=True, editable=False)
+    motivo_legado = models.TextField(blank=True, default='', editable=False)
     equipamentos = models.ManyToManyField('inovalab_app.Equipamento', db_table='agenda_agendaservico_equipamentos', blank=True, related_name='agendamentos_de_servico')
     material_proprio = models.BooleanField('tem material próprio', null=True, blank=True)
     material_gasto = models.ForeignKey('inovalab_app.Material', on_delete=models.PROTECT, null=True, blank=True,
@@ -98,10 +102,36 @@ class AgendaServico(AgendaBase):
         validators=[MinValueValidator(Decimal('0.001'))],
     )
 
-    class Meta(AgendaBase.Meta):
+    @property
+    def objeto_id(self):
+        return self.servico_id
+
+    @property
+    def objeto_nome(self):
+        return self.servico.titulo
+
+    @property
+    def categoria_display(self):
+        return 'Serviços'
+
+    @property
+    def motivo(self):
+        return self.servico.descricao
+
+    @property
+    def inicio(self):
+        return self.servico.prazo
+
+    @property
+    def fim(self):
+        return self.servico.prazo
+
+    class Meta:
         db_table = 'agenda_agendaservico'
-        abstract = False
-        constraints = AgendaBase.Meta.constraints + [
+        ordering = ['servico__prazo', 'pk']
+        constraints = [
+            models.CheckConstraint(condition=models.Q(versao__gte=1), name='agendaservico_versao_positiva'),
+            models.CheckConstraint(condition=models.Q(situacao__in=list(BOOKING_STATUSES)), name='agendaservico_situacao_valida'),
             models.CheckConstraint(condition=(
                 models.Q(material_proprio__isnull=True, material_gasto_gramas__isnull=True)
                 | models.Q(material_proprio=True, material_proprio__isnull=False, material_gasto_gramas__isnull=True)
@@ -113,6 +143,7 @@ class AgendaServico(AgendaBase):
 
     def clean(self):
         super().clean()
+        self.observacoes = self.observacoes.strip() if isinstance(self.observacoes, str) else self.observacoes
         errors = {}
         if self.material_gasto_id is not None and self.material_proprio is not False:
             errors['material_gasto'] = 'Selecione material somente para serviços que utilizam material do laboratório.'

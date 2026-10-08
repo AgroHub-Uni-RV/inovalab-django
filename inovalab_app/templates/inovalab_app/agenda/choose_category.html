@@ -13,11 +13,7 @@
         <strong>Visita</strong>
         <span>Solicite uma visita ao laboratório.</span>
       </a>
-      <a class="booking-type-card" data-booking-step href="{% url 'agenda:create' %}?categoria=equipamento">
-        {% include 'inovalab_app/shared/icon.html' with name='settings' %}
-        <strong>Equipamento</strong>
-        <span>Reserve um equipamento para uso.</span>
-      </a>
+
       <a class="booking-type-card" data-booking-step href="{% url 'agenda:create' %}?categoria=servico">
         {% include 'inovalab_app/shared/icon.html' with name='layers' %}
         <strong>Serviços</strong>

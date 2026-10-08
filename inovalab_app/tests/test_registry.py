@@ -5,7 +5,7 @@ from django.test import SimpleTestCase
 class ConsolidationRegistryTests(SimpleTestCase):
     def test_business_models_share_one_app_and_keep_physical_tables(self):
         expected = {
-            'Servico': 'catalogo_servico', 'Equipamento': 'catalogo_equipamento',
+            'Servico': 'inovalab_servico_solicitado', 'ServicoLegado': 'catalogo_servico', 'Equipamento': 'catalogo_equipamento',
             'Material': 'materiais_material', 'Tarefa': 'tarefas_tarefa',
             'EventoTarefa': 'tarefas_eventotarefa', 'Banner': 'conteudo_banner',
             'AgendaServico': 'agenda_agendaservico',

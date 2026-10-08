@@ -13,8 +13,8 @@ from inovalab_app.agenda.forms import BookingForm, CancelForm, ReviewForm
 from inovalab_app.agenda.modal import booking_saved, render_booking
 from inovalab_app.agenda.models import BOOKING_STATUSES, CATEGORIES
 from inovalab_app.agenda.policies import ADMIN_CANCEL_MESSAGE, can_access_agenda, can_create_booking, can_cancel_booking
-from inovalab_app.agenda.selectors import calendar_weeks, filter_bookings, month_bounds, visible_bookings, visible_booking
-from inovalab_app.agenda.services import PUBLIC_FIELDS, SERVICE_FIELDS, BookingConflict, cancel_booking, review_booking, save_booking
+from inovalab_app.agenda.selectors import occurs_in_period, calendar_weeks, filter_bookings, month_bounds, visible_bookings, visible_booking
+from inovalab_app.agenda.services import PUBLIC_FIELDS, BookingConflict, cancel_booking, review_booking, save_booking
 from inovalab_app.adapters.host import profile_photo_response, has_profile_photo
 
 
@@ -114,6 +114,8 @@ class BookingWriteView(BookingWriteAccessMixin, View):
     def get_booking(self):
         if 'pk' in self.kwargs and not is_business_admin(self.request.user):
             raise PermissionDenied('Somente administradores do laboratório podem editar agendamentos.')
+        if self.kwargs.get('category') == 'equipamento':
+            raise Http404('Agendamentos de equipamento são somente históricos.')
         booking = self.get_object() if 'pk' in self.kwargs else None
         return booking
 
@@ -123,7 +125,7 @@ class BookingWriteView(BookingWriteAccessMixin, View):
             category = request.GET.get('categoria', '')
             if category == 'visita':
                 return redirect('agenda:visit-create')
-            if category not in ('servico', 'equipamento'):
+            if category != 'servico':
                 return render_booking(request, 'inovalab_app/agenda/choose_category.html', {
                     'category_error': 'Selecione uma das formas de agendamento abaixo.' if category else '',
                 }, status=400 if category else 200)
@@ -137,22 +139,6 @@ class BookingWriteView(BookingWriteAccessMixin, View):
             from inovalab_app.agenda.visit_views import VisitWriteView
             return VisitWriteView.as_view()(request, **kwargs)
         booking = self.get_booking()
-        if request.POST.get('atualizar') == '1':
-            # POST keeps names, reasons and CSRF tokens out of URL/history/logs.
-            initial = {key: request.POST[key] for key in PUBLIC_FIELDS | {'dia', 'hora_inicio', 'hora_termino'}
-                       if key in request.POST}
-            if initial.get('categoria') == 'servico':
-                initial['equipamentos'] = request.POST.getlist('equipamentos')
-            else:
-                for key in SERVICE_FIELDS:
-                    initial.pop(key, None)
-            if booking:
-                initial['versao'] = request.POST.get('versao', '')
-            initial.pop('objeto', None)
-            if booking and initial.get('categoria') != booking.categoria:
-                initial['objeto'] = None
-            form = BookingForm(booking=booking, actor=request.user, initial=initial)
-            return render_booking(request, 'inovalab_app/agenda/form.html', {'form': form, 'booking': booking})
         form = BookingForm(request.POST, booking=booking, actor=request.user)
         response_status = 200
         if form.is_valid():
@@ -165,7 +151,7 @@ class BookingWriteView(BookingWriteAccessMixin, View):
                 response_status = 409
             except ValidationError as error:
                 for field, errors in error.message_dict.items():
-                    field = {'inicio': 'hora_inicio', 'fim': 'hora_termino', 'data': 'dia'}.get(field, field)
+                    field = {'prazo': 'prazo_hora'}.get(field, field)
                     form.add_error(field if field in form.fields else None, errors)
             else:
                 return booking_saved(request, saved, creating=booking is None)
@@ -236,7 +222,7 @@ class BookingReviewListView(AdminAgendaAccessMixin, ListView):
                 for row in model.objects.select_related('criado_por').all()]
         if bounds:
             start, end = bounds
-            rows = [row for row in rows if row.inicio < end and row.fim > start]
+            rows = [row for row in rows if occurs_in_period(row, start, end)]
         if self.query:
             rows = [row for row in rows if self.query.casefold() in ' '.join((
                 str(row.pk), row.categoria_display, row.objeto_nome, row.criador_nome,

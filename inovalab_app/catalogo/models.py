@@ -31,7 +31,7 @@ class CadastroBase(models.Model):
         return self.nome
 
 
-class Servico(CadastroBase):
+class ServicoLegado(CadastroBase):
     descricao = models.TextField('descrição', blank=True)
     status = models.CharField('status', max_length=15, choices=StatusServico.choices, default=StatusServico.DISPONIVEL)
     codigo_inicial = models.CharField(max_length=40, null=True, blank=True, unique=True, editable=False)
@@ -44,7 +44,42 @@ class Servico(CadastroBase):
         constraints = [models.CheckConstraint(condition=models.Q(status__in=StatusServico.values), name='servico_status_valido')]
 
 
+class Servico(models.Model):
+    titulo = models.CharField('título', max_length=150)
+    descricao = models.TextField('descrição')
+    prazo = models.DateTimeField('prazo')
+
+    class Meta:
+        db_table = 'inovalab_servico_solicitado'
+        ordering = ['titulo', 'pk']
+        verbose_name = 'serviço solicitado'
+        verbose_name_plural = 'serviços solicitados'
+
+    @property
+    def nome(self):
+        return self.titulo
+
+    def clean(self):
+        super().clean()
+        from django.utils import timezone
+        errors = {}
+        for name in ('titulo', 'descricao'):
+            value = getattr(self, name)
+            if isinstance(value, str):
+                setattr(self, name, value.strip())
+            if not getattr(self, name):
+                errors[name] = 'Este campo é obrigatório.'
+        if self.prazo and timezone.is_naive(self.prazo):
+            errors['prazo'] = 'Informe data e hora com fuso horário.'
+        if errors:
+            raise ValidationError(errors)
+
+    def __str__(self):
+        return self.titulo
+
+
 class Equipamento(CadastroBase):
+    excluido_em = models.DateTimeField(null=True, blank=True, editable=False)
     codigo_inicial = models.CharField(max_length=40, null=True, blank=True, unique=True, editable=False)
     descricao = models.TextField('descrição', blank=True)
     foto = models.ImageField('foto', upload_to='equipamentos/', storage=EquipmentPhotoStorage(), blank=True)

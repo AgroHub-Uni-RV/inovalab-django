@@ -80,7 +80,7 @@ def filter_bookings(queryset, *, month=None, category=None, situation=None):
         queryset = [row for row in queryset if row.categoria == category]
     if month:
         start, end = month_bounds(month)
-        queryset = [row for row in queryset if row.inicio < end and row.fim > start]
+        queryset = [row for row in queryset if occurs_in_period(row, start, end)]
     return queryset
 
 
@@ -90,6 +90,13 @@ def calendar_weeks(queryset, month):
     counts, previews = {}, {}
     for booking in queryset:
         if booking.situacao != 'confirmado' or booking.cancelado_em is not None:
+            continue
+        if booking.categoria == 'servico':
+            day = timezone.localtime(booking.servico.prazo).date()
+            if start <= booking.servico.prazo < end:
+                counts[day] = counts.get(day, 0) + 1
+                if len(previews.setdefault(day, [])) < 3:
+                    previews[day].append(booking)
             continue
         first, last = booking.inicio, booking.fim
         first, last = max(first, start), min(last, end)
@@ -105,3 +112,9 @@ def calendar_weeks(queryset, month):
     return [[{'date': day, 'in_month': day.month == start.month, 'count': counts.get(day, 0),
               'bookings': previews.get(day, []), 'sunday': day.weekday() == 6}
              for day in week] for week in weeks]
+
+
+def occurs_in_period(booking, start, end):
+    if booking.categoria == 'servico':
+        return start <= booking.servico.prazo < end
+    return booking.inicio < end and booking.fim > start

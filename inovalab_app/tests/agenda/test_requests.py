@@ -1,3 +1,4 @@
+from inovalab_app.tests.agenda.helpers import make_service, make_booking, service_data, service_web_data
 from inovalab_app.tests.http import close_response
 from datetime import date, time, datetime, timedelta
 from tempfile import TemporaryDirectory
@@ -24,14 +25,11 @@ class BookingRequestFixtures:
         cls.admin.groups.add(Group.objects.get(name='Administradores'))
         cls.user = get_user_model().objects.create_user('solicitante', is_staff=True)
         cls.other = get_user_model().objects.create_user('outro', is_staff=True)
-        cls.service = Servico.objects.first()
+        cls.service = make_service()
         cls.machine = Equipamento.objects.create(nome='Máquina para pedido')
         cls.material = Material.objects.create(nome='PLA pedido', categoria='Filamento', quantidade=500,
                                                unidade='g', fonte='Laboratório')
-        cls.data = {'categoria': 'servico', 'objeto': cls.service.pk,
-                    'motivo': 'Pedido próprio', 'material_proprio': True,
-                    'inicio': datetime.fromisoformat('2026-11-01T14:00:00-03:00'),
-                    'fim': datetime.fromisoformat('2026-11-01T15:00:00-03:00')}
+        cls.data = service_data(prazo=datetime.fromisoformat('2026-11-01T15:00:00-03:00'))
 
     def create(self, actor=None, **overrides):
         return services.save_booking(actor=actor or self.user, data={**self.data, **overrides})
@@ -76,18 +74,15 @@ class BookingRequestTests(BookingRequestFixtures, TestCase):
         event = saved.eventos.first()
         self.assertEqual((event.acao, event.ator_id), ('aprovar', self.admin.pk))
         self.assertEqual(event.alteracoes['situacao'], {'anterior': 'pendente', 'novo': 'confirmado'})
-        with self.assertRaises(services.BookingConflict):
-            self.create(actor=self.admin)
+        self.assertEqual(self.create(actor=self.admin).situacao, 'confirmado')
 
-    def test_approval_conflict_keeps_pending_and_does_not_record_decision(self):
+    def test_same_deadline_does_not_block_approval_of_independent_requests(self):
         booking = self.create()
-        self.create(actor=self.admin)
-        with self.assertRaises(services.BookingConflict) as error:
-            self.review(booking)
-        self.assertEqual(error.exception.code, 'horario_ocupado')
-        booking.refresh_from_db()
-        self.assertEqual((booking.situacao, booking.versao, booking.eventos.count()), ('pendente', 1, 1))
-        self.assertIsNone(booking.avaliado_em)
+        other = self.create(actor=self.admin)
+        saved = self.review(booking)
+        self.assertEqual(saved.situacao, 'confirmado')
+        self.assertNotEqual(saved.servico_id, other.servico_id)
+        self.assertEqual(saved.eventos.count(), 2)
 
     def test_rejection_remains_visible_without_reserving_or_requiring_free_slot(self):
         booking = self.create()
@@ -116,7 +111,7 @@ class BookingRequestTests(BookingRequestFixtures, TestCase):
             with self.assertRaises(ValidationError):
                 self.review(booking, version=version)
         services.save_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=1,
-                              data={'motivo': 'Pedido corrigido pelo administrador'})
+                              data={'descricao': 'Pedido corrigido pelo administrador'})
         with self.assertRaises(services.BookingConflict):
             self.review(booking)
         booking.refresh_from_db()
@@ -125,7 +120,7 @@ class BookingRequestTests(BookingRequestFixtures, TestCase):
     def test_normal_user_can_cancel_own_but_cannot_edit_or_assign_protected_fields(self):
         booking = self.create()
         with self.assertRaises(PermissionDenied):
-            services.save_booking(actor=self.user, category=booking.categoria, booking_id=booking.pk, expected_version=1, data={'motivo': 'Editar'})
+            services.save_booking(actor=self.user, category=booking.categoria, booking_id=booking.pk, expected_version=1, data={'descricao': 'Editar'})
         services.cancel_booking(actor=self.user, category=booking.categoria, booking_id=booking.pk, expected_version=1)
         booking.refresh_from_db()
         self.assertIsNotNone(booking.cancelado_em)
@@ -148,38 +143,26 @@ class BookingRequestTests(BookingRequestFixtures, TestCase):
                 with self.subTest(actor=actor), self.assertRaises(ValidationError):
                     self.create(actor=actor, **fields)
 
-    def test_approval_revalidates_target_machine_and_material_availability(self):
-        for resource in (self.service, self.machine, self.material):
-            booking = self.create(equipamentos=[self.machine.pk], material_proprio=False,
-                                  material_gasto=self.material.pk, material_gasto_gramas=12)
-            type(resource).objects.filter(pk=resource.pk).update(status='indisponivel')
+    def test_equipment_and_material_fields_are_rejected_on_service_request(self):
+        for fields in ({'equipamentos': [self.machine.pk]}, {'material_gasto': self.material.pk}, {'material_proprio': True}):
             with self.assertRaises(ValidationError):
-                self.review(booking)
-            booking.refresh_from_db()
-            self.assertEqual((booking.situacao, booking.eventos.count()), ('pendente', 1))
-            type(resource).objects.filter(pk=resource.pk).update(status='disponivel')
+                self.create(**fields)
+        self.assertEqual(AgendaServico.objects.count(), 0)
 
-    def test_adjacent_approval_and_optional_service_machines_preserve_reservation_rules(self):
-        booking = self.create(equipamentos=[self.machine.pk])
-        self.create(actor=self.admin, categoria='equipamento', objeto=self.machine.pk, material_proprio=None)
-        self.review(booking)
-        adjacent = self.create(inicio=self.data['fim'], fim=self.data['fim'] + timedelta(hours=1))
-        self.assertEqual(self.review(adjacent).situacao, 'confirmado')
+    def test_independent_services_can_be_approved_at_the_same_deadline(self):
+        first, second = self.create(), self.create()
+        self.assertEqual(self.review(first).situacao, 'confirmado')
+        self.assertEqual(self.review(second).situacao, 'confirmado')
 
-    def test_admin_and_legacy_direct_creation_are_confirmed_without_evaluator(self):
+    def test_admin_creation_is_confirmed_without_evaluator(self):
         booking = self.create(actor=self.admin)
         self.assertEqual(booking.situacao, 'confirmado')
         self.assertIsNone(booking.avaliado_por_id)
-        legacy = AgendaServico.objects.create(servico=self.service, motivo='Importado',
-                                            inicio=self.data['inicio'], fim=self.data['fim'])
-        self.assertEqual(legacy.situacao, 'confirmado')
 
 
 class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
     def web_data(self, **overrides):
-        data = {key: value for key, value in self.data.items() if key not in ('inicio', 'fim')}
-        return {**data, 'dia': '2026-11-01', 'hora_inicio': '14:00:00',
-                'hora_termino': '15:00:00', 'material_proprio': 'sim', **overrides}
+        return service_web_data(prazo_data='2026-11-01', prazo_hora='15:00', **overrides)
 
     def test_user_can_create_and_read_own_requests_without_admin_actions(self):
         self.client.force_login(self.user)
@@ -197,7 +180,7 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
 
     def test_owner_isolation_covers_pages_api_history_photo_and_filters(self):
         own = self.create()
-        foreign = self.create(actor=self.other, motivo='SEGREDO de outro')
+        foreign = self.create(actor=self.other, descricao='SEGREDO de outro')
         self.client.force_login(self.user)
         response = self.client.get('/agenda/')
         self.assertEqual([booking.pk for booking in response.context['object_list']], [own.pk])
@@ -214,8 +197,8 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
 
     def test_pending_and_rejected_outside_current_month_are_visible_and_filterable(self):
         pending = self.create()
-        rejected = self.create(actor=self.user, inicio=self.data['inicio'] - timedelta(days=70),
-                               fim=self.data['fim'] - timedelta(days=70))
+        rejected = self.create(actor=self.user,
+                               prazo=self.data['prazo'] - timedelta(days=70))
         self.review(rejected, 'rejeitar')
         self.client.force_login(self.user)
         response = self.client.get('/agenda/')
@@ -250,15 +233,15 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
 
     def test_review_error_preserves_request_and_csrf_and_unknown_fields_are_rejected(self):
         booking = self.create()
-        self.create(actor=self.admin)
+        services.save_booking(actor=self.admin, category='servico', booking_id=booking.pk, expected_version=1, data={'observacoes': 'Alterado'})
         url = f'/agenda/{booking.categoria}/{booking.pk}/avaliar/'
         self.client.force_login(self.admin)
         self.assertEqual(self.client.post(url, {'versao': 1, 'decisao': 'aprovar'}).status_code, 409)
         self.assertEqual(self.client.post(url, {'versao': 1, 'decisao': 'rejeitar', 'criado_por': self.admin.pk}).status_code, 400)
         secure = Client(enforce_csrf_checks=True)
         secure.force_login(self.admin)
-        self.assertEqual(secure.post(url, {'versao': 1, 'decisao': 'rejeitar'}).status_code, 403)
-        self.assertRedirects(self.client.post(url, {'versao': 1, 'decisao': 'rejeitar'}), '/agenda/solicitacoes/')
+        self.assertEqual(secure.post(url, {'versao': 2, 'decisao': 'rejeitar'}).status_code, 403)
+        self.assertRedirects(self.client.post(url, {'versao': 2, 'decisao': 'rejeitar'}), '/agenda/solicitacoes/')
         self.client.force_login(self.user)
         self.assertContains(self.client.get('/agenda/'), 'Rejeitado')
 
@@ -269,7 +252,7 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
             response = self.client.get('/agenda/novo/')
             self.assertNotContains(response, '<option value="espaco"')
             data = self.web_data(categoria='espaco', objeto=space_id)
-            data.pop('material_proprio')
+            data.pop('material_proprio', None)
             response = self.client.post('/agenda/novo/', data)
             self.assertEqual(response.status_code, 200)
             self.assertIn('categoria', response.context['form'].errors)
@@ -310,7 +293,7 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
     def test_local_requests_page_includes_confirmed_bookings_and_counts(self):
         request = self.create()
         self.review(request)
-        self.create(actor=self.admin, inicio=self.data['fim'], fim=self.data['fim'] + timedelta(hours=1))
+        self.create(actor=self.admin,  prazo=self.data['prazo'] + timedelta(hours=1))
         self.client.force_login(self.admin)
         response = self.client.get('/agenda/solicitacoes/', {'situacao': '', 'mes': ''})
         self.assertEqual(response.context['paginator'].count, 2)
@@ -322,14 +305,12 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
 
     def test_confirmed_tab_includes_three_categories_and_cancelled_are_separate(self):
         service = self.create(actor=self.admin)
-        equipment = services.save_booking(actor=self.admin, data={
-            'categoria': 'equipamento', 'objeto': self.machine.pk, 'motivo': 'Uso confirmado',
-            'inicio': self.data['inicio'], 'fim': self.data['fim']})
+        equipment = AgendaEquipamento.objects.create(equipamento=self.machine, criado_por=self.admin, motivo='Uso confirmado', inicio=self.data['prazo']-timedelta(hours=1), fim=self.data['prazo'])
         visit = services.save_booking(actor=self.admin, data={
             'categoria': 'visita', 'quantidade_pessoas': 3, 'data': date(2026, 11, 1),
             'hora_inicio': time(14), 'hora_termino': time(15)})
-        cancelled = self.create(actor=self.admin, inicio=self.data['fim'],
-                                fim=self.data['fim'] + timedelta(hours=1))
+        cancelled = self.create(actor=self.admin,
+                                prazo=self.data['prazo'] + timedelta(hours=1))
         services.cancel_booking(actor=self.admin, category='servico', booking_id=cancelled.pk, expected_version=1)
         self.client.force_login(self.admin)
         response = self.client.get('/agenda/solicitacoes/', {'status': 'confirmada'})
@@ -348,13 +329,13 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         self.assertContains(cancelled_page, 'stat-card gray')
 
     def test_confirmed_tab_preserves_search_month_and_pagination(self):
-        bookings = [self.create(actor=self.admin, motivo=f'Confirmação pesquisável {index}',
-                    inicio=self.data['inicio'] + timedelta(hours=index),
-                    fim=self.data['fim'] + timedelta(hours=index)) for index in range(27)]
+        bookings = [self.create(actor=self.admin, descricao=f'Confirmação pesquisável {index}',
+
+                    prazo=self.data['prazo'] + timedelta(hours=index)) for index in range(27)]
         services.cancel_booking(actor=self.admin, category='servico', booking_id=bookings[0].pk, expected_version=1)
-        self.create(actor=self.admin, motivo='Confirmação pesquisável fora do mês',
-                    inicio=self.data['inicio'] + timedelta(days=40), fim=self.data['fim'] + timedelta(days=40))
-        self.create(actor=self.user, motivo='Confirmação pesquisável pendente')
+        self.create(actor=self.admin, descricao='Confirmação pesquisável fora do mês',
+                     prazo=self.data['prazo'] + timedelta(days=40))
+        self.create(actor=self.user, descricao='Confirmação pesquisável pendente')
         self.client.force_login(self.admin)
         params = {'status': 'confirmada', 'mes': '2026-11', 'q': 'pesquisável', 'page': 2}
         response = self.client.get('/agenda/solicitacoes/', params)
@@ -381,16 +362,16 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
 
         confirmed = self.create()
         self.review(confirmed)
-        self.create(actor=self.other, inicio=self.data['fim'], fim=self.data['fim'] + timedelta(hours=1))
-        self.create(inicio=self.data['fim'], fim=self.data['fim'] + timedelta(hours=1))
-        context = dashboard_context(self.user, now=self.data['inicio'])
+        self.create(actor=self.other,  prazo=self.data['prazo'] + timedelta(hours=1))
+        self.create( prazo=self.data['prazo'] + timedelta(hours=1))
+        context = dashboard_context(self.user, now=self.data['prazo'] - timedelta(hours=1))
         days = [day for month in context['months'] for week in month['weeks'] for day in week if day['in_month']]
         self.assertEqual(sum(day['reservations'] for day in days), 1)
 
     def test_api_status_filters_and_pagination_never_include_other_users(self):
         for index in range(27):
-            self.create(actor=self.user, motivo=f'Próprio {index}')
-            self.create(actor=self.other, motivo='SEGREDO')
+            self.create(actor=self.user, descricao=f'Próprio {index}')
+            self.create(actor=self.other, descricao='SEGREDO')
         api = APIClient()
         api.force_login(self.user)
         page = api.get('/api/v1/agendamentos/', {'situacao': 'pendente'}).data

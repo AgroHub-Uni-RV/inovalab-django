@@ -5,7 +5,7 @@ from django.core.management import call_command
 from django.db import connection
 from django.db.migrations.recorder import MigrationRecorder
 from django.test import TestCase
-from inovalab_app.upgrade import validate_existing_schema, UpgradeError, LEGACY_LEAVES
+from inovalab_app.upgrade import validate_existing_schema, UpgradeError, LEGACY_LEAVES, business_models
 from inovalab_app import schema_checks
 
 
@@ -34,7 +34,7 @@ class SchemaValidationTests(TestCase):
         def definitions(*args):
             return {name: value.replace('material_proprio = 1', 'material_proprio').replace('material_proprio = 0', 'NOT material_proprio')
                     for name, value in original(*args).items()}
-        with patch.object(schema_checks, 'check_definitions', side_effect=definitions):
+        with patch('inovalab_app.upgrade.business_models', return_value=business_models()), patch.object(schema_checks, 'check_definitions', side_effect=definitions):
             with self.assertRaisesMessage(UpgradeError, 'definição divergente'):
                 validate_existing_schema(connection)
 

@@ -16,8 +16,7 @@ class CatalogModelTests(TestCase):
         cls.user = get_user_model().objects.create_user('leitor', is_staff=True)
 
     def test_business_admin_without_staff_can_create_all_models(self):
-        for model, data in ((Servico, {'nome': '  Serviço  '}),
-                            (Equipamento, {'nome': 'Equipamento'})):
+        for model, data in ((Equipamento, {'nome': 'Equipamento'}),):
             with self.subTest(model=model):
                 entry = save_entry(actor=self.admin, model=model, data=data)
                 self.assertEqual(entry.status, 'disponivel')
@@ -28,8 +27,8 @@ class CatalogModelTests(TestCase):
         self.admin.is_active = False
         for actor in (AnonymousUser(), self.user, self.admin):
             with self.subTest(actor=actor), self.assertRaises(PermissionDenied):
-                save_entry(actor=actor, model=Servico, data={'nome': 'Negado'})
-        self.assertFalse(Servico.objects.filter(nome='Negado').exists())
+                save_entry(actor=actor, model=Equipamento, data={'nome': 'Negado'})
+        self.assertFalse(Equipamento.objects.filter(nome='Negado').exists())
 
     def test_names_are_trimmed_required_and_not_unique(self):
         for invalid in ('', '   ', 'a' * 151):
@@ -62,10 +61,10 @@ class CatalogModelTests(TestCase):
         self.assertEqual(entry.status, 'disponivel')
 
     def test_private_seed_key_cannot_be_changed_by_write_operation(self):
-        entry = Servico.objects.first()
+        entry = Equipamento.objects.first()
         original_key = entry.codigo_inicial
         with self.assertRaises(ValidationError):
-            save_entry(actor=self.admin, model=Servico, instance=entry, data={'codigo_inicial': 'outro'})
+            save_entry(actor=self.admin, model=Equipamento, instance=entry, data={'codigo_inicial': 'outro'})
         entry.refresh_from_db()
         self.assertEqual(entry.codigo_inicial, original_key)
 

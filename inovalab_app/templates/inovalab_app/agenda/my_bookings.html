@@ -14,7 +14,7 @@
   </form>
   <h2>Agendamentos · {{ paginator.count }}</h2>
   <div class="table-wrapper" tabindex="0" role="region" aria-label="Meus agendamentos"><table><thead><tr><th>Categoria</th><th>Agendamento</th><th>Período</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
-    {% for booking in object_list %}<tr><td>{{ booking.categoria_display }}</td><td><a href="{{ booking.get_absolute_url }}">#{{ booking.pk }} · {{ booking.objeto_nome }}</a></td><td>{{ booking.inicio|date:'d/m/Y H:i' }}<br>até {{ booking.fim|date:'d/m/Y H:i' }}</td><td><span class="badge booking-status {{ booking.situacao }}">{{ booking.get_situacao_display }}</span></td><td><a href="{{ booking.get_absolute_url }}">Ver detalhes</a></td></tr>{% empty %}<tr><td colspan="5">Nenhum agendamento neste filtro.</td></tr>{% endfor %}
+    {% for booking in object_list %}<tr><td>{{ booking.categoria_display }}</td><td><a href="{{ booking.get_absolute_url }}">#{{ booking.pk }} · {{ booking.objeto_nome }}</a></td><td>{% if booking.categoria == 'servico' %}Prazo: {{ booking.servico.prazo|date:'d/m/Y H:i' }}{% else %}{{ booking.inicio|date:'d/m/Y H:i' }}<br>até {{ booking.fim|date:'d/m/Y H:i' }}{% endif %}</td><td><span class="badge booking-status {{ booking.situacao }}">{{ booking.get_situacao_display }}</span></td><td><a href="{{ booking.get_absolute_url }}">Ver detalhes</a></td></tr>{% empty %}<tr><td colspan="5">Nenhum agendamento neste filtro.</td></tr>{% endfor %}
   </tbody></table></div>
   {% include 'inovalab_app/shared/pagination.html' %}
 </section>

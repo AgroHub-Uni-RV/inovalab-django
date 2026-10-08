@@ -20,7 +20,7 @@ class RemovedIntegrationsTests(TestCase):
         self.client.force_login(user)
         with patch('inovalab_app.shared.views.load_events', return_value=([], False)):
             for path in ('/index/', '/agenda/', '/materiais/', '/tarefas/',
-                         '/banners/', '/catalogo/servicos/', '/perfil/'):
+                         '/banners/', '/catalogo/equipamentos/', '/perfil/'):
                 with self.subTest(path=path):
                     response = self.client.get(path)
                     self.assertEqual(response.status_code, 200)

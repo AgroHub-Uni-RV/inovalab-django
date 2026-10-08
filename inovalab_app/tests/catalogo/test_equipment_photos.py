@@ -20,12 +20,11 @@ class EquipmentPhotoTests(TestCase):
 
     def test_seeded_equipment_cards_have_working_photos_and_single_selection(self):
         self.client.force_login(self.user)
-        response = self.client.get('/agenda/novo/?categoria=equipamento')
-        self.assertContains(response, 'equipment-picker')
+        response = self.client.get('/catalogo/equipamentos/')
         for machine in Equipamento.objects.filter(codigo_inicial__isnull=False):
             self.assertTrue(machine.foto)
             self.assertTrue(machine.foto.name.endswith('.webp'))
-            self.assertContains(response, machine.foto.url)
+            self.assertContains(self.client.get(f'/catalogo/equipamentos/{machine.pk}/'), machine.foto.url)
             photo = self.client.get(machine.foto.url)
             self.assertEqual(photo.status_code, 200)
             self.assertEqual(photo['Content-Type'], 'image/webp')
@@ -67,8 +66,7 @@ class EquipmentPhotoTests(TestCase):
         self.assertIn('foto', response.context['form'].errors)
         self.assertFalse(Equipamento.objects.filter(nome='Inválido').exists())
         machine = Equipamento.objects.create(nome='Máquina sem foto')
-        response = self.client.get('/agenda/novo/?categoria=equipamento')
-        self.assertContains(response, 'Sem foto')
+        response = self.client.get(f'/catalogo/equipamentos/{machine.pk}/')
         self.assertContains(response, machine.nome)
 
     def test_photo_endpoint_requires_login_and_cannot_serve_unrelated_files(self):
@@ -89,16 +87,10 @@ class EquipmentPhotoTests(TestCase):
             self.assertEqual(response.status_code, 201)
             self.assertTrue(response.data['foto'])
 
-    def test_equipment_selection_persists_on_error_and_photo_appears_in_booking_detail(self):
+    def test_equipment_booking_is_retired_and_photo_remains_in_catalog(self):
         self.client.force_login(self.user)
         machine = Equipamento.objects.get(codigo_inicial='impressora-3d')
-        data = {'categoria': 'equipamento', 'objeto': machine.pk, 'motivo': 'Protótipo',
-                'dia': '2026-11-01', 'hora_inicio': '14:00:00', 'hora_termino': '15:00:00'}
-        response = self.client.post('/agenda/novo/', {**data, 'motivo': ''})
-        options = response.context['form'].fields['objeto'].widget.optgroups('objeto', [str(machine.pk)])
-        selected = [option for _, options, _ in options for option in options if option['selected']]
-        self.assertEqual(len(selected), 1)
-        self.assertEqual(selected[0]['value'].value, machine.pk)
-        response = self.client.post('/agenda/novo/', data)
-        self.assertEqual(response.status_code, 302)
-        self.assertContains(self.client.get(response.url), machine.foto.url)
+        self.assertEqual(self.client.get('/agenda/novo/?categoria=equipamento').status_code, 400)
+        response = self.client.post('/agenda/novo/', {'categoria': 'equipamento', 'objeto': machine.pk})
+        self.assertTrue(response.context['form'].errors)
+        self.assertContains(self.client.get(f'/catalogo/equipamentos/{machine.pk}/'), machine.foto.url)

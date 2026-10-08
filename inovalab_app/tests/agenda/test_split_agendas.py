@@ -1,4 +1,5 @@
-﻿from datetime import datetime
+from inovalab_app.tests.agenda.helpers import make_booking
+from datetime import datetime
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
@@ -17,17 +18,18 @@ class SplitAgendaTests(TestCase):
         self.assertTrue(hasattr(models, 'AgendaServico'), 'Falta a agenda concreta de serviços')
         self.admin = get_user_model().objects.create_user('gestor-split')
         self.admin.groups.add(Group.objects.get(name='Administradores'))
-        self.service = Servico.objects.first()
+        self.service = None
         self.equipment = Equipamento.objects.create(nome='Máquina split')
         base = dict(pk=77, motivo='Original', criado_por=self.admin, situacao='confirmado',
                     inicio=datetime.fromisoformat('2026-11-01T14:00:00-03:00'),
                     fim=datetime.fromisoformat('2026-11-01T15:00:00-03:00'))
-        self.service_booking = models.AgendaServico.objects.create(servico=self.service, **base)
+        self.service_booking = make_booking(actor=self.admin, pk=77, titulo='Serviço split')
+        self.service = self.service_booking.servico
         self.equipment_booking = models.AgendaEquipamento.objects.create(equipamento=self.equipment, **base)
 
     def test_typed_edit_and_cancel_preserve_other_category_with_same_id(self):
         changed = save_booking(actor=self.admin, category='servico', booking_id=77,
-                               expected_version=1, data={'motivo': 'Serviço alterado'})
+                               expected_version=1, data={'descricao': 'Serviço alterado'})
         self.equipment_booking.refresh_from_db()
         self.assertEqual(changed.motivo, 'Serviço alterado')
         self.assertEqual(self.equipment_booking.motivo, 'Original')

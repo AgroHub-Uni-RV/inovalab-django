@@ -1,3 +1,4 @@
+from inovalab_app.tests.agenda.helpers import make_service, make_booking
 from datetime import datetime, timezone
 from unittest.mock import patch
 
@@ -117,10 +118,7 @@ class EcosystemCalendarTests(TestCase):
     def test_events_keep_authorized_reservation_count_and_neutral_today(self):
         from inovalab_app.agenda.models import AgendaEquipamento, BOOKING_MODELS, AgendaServico
         from inovalab_app.catalogo.models import Servico
-        service = Servico.objects.create(nome='Serviço')
-        AgendaServico.objects.create(servico=service, motivo='Projeto', criado_por=self.user,
-            inicio=datetime(2026, 10, 8, 12, tzinfo=timezone.utc),
-            fim=datetime(2026, 10, 8, 13, tzinfo=timezone.utc))
+        make_booking(actor=self.user, prazo=datetime(2026, 10, 8, 13, tzinfo=timezone.utc))
         self.page([event()])
         response = self.client.get('/index/')
         days = self.days(response)

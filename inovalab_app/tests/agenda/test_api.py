@@ -1,146 +1,97 @@
-from datetime import datetime, timedelta
-
+from datetime import datetime, timedelta, timezone as dt_timezone
+from unittest.mock import patch
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
-from django.test import TestCase
+from django.contrib.auth.models import AnonymousUser
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.test import TestCase, Client
 from rest_framework.test import APIClient
+from inovalab_app.agenda.models import AgendaServico, AgendaEquipamento, AgendaVisita, EventoAgendamento
+from inovalab_app.agenda.services import save_booking, review_booking, cancel_booking, BookingConflict
+from inovalab_app.agenda.selectors import visible_bookings, calendar_weeks, filter_bookings
+from inovalab_app.tests.agenda.helpers import service_data, service_web_data, make_booking, make_service
+from inovalab_app.catalogo.models import Equipamento
 
-from inovalab_app.agenda.models import AgendaEquipamento, BOOKING_MODELS, AgendaServico
-from inovalab_app.agenda.services import save_booking
-from inovalab_app.catalogo.models import Equipamento, Servico
-
-
-class BookingAPITests(TestCase):
+class RequestFixtures:
     @classmethod
     def setUpTestData(cls):
-        cls.admin = get_user_model().objects.create_user('gestor')
-        cls.admin.groups.add(Group.objects.get(name='Administradores'))
-        cls.user = get_user_model().objects.create_user('comum', is_staff=True)
-        cls.service = Servico.objects.first()
-        cls.equipment = Equipamento.objects.create(nome='Impressora')
-
-    def setUp(self):
-        self.client = APIClient()
-        self.client.force_login(self.admin)
-        self.url = '/api/v1/agendamentos/'
-        self.data = {'categoria': 'servico', 'objeto': self.service.pk, 'motivo': 'Protótipo',
-                     'inicio': '2026-11-01T14:00:00-03:00', 'fim': '2026-11-01T15:00:00-03:00'}
+        cls.admin = get_user_model().objects.create_superuser('gestor-fluxo')
+        cls.owner = get_user_model().objects.create_user('autor-fluxo', is_staff=True)
+        cls.other = get_user_model().objects.create_user('outro-fluxo', is_staff=True)
 
     def create(self, **overrides):
-        response = self.client.post(self.url, {**self.data, **overrides}, format='json')
+        return save_booking(actor=self.admin, data=service_data(**overrides))
+
+class BookingApiTests(RequestFixtures, TestCase):
+    def setUp(self):
+        self.api = APIClient()
+        self.api.force_login(self.admin)
+
+    def test_complete_create_edit_history_cancel_contract(self):
+        response = self.api.post('/api/v1/agendamentos/', service_data(prazo='2099-11-01T15:00:00-03:00'), format='json')
         self.assertEqual(response.status_code, 201, response.data)
-        return response.data
-
-    def test_session_admin_without_staff_can_crud_and_history(self):
-        booking = self.create()
-        url = f'{self.url}{booking["categoria"]}/{booking["id"]}/'
-        self.assertEqual((booking['objeto_nome'], booking['versao']), (self.service.nome, 1))
-        response = self.client.patch(url, {'versao': 1, 'motivo': 'Corrigido'}, format='json')
+        url = f'/api/v1/agendamentos/servico/{response.data["id"]}/'
+        self.assertEqual(self.api.get(url).data['criado_por'], self.admin.pk)
+        response = self.api.patch(url, {'titulo': 'Editado', 'versao': 1}, format='json')
         self.assertEqual((response.status_code, response.data['versao']), (200, 2))
-        history = self.client.get(url + 'historico/').data
-        self.assertEqual(history['count'], 2)
-        self.assertEqual(history['results'][0]['alteracoes'], {'motivo': {'anterior': 'Protótipo', 'novo': 'Corrigido'}})
-        self.assertEqual(self.client.delete(url, {'versao': 2}, format='json').status_code, 204)
-        self.assertEqual(self.client.get(url).status_code, 404)
-        self.assertEqual(self.client.get(url + 'historico/').status_code, 404)
-        self.assertEqual(self.client.get(self.url).data['count'], 0)
-        self.assertEqual(AgendaServico.objects.get(pk=booking['id']).eventos.count(), 3)
-        self.create()
+        self.assertEqual(self.api.get(url+'historico/').data['count'], 2)
+        self.assertEqual(self.api.delete(url, {'versao': 2}, format='json').status_code, 204)
 
-    def test_resource_categories_are_supported(self):
-        for category, target in (('servico', self.service), ('equipamento', self.equipment)):
-            booking = self.create(categoria=category, objeto=target.pk)
-            self.assertEqual((booking['categoria'], booking['objeto']), (category, target.pk))
+    def test_anonymous_and_ordinary_user_cannot_read_internal_collection(self):
+        self.api.logout()
+        self.assertEqual(self.api.get('/api/v1/agendamentos/').status_code, 403)
+        outside = get_user_model().objects.create_user('externo-api')
+        self.api.force_login(outside)
+        self.assertEqual(self.api.get('/api/v1/agendamentos/').status_code, 403)
+        self.assertEqual(self.api.post('/api/v1/agendamentos/', service_data(prazo='2099-11-01T15:00:00-03:00'), format='json').status_code, 201)
 
-    def test_anonymous_denied_and_normal_user_can_only_read_own_or_create_pending(self):
+    def test_strict_payload_naive_deadline_and_missing_required_fields(self):
+        for fields in ({'prazo': '2099-11-01T15:00:00'}, {'titulo': ''}, {'criado_por': self.other.pk}, {'versao': 1}, {'categoria': 'equipamento'}):
+            response = self.api.post('/api/v1/agendamentos/', service_data(prazo='2099-11-01T15:00:00-03:00') | fields, format='json')
+            self.assertEqual(response.status_code, 400, response.data)
+
+    def test_put_requires_complete_service_data_and_version(self):
         booking = self.create()
-        self.client.logout()
-        for suffix in ('', f'{booking["categoria"]}/{booking["id"]}/', f'{booking["categoria"]}/{booking["id"]}/historico/'):
-            self.assertEqual(self.client.get(self.url + suffix).status_code, 403)
-        self.assertEqual(self.client.post(self.url, self.data, format='json').status_code, 403)
-        self.client.force_login(self.user)
-        self.assertEqual(self.client.get(self.url).data['count'], 0)
-        for suffix in (f'{booking["categoria"]}/{booking["id"]}/', f'{booking["categoria"]}/{booking["id"]}/historico/'):
-            self.assertEqual(self.client.get(self.url + suffix).status_code, 404)
-        own = self.create()
-        self.assertEqual(own['situacao'], 'pendente')
-        for actor in (None, self.user):
-            self.client.logout()
-            if actor:
-                self.client.force_login(actor)
-            self.assertEqual(self.client.patch(f'{self.url}{booking["categoria"]}/{booking["id"]}/', {'versao': 1}, format='json').status_code, 403)
-            self.assertEqual(self.client.delete(f'{self.url}{booking["categoria"]}/{booking["id"]}/', {'versao': 1}, format='json').status_code, 404 if actor else 403)
+        url = f'/api/v1/agendamentos/servico/{booking.pk}/'
+        self.assertEqual(self.api.put(url, {'versao': 1, 'titulo': 'Só título'}, format='json').status_code, 400)
+        self.assertEqual(self.api.patch(url, {'titulo': 'Sem versão'}, format='json').status_code, 400)
 
-    def test_overlap_and_stale_version_are_409_without_partial_update(self):
+    def test_foreign_owner_cannot_read_edit_cancel_or_access_history(self):
         booking = self.create()
-        response = self.client.post(self.url, self.data, format='json')
-        self.assertEqual((response.status_code, response.data['code']), (409, 'horario_ocupado'))
-        url = f'{self.url}{booking["categoria"]}/{booking["id"]}/'
-        self.client.patch(url, {'versao': 1, 'motivo': 'Atualizado'}, format='json')
-        for method in (self.client.patch, self.client.delete):
-            response = method(url, {'versao': 1}, format='json')
-            self.assertEqual((response.status_code, response.data['code']), (409, 'versao_desatualizada'))
-        self.assertEqual(AgendaServico.objects.get(pk=booking['id']).eventos.count(), 2)
+        self.api.force_login(self.other)
+        url = f'/api/v1/agendamentos/servico/{booking.pk}/'
+        self.assertEqual(self.api.get(url).status_code, 404)
+        self.assertEqual(self.api.get(url+'historico/').status_code, 404)
+        self.assertEqual(self.api.patch(url, {'versao': 1}, format='json').status_code, 403)
+        self.assertEqual(self.api.delete(url, {'versao': 1}, format='json').status_code, 404)
 
-    def test_strict_payload_versions_and_object_ids(self):
-        for version in (True, 1.5, '1', 0, None):
-            with self.subTest(version=version):
-                self.assertEqual(self.client.post(self.url, {**self.data, 'versao': version}, format='json').status_code, 400)
-        for field in ('servico', 'equipamento', 'espaco', 'espaco_legado_id', 'espaco_legado_nome',
-                      'criado_por', 'id', 'cancelado_em', 'objeto_nome'):
-            self.assertEqual(self.client.post(self.url, {**self.data, field: 1}, format='json').status_code, 400)
-        for value in (True, '1', 1.5, None, 0, 999999):
-            self.assertEqual(self.client.post(self.url, {**self.data, 'objeto': value}, format='json').status_code, 400)
-        self.assertEqual(self.client.post(self.url, [], format='json').status_code, 400)
+    def test_stale_edit_and_cancel_return_409_without_partial_write(self):
         booking = self.create()
-        url = f'{self.url}{booking["categoria"]}/{booking["id"]}/'
-        self.assertEqual(self.client.patch(url, {'motivo': 'Sem versão'}, format='json').status_code, 400)
-        self.assertEqual(self.client.patch(url, {'versao': 1, 'categoria': 'espaco'}, format='json').status_code, 400)
-        self.assertEqual(self.client.delete(url, {'versao': 1, 'motivo': 'Inesperado'}, format='json').status_code, 400)
+        url = f'/api/v1/agendamentos/servico/{booking.pk}/'
+        self.api.patch(url, {'titulo': 'Novo', 'versao': 1}, format='json')
+        self.assertEqual(self.api.patch(url, {'titulo': 'Perdido', 'versao': 1}, format='json').status_code, 409)
+        self.assertEqual(self.api.delete(url, {'versao': 1}, format='json').status_code, 409)
+        self.assertEqual(self.api.get(url).data['titulo'], 'Novo')
 
-    def test_naive_invalid_or_zero_intervals_are_rejected_and_put_is_complete(self):
-        for fields in ({'inicio': '2026-11-01T14:00:00'}, {'fim': self.data['inicio']}, {'fim': 'inválido'}, {'requerente': ' '}):
-            self.assertEqual(self.client.post(self.url, {**self.data, **fields}, format='json').status_code, 400)
-        booking = self.create()
-        url = f'{self.url}{booking["categoria"]}/{booking["id"]}/'
-        self.assertEqual(self.client.put(url, {'versao': 1, 'motivo': 'Incompleto'}, format='json').status_code, 400)
-        self.assertEqual(self.client.put(url, {**self.data, 'versao': 1}, format='json').status_code, 200)
+    def test_month_filters_include_deadline_at_month_start_only_in_its_month(self):
+        self.create(prazo=datetime(2099, 11, 1, 3, tzinfo=dt_timezone.utc))
+        self.assertEqual(self.api.get('/api/v1/agendamentos/?mes=2099-11').data['count'], 1)
+        self.assertEqual(self.api.get('/api/v1/agendamentos/?mes=2099-10').data['count'], 0)
 
-    def test_unavailable_target_is_400_but_unchanged_metadata_remains_editable(self):
-        booking = self.create()
-        self.service.status = 'indisponivel'
-        self.service.save()
-        self.assertEqual(self.client.post(self.url, self.data, format='json').status_code, 400)
-        self.assertEqual(self.client.patch(f'{self.url}{booking["categoria"]}/{booking["id"]}/', {'versao': 1, 'motivo': 'Só descrição'}, format='json').status_code, 200)
+    def test_booking_and_event_pagination(self):
+        for _ in range(27): self.create()
+        first = self.api.get('/api/v1/agendamentos/')
+        self.assertEqual((first.data['count'], len(first.data['results'])), (27, 25))
+        self.assertEqual(len(self.api.get('/api/v1/agendamentos/?page=2').data['results']), 2)
 
-    def test_filters_include_cross_month_reservations_and_exclude_end_at_month_start(self):
-        self.create(inicio='2026-10-31T23:00:00-03:00', fim='2026-11-01T01:00:00-03:00')
-        other = Servico.objects.create(nome='Outro serviço')
-        self.create(objeto=other.pk, inicio='2026-10-31T20:00:00-03:00', fim='2026-11-01T00:00:00-03:00')
-        self.create(categoria='equipamento', objeto=self.equipment.pk)
-        response = self.client.get(self.url, {'mes': '2026-11', 'categoria': 'servico'})
-        self.assertEqual((response.status_code, response.data['count']), (200, 1))
-        self.assertEqual(self.client.get(self.url).data['count'], 3)
-        for fields in ({'mes': '2026-13'}, {'mes': '2026-1'}, {'categoria': 'qualquer'}, {'mes': '9999-12'}):
-            self.assertEqual(self.client.get(self.url, fields).status_code, 400)
+    def test_csrf_is_required_for_session_write(self):
+        strict = APIClient(enforce_csrf_checks=True)
+        strict.force_login(self.admin)
+        self.assertEqual(strict.post('/api/v1/agendamentos/', service_data(), format='json').status_code, 403)
 
-    def test_booking_and_history_pagination(self):
-        start = datetime.fromisoformat(self.data['inicio'])
-        for index in range(26):
-            self.create(inicio=(start + timedelta(hours=index)).isoformat(), fim=(start + timedelta(hours=index + 1)).isoformat())
-        page = self.client.get(self.url).data
-        self.assertEqual((page['count'], len(page['results'])), (26, 25))
-        self.assertEqual(len(self.client.get(self.url, {'page': 2}).data['results']), 1)
-        booking = AgendaServico.objects.first()
-        for version in range(1, 27):
-            save_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=version, data={'motivo': str(version)})
-        page = self.client.get(f'{self.url}{booking.categoria}/{booking.pk}/historico/').data
-        self.assertEqual((page['count'], len(page['results'])), (27, 25))
-
-    def test_session_authentication_requires_csrf_for_unsafe_requests(self):
-        client = APIClient(enforce_csrf_checks=True)
-        client.force_login(self.admin)
-        self.assertEqual(client.post(self.url, self.data, format='json').status_code, 403)
-        client.get('/agenda/novo/')
-        token = client.cookies['csrftoken'].value
-        self.assertEqual(client.post(self.url, self.data, format='json', HTTP_X_CSRFTOKEN=token).status_code, 201)
+    def test_legacy_equipment_cannot_be_edited_in_api(self):
+        equipment = Equipamento.objects.first()
+        booking = AgendaEquipamento.objects.create(equipamento=equipment, criado_por=self.admin,
+            motivo='Histórico', inicio=datetime(2099, 11, 1, 9, tzinfo=dt_timezone.utc), fim=datetime(2099, 11, 1, 10, tzinfo=dt_timezone.utc))
+        url = f'/api/v1/agendamentos/equipamento/{booking.pk}/'
+        self.assertEqual(self.api.get(url).status_code, 200)
+        self.assertEqual(self.api.patch(url, {'versao': 1}, format='json').status_code, 400)

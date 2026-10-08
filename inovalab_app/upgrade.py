@@ -32,8 +32,15 @@ def _type_family(name):
     }.get(name, name)
 
 
-def business_models():
-    config = apps.get_app_config('inovalab_app')
+def business_models(connection=None):
+    if connection is not None:
+        from django.db.migrations.loader import MigrationLoader
+        loader = MigrationLoader(connection)
+        installed = [node for node in loader.applied_migrations if node[0] == 'inovalab_app']
+        target = max(installed, default=('inovalab_app', '0001_initial'))
+        config = loader.project_state([target]).apps.get_app_config('inovalab_app')
+    else:
+        config = apps.get_app_config('inovalab_app')
     return list(config.get_models(include_auto_created=True))
 
 
@@ -50,7 +57,7 @@ def validate_content_types(connection):
 
 def validate_existing_schema(connection):
     """Return False for an empty installation, True for a compatible existing DB."""
-    models_to_check = business_models()
+    models_to_check = business_models(connection)
     expected_tables = {model._meta.db_table for model in models_to_check}
     actual_tables = set(connection.introspection.table_names())
     applied = set(MigrationRecorder(connection).applied_migrations())

@@ -1,3 +1,4 @@
+from inovalab_app.tests.agenda.helpers import service_web_data, make_booking
 from datetime import datetime
 
 from django.contrib.auth import get_user_model
@@ -25,14 +26,10 @@ class BookingModalTests(TestCase):
         if category == 'visita':
             return {'categoria': category, 'quantidade_pessoas': '5', 'data': '2099-11-01',
                     'hora_inicio': '10:00', 'hora_termino': '11:00', 'observacoes': 'Visita no modal'}
-        data = {'categoria': category, 'objeto': str(self.machine.pk if category == 'equipamento' else self.service.pk),
-                'motivo': 'Reserva no modal', 'dia': '2099-11-01', 'hora_inicio': '10:00', 'hora_termino': '11:00'}
-        if category == 'servico':
-            data['material_proprio'] = 'sim'
-        return data
+        return service_web_data(titulo='Reserva no modal', prazo_hora='11:00')
 
     def test_modal_steps_return_only_fragment_and_do_not_save_on_navigation(self):
-        for path in ('/agenda/novo/', '/agenda/novo/?categoria=equipamento',
+        for path in ('/agenda/novo/',
                      '/agenda/novo/?categoria=servico', '/agenda/visitas/novo/'):
             response = self.client.get(path, **self.headers)
             self.assertContains(response, 'data-booking-modal-content')
@@ -51,10 +48,10 @@ class BookingModalTests(TestCase):
             self.assertFalse(model.objects.exists())
 
     def test_modal_confirmation_persists_each_category_and_returns_success_without_redirect(self):
-        for category, model in (('servico', AgendaServico), ('equipamento', AgendaEquipamento), ('visita', AgendaVisita)):
+        for category, model in (('servico', AgendaServico), ('visita', AgendaVisita)):
             with self.subTest(category=category):
                 path = '/agenda/visitas/novo/' if category == 'visita' else '/agenda/novo/'
-                invalid = self.client.post(path, self.payload(category) | {'hora_termino': '09:00'}, **self.headers)
+                invalid = self.client.post(path, self.payload(category) | ({'hora_termino': '09:00'} if category == 'visita' else {'titulo': ''}), **self.headers)
                 self.assertContains(invalid, 'data-booking-modal-content')
                 self.assertContains(invalid, 'errorlist')
                 self.assertTrue(invalid.context['form'].errors)
@@ -111,9 +108,8 @@ class BookingModalTests(TestCase):
         self.assertContains(self.client.get('/'), 'href="/agenda/meus/" class="inova-quicknav__item"')
 
     def test_editing_remains_on_existing_page_even_with_modal_header(self):
-        booking = AgendaEquipamento.objects.create(equipamento=self.machine, criado_por=self.admin, motivo='Existente',
-            inicio=datetime.fromisoformat('2099-11-01T10:00:00-03:00'), fim=datetime.fromisoformat('2099-11-01T11:00:00-03:00'))
-        response = self.client.get(f'/agenda/equipamento/{booking.pk}/editar/', **self.headers)
+        booking = make_booking(actor=self.admin)
+        response = self.client.get(f'/agenda/servico/{booking.pk}/editar/', **self.headers)
         self.assertNotContains(response, 'data-booking-modal-content')
         self.assertNotContains(response, 'data-booking-create-page')
         self.assertContains(response, '<html')

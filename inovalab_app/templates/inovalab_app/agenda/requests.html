@@ -35,7 +35,7 @@
       <h3><a href="{% url 'agenda:detail' booking.categoria booking.pk %}">{{ booking.objeto_nome }}</a></h3>
       <p class="task-description">{{ booking.categoria_display }}{% if booking.categoria == 'visita' %} · {{ booking.quantidade_pessoas }} pessoa{{ booking.quantidade_pessoas|pluralize:'s' }}{% endif %}</p>
       <span class="kanban-id">#{{ booking.id|stringformat:'03d' }}</span>
-      <span class="kanban-deadline">{% include 'inovalab_app/shared/icon.html' with name='clock' %}<span>{{ booking.inicio|date:'d/m/Y H:i' }}<br>até {{ booking.fim|date:'d/m/Y H:i' }}</span></span>
+      <span class="kanban-deadline">{% include 'inovalab_app/shared/icon.html' with name='clock' %}<span>{% if booking.categoria == 'servico' %}Prazo: {{ booking.servico.prazo|date:'d/m/Y H:i' }}{% else %}{{ booking.inicio|date:'d/m/Y H:i' }}<br>até {{ booking.fim|date:'d/m/Y H:i' }}{% endif %}</span></span>
       <span class="kanban-owner">{{ booking.criador_nome }}</span>
       <span class="badge booking-status {{ booking.situacao }}">{{ booking.get_situacao_display }}</span>
       {% if booking.situacao == 'pendente' %}

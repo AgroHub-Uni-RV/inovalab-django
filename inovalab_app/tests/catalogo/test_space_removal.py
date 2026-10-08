@@ -21,8 +21,8 @@ class SpaceRemovalTests(TestCase):
                      '/catalogo/espacos/1/editar/', '/api/v1/espacos/', '/api/v1/espacos/1/'):
             with self.subTest(path=path):
                 self.assertEqual(self.client.get(path).status_code, 404)
-        for category in ('servicos', 'equipamentos'):
-            response = self.client.get(f'/catalogo/{category}/')
-            self.assertContains(response, '/catalogo/servicos/')
-            self.assertContains(response, '/catalogo/equipamentos/')
-            self.assertNotContains(response, '/catalogo/espacos/')
+        self.assertRedirects(self.client.get('/catalogo/servicos/'), '/agenda/')
+        response = self.client.get('/catalogo/equipamentos/')
+        self.assertContains(response, 'Infraestrutura')
+        self.assertNotContains(response, '/catalogo/servicos/')
+        self.assertNotContains(response, '/catalogo/espacos/')

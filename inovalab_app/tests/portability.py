@@ -1,3 +1,4 @@
+from inovalab_app.tests.agenda.helpers import make_service, make_booking
 from datetime import timedelta
 from urllib.parse import parse_qs, urlsplit
 from django.apps import apps
@@ -64,7 +65,6 @@ class NativeHostTests(TestCase):
 
     def test_creator_photo_is_optional_for_native_users(self):
         self.client.force_login(self.user)
-        booking = AgendaServico.objects.create(servico=Servico.objects.first(), criado_por=self.user, motivo='Teste',
-                                               inicio=timezone.now(), fim=timezone.now()+timedelta(hours=1))
+        booking = make_booking(actor=self.user)
         self.assertEqual(self.client.get(booking.get_absolute_url()).status_code, 200)
         self.assertEqual(self.client.get(reverse('agenda:creator-photo', args=['servico', booking.pk])).status_code, 404)

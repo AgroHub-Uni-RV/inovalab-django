@@ -1,3 +1,4 @@
+from inovalab_app.tests.agenda.helpers import make_booking, make_service
 from datetime import datetime, timedelta
 
 from django.contrib.auth import get_user_model
@@ -13,7 +14,7 @@ class PersonalLocalBookingsTests(TestCase):
         cls.user = get_user_model().objects.create_user('usuario-pessoal')
         cls.other = get_user_model().objects.create_user('outro-pessoal')
         cls.admin = get_user_model().objects.create_superuser('admin-pessoal')
-        cls.service = Servico.objects.first()
+        cls.service = make_service()
         cls.equipment = Equipamento.objects.create(nome='Máquina pessoal')
 
     def booking(self, actor, *, equipment=False, status='pendente', cancelled=False, reason='Pedido próprio'):
@@ -22,7 +23,7 @@ class PersonalLocalBookingsTests(TestCase):
                 'motivo': reason, 'observacoes': 'Observações próprias', 'situacao': status,
                 'cancelado_em': start if cancelled else None}
         return (AgendaEquipamento.objects.create(equipamento=self.equipment, **data) if equipment else
-                AgendaServico.objects.create(servico=self.service, material_proprio=True, **data))
+                make_booking(actor=actor, service=make_service(descricao=reason, prazo=data['fim']), situacao=status, cancelado_em=data['cancelado_em'], observacoes=data['observacoes']))
 
     def test_any_active_user_can_list_only_own_services_and_equipment_and_read_details(self):
         own = [self.booking(self.user), self.booking(self.user, equipment=True)]

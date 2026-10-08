@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.utils.dates import MONTHS
 
 from inovalab_app.adapters.host import is_business_admin
-from inovalab_app.agenda.selectors import visible_bookings
+from inovalab_app.agenda.selectors import visible_bookings, occurs_in_period
 from inovalab_app.tarefas.selectors import visible_tasks
 
 TASK_TABS = {'pendentes': ('Pendentes', ['demanda']),
@@ -25,6 +25,11 @@ def _months(bookings, today, events=()):
     last = timezone.make_aware(_month_date(today.year, today.month, 6))
     counts = {}
     for booking in bookings:
+        if booking.categoria == 'servico':
+            if first <= booking.servico.prazo < last:
+                day = timezone.localtime(booking.servico.prazo).date()
+                counts[day] = counts.get(day, 0) + 1
+            continue
         begin, end = booking.inicio, booking.fim
         if begin >= last or end <= first:
             continue
@@ -75,7 +80,7 @@ def dashboard_context(actor, *, now=None, task_tab='pendentes', booking_tab='sem
     elif booking_tab == 'proximos':
         bookings = [row for row in all_bookings if row.inicio >= end]
     else:
-        bookings = [row for row in all_bookings if row.inicio < end and row.fim > max(start, now)]
+        bookings = [row for row in all_bookings if occurs_in_period(row, max(start, now), end) and (row.categoria != 'servico' or row.servico.prazo > now)]
     return {
         'is_business_admin': admin, 'tasks': tasks, 'bookings': list(bookings[:10]),
         'task_tab': task_tab, 'booking_tab': booking_tab, 'months': _months(all_bookings, today, events),

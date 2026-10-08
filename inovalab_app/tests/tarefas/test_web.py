@@ -1,3 +1,4 @@
+from inovalab_app.tests.agenda.helpers import make_service, make_booking
 from datetime import datetime
 import re
 
@@ -21,13 +22,14 @@ class TaskWebTests(TaskFixtures, TestCase):
         self.assertNotContains(response, '/tarefas/nova/')
         columns = response.context['columns']
         self.assertEqual([column['count'] for column in columns], [1, 0, 0, 0])
-        self.assertContains(self.client.get(f'/tarefas/{self.mine.pk}/'), 'Iniciar execução')
+        self.assertContains(self.client.get(f'/tarefas/{self.mine.pk}/'), 'name="status"')
+        self.assertContains(self.client.get(f'/tarefas/{self.mine.pk}/'), 'value="criacao"')
 
     def test_foreign_detail_history_and_transition_are_404(self):
         self.client.force_login(self.owner)
         path = f'/tarefas/{self.theirs.pk}/'
         for response in (self.client.get(path), self.client.get(path + 'historico/'),
-                         self.client.post(path + 'transicoes/', {'acao': 'iniciar', 'versao': 1})):
+                         self.client.post(path + 'transicoes/', {'status': 'criacao', 'versao': 1})):
             self.assertEqual(response.status_code, 404)
 
     def test_admin_creates_edits_reassigns_and_deletes_with_confirmation(self):
@@ -55,17 +57,17 @@ class TaskWebTests(TaskFixtures, TestCase):
         self.client.force_login(self.owner)
         path = f'/tarefas/{self.mine.pk}/transicoes/'
         for action, version in (('iniciar', 1), ('enviar', 2)):
-            self.assertRedirects(self.client.post(path, {'acao': action, 'versao': version}), f'/tarefas/{self.mine.pk}/', fetch_redirect_response=False)
+            self.assertRedirects(self.client.post(path, {'status': {'iniciar': 'criacao', 'enviar': 'avaliacao', 'aprovar': 'concluido', 'recusar': 'criacao', 'reabrir': 'criacao'}.get(action, 'invalido'), 'versao': version}), f'/tarefas/{self.mine.pk}/', fetch_redirect_response=False)
         detail = self.client.get(f'/tarefas/{self.mine.pk}/')
         self.assertNotContains(detail, 'Aprovar entrega')
-        self.assertEqual(self.client.post(path, {'acao': 'aprovar', 'versao': 3}).status_code, 403)
+        self.assertEqual(self.client.post(path, {'status': 'concluido', 'versao': 3}).status_code, 403)
         self.mine.refresh_from_db()
         self.assertEqual(self.mine.status, 'avaliacao')
 
     def test_posting_metadata_with_transition_is_rejected_without_partial_change(self):
         self.client.force_login(self.owner)
         response = self.client.post(f'/tarefas/{self.mine.pk}/transicoes/',
-                                    {'acao': 'iniciar', 'versao': 1, 'responsavel': self.other.pk})
+                                    {'status': 'criacao', 'versao': 1, 'responsavel': self.other.pk})
         self.assertEqual(response.status_code, 400)
         self.mine.refresh_from_db()
         self.assertEqual((self.mine.status, self.mine.versao), ('demanda', 1))
@@ -84,7 +86,7 @@ class TaskWebTests(TaskFixtures, TestCase):
         response = self.client.post(f'/tarefas/{self.mine.pk}/editar/', self.payload(descricao='Antiga', versao=1))
         self.assertEqual(response.status_code, 409)
         self.assertContains(response, 'alterada', status_code=409)
-        response = self.client.post(f'/tarefas/{self.mine.pk}/transicoes/', {'acao': 'iniciar', 'versao': 1})
+        response = self.client.post(f'/tarefas/{self.mine.pk}/transicoes/', {'status': 'criacao', 'versao': 1})
         self.assertEqual(response.status_code, 409)
         self.mine.refresh_from_db()
         self.assertEqual((self.mine.descricao, self.mine.versao), ('Nova versão', 2))
@@ -105,10 +107,10 @@ class TaskWebTests(TaskFixtures, TestCase):
         client = Client(enforce_csrf_checks=True)
         client.force_login(self.owner)
         path = f'/tarefas/{self.mine.pk}/transicoes/'
-        self.assertEqual(client.post(path, {'acao': 'iniciar', 'versao': 1}).status_code, 403)
+        self.assertEqual(client.post(path, {'status': 'criacao', 'versao': 1}).status_code, 403)
         self.assertEqual(client.get(path).status_code, 405)
         client.get(f'/tarefas/{self.mine.pk}/')
-        self.assertEqual(client.post(path, {'acao': 'iniciar', 'versao': 1}, HTTP_X_CSRFTOKEN=client.cookies['csrftoken'].value).status_code, 302)
+        self.assertEqual(client.post(path, {'status': 'criacao', 'versao': 1}, HTTP_X_CSRFTOKEN=client.cookies['csrftoken'].value).status_code, 302)
 
     def test_create_form_errors_keep_input_and_existing_inactive_refs_remain_editable(self):
         self.client.force_login(self.admin)

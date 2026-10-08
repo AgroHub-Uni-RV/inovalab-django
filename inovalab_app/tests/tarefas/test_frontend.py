@@ -1,3 +1,4 @@
+from inovalab_app.tests.agenda.helpers import make_service, make_booking
 from django.test import TestCase
 
 from inovalab_app.catalogo.models import Servico
@@ -7,6 +8,15 @@ from inovalab_app.tests.tarefas.helpers import TaskFixtures
 
 
 class TaskFrontendTests(TaskFixtures, TestCase):
+    def test_service_filter_does_not_disclose_titles_of_foreign_requests(self):
+        private = make_booking(actor=self.admin, titulo='Pedido confidencial de Bruno')
+        save_task(actor=self.admin, data={'agendamento_servico': private, 'responsavel': self.other,
+                                         'descricao': 'Tarefa de outra pessoa'})
+        self.client.force_login(self.owner)
+        response = self.client.get('/tarefas/')
+        self.assertNotContains(response, 'Pedido confidencial de Bruno')
+        self.assertEqual(list(response.context['services']), [self.service])
+
     def test_search_and_status_filters_do_not_expose_foreign_tasks(self):
         self.client.force_login(self.owner)
         response = self.client.get('/tarefas/', {'q': self.theirs.descricao})
@@ -17,8 +27,8 @@ class TaskFrontendTests(TaskFixtures, TestCase):
         self.assertEqual(response.context['stat_counts']['demanda'], 1)
 
     def test_service_filter_and_invalid_choices_are_safe(self):
-        service = Servico.objects.create(nome='Outro serviço')
-        task = save_task(actor=self.admin, data={'servico': service, 'responsavel': self.owner, 'descricao': 'Buscável'})
+        service = make_service(titulo='Outro serviço')
+        task = save_task(actor=self.admin, data={'agendamento_servico': make_booking(actor=self.admin, service=service), 'responsavel': self.owner, 'descricao': 'Buscável'})
         self.client.force_login(self.admin)
         response = self.client.get('/tarefas/', {'servico': str(service.pk), 'q': 'Buscável'})
         self.assertEqual([item.pk for item in response.context['object_list']], [task.pk])
@@ -28,7 +38,7 @@ class TaskFrontendTests(TaskFixtures, TestCase):
             self.assertEqual(response.context['selected_status'], '')
 
     def test_pagination_preserves_filters_and_detail_history_is_real(self):
-        Tarefa.objects.bulk_create([Tarefa(servico=self.service, responsavel=self.owner, descricao='Busca teste') for _ in range(26)])
+        Tarefa.objects.bulk_create([Tarefa(agendamento_servico=self.booking, responsavel=self.owner, descricao='Busca teste') for _ in range(26)])
         self.client.force_login(self.owner)
         response = self.client.get('/tarefas/', {'q': 'Busca teste', 'status': 'demanda'})
         self.assertEqual(len(response.context['object_list']), 25)

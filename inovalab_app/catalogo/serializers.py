@@ -33,7 +33,7 @@ class CatalogSerializer(serializers.ModelSerializer):
 class ServicoSerializer(CatalogSerializer):
     class Meta:
         model = Servico
-        fields = ['id', 'nome', 'descricao', 'status']
+        fields = ['id', 'titulo', 'descricao', 'prazo']
         read_only_fields = ['id']
 
 

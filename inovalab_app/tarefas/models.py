@@ -11,7 +11,11 @@ class StatusTarefa(models.TextChoices):
 
 
 class Tarefa(models.Model):
-    servico = models.ForeignKey('inovalab_app.Servico', on_delete=models.PROTECT, verbose_name='serviço')
+    agendamento_servico = models.ForeignKey('inovalab_app.AgendaServico', on_delete=models.PROTECT, related_name='tarefas', verbose_name='agendamento de serviço')
+    servico_legado = models.ForeignKey('inovalab_app.ServicoLegado', on_delete=models.PROTECT, null=True, blank=True, editable=False)
+    equipamento = models.ForeignKey('inovalab_app.Equipamento', on_delete=models.PROTECT, null=True, blank=True, verbose_name='equipamento')
+    material_gasto = models.ForeignKey('inovalab_app.Material', on_delete=models.PROTECT, null=True, blank=True, verbose_name='material gasto')
+    quantidade_material_gasto = models.CharField('quantidade de material gasto', max_length=150, blank=True, default='')
     descricao = models.TextField('descrição')
     responsavel = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='responsável')
     status = models.CharField('status', max_length=10, choices=StatusTarefa.choices, default=StatusTarefa.DEMANDA)
@@ -48,6 +52,14 @@ class Tarefa(models.Model):
 
     def __str__(self):
         return f'Tarefa #{self.pk}'
+
+    @property
+    def servico(self):
+        return self.agendamento_servico.servico
+
+    @property
+    def servico_id(self):
+        return self.agendamento_servico.servico_id
 
 
 class EventoTarefa(models.Model):

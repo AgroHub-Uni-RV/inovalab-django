@@ -18,9 +18,7 @@ from inovalab_app.materiais.models import Material
 
 
 CATEGORY_MODELS = {'servico': Servico, 'equipamento': Equipamento}
-BASE_FIELDS = {'categoria', 'objeto', 'motivo', 'inicio', 'fim'}
-SERVICE_FIELDS = {'equipamentos', 'material_proprio', 'material_gasto', 'material_gasto_gramas'}
-PUBLIC_FIELDS = BASE_FIELDS | SERVICE_FIELDS | {'observacoes'}
+PUBLIC_FIELDS = {'categoria', 'titulo', 'descricao', 'prazo', 'observacoes'}
 VISIT_FIELDS = {'categoria', 'quantidade_pessoas', 'data', 'hora_inicio', 'hora_termino', 'observacoes'}
 
 
@@ -83,7 +81,8 @@ def _lock_targets(*targets):
             else:
                 AgendaVisita.objects.all().update(versao=F('versao'))
             continue
-        if not CATEGORY_MODELS[category].objects.filter(pk=pk).update(status=F('status')):
+        field = 'titulo' if category == 'servico' else 'status'
+        if not CATEGORY_MODELS[category].objects.filter(pk=pk).update(**{field: F(field)}):
             raise ValidationError({'objeto': 'Selecione um cadastro válido.'})
 
 
@@ -98,9 +97,9 @@ def _snapshot(booking):
         values.update({name: getattr(booking, name) for name in VISIT_FIELDS - {'categoria', 'observacoes'}})
     values['criado_por'] = booking.criado_por_id
     if booking.categoria == 'servico':
-        values.update(material_gasto=booking.material_gasto_id, material_proprio=booking.material_proprio,
-                      material_gasto_gramas=booking.material_gasto_gramas,
-                      equipamentos=sorted(booking.equipamentos.values_list('pk', flat=True)))
+        values.update(titulo=booking.servico.titulo, descricao=booking.servico.descricao, prazo=booking.servico.prazo)
+        for name in ('motivo', 'inicio', 'fim', 'objeto'):
+            values.pop(name, None)
     values['avaliado_por'] = booking.avaliado_por_id
     return {name: value.astimezone(dt_timezone.utc).isoformat() if isinstance(value, datetime)
             else value.isoformat() if isinstance(value, (date, time))
@@ -133,10 +132,10 @@ def save_booking(*, actor, data, category=None, booking_id=None, expected_versio
         _require_admin(actor)
     if (category or data.get('categoria')) == 'visita':
         return _save_visit(actor=actor, data=data, booking_id=booking_id, expected_version=expected_version)
-    booking = _save_booking(actor=actor, actor_name=actor.username, data=data,
-                         category=category, booking_id=booking_id, expected_version=expected_version,
-                         initial_status='confirmado' if is_business_admin(actor) else 'pendente')
-    return booking
+    if (category or data.get('categoria')) == 'servico':
+        from inovalab_app.agenda.service_requests import save_service_request
+        return save_service_request(actor=actor, data=data, booking_id=booking_id, expected_version=expected_version)
+    raise ValidationError({'categoria': 'Equipamentos não podem ser agendados. Selecione serviço ou visita.'})
 
 
 def _save_visit(*, actor, data, booking_id=None, expected_version=None):
@@ -172,88 +171,6 @@ def _save_visit(*, actor, data, booking_id=None, expected_version=None):
         return booking
 
 
-def _save_booking(*, actor, actor_name, data, category=None, booking_id=None, expected_version=None, initial_status='confirmado'):
-    # Núcleo privado chamado pela fachada com autorização por papel.
-    unknown = set(data) - PUBLIC_FIELDS
-    if unknown:
-        raise ValidationError({name: 'Este campo não pode ser alterado.' for name in unknown})
-    if booking_id is not None:
-        booking = _load(booking_id, expected_version, category)
-        if 'categoria' in data and data['categoria'] != category:
-            raise ValidationError({'categoria': 'A categoria do agendamento não pode ser alterada.'})
-    else:
-        category = data.get('categoria', category)
-        booking = booking_model(category)(criado_por=actor, situacao=initial_status)
-    old_equipment_ids = set(booking.equipamentos.values_list('pk', flat=True)) if booking.pk and category == 'servico' else set()
-    old_target = _target(booking) if booking_id is not None else None
-    if ('categoria' in data) != ('objeto' in data):
-        raise ValidationError({'objeto': 'Informe categoria e objeto juntos.'})
-    if 'objeto' in data:
-        pk = data['objeto']
-        if type(pk) is not int or pk < 1:
-            raise ValidationError({'objeto': 'Informe um ID inteiro positivo.'})
-        setattr(booking, category + '_id', pk)
-    if booking.objeto_id is None:
-        raise ValidationError({'objeto': 'Selecione categoria e objeto.'})
-    equipment_ids = data.get('equipamentos', sorted(old_equipment_ids))
-    if not isinstance(equipment_ids, (list, tuple)) or any(type(pk) is not int or pk < 1 for pk in equipment_ids):
-        raise ValidationError({'equipamentos': 'Informe uma lista de IDs inteiros positivos.'})
-    if len(set(equipment_ids)) != len(equipment_ids):
-        raise ValidationError({'equipamentos': 'Selecione cada equipamento uma única vez.'})
-    if booking.categoria != 'servico':
-        if any(data.get(name) not in (None, []) for name in SERVICE_FIELDS):
-            raise ValidationError({'equipamentos': 'Estes campos são exclusivos de agendamentos de serviço.'})
-        equipment_ids = []
-    else:
-        for name in ('material_proprio', 'material_gasto_gramas'):
-            if name in data:
-                setattr(booking, name, data[name])
-        if booking.material_proprio is not None and type(booking.material_proprio) is not bool:
-            raise ValidationError({'material_proprio': 'Informe sim ou não.'})
-        if booking.material_proprio is True and 'material_gasto_gramas' not in data:
-            booking.material_gasto_gramas = None
-        if 'material_gasto' in data:
-            material_id = data['material_gasto']
-            if material_id is not None and (type(material_id) is not int or material_id < 1):
-                raise ValidationError({'material_gasto': 'Selecione um material válido.'})
-            booking.material_gasto_id = material_id
-        elif booking.material_proprio is True:
-            booking.material_gasto_id = None
-    for name in ('motivo', 'observacoes', 'inicio', 'fim'):
-        if name in data:
-            setattr(booking, name, data[name])
-    target = _target(booking)
-    with transaction.atomic():
-        _lock_targets(*(item for item in (old_target, target) if item is not None),
-                      *(('equipamento', pk) for pk in set(equipment_ids) | old_equipment_ids))
-        previous = _load(booking_id, expected_version, category) if booking_id is not None else None
-        before = _snapshot(previous) if previous else {}
-        resource = CATEGORY_MODELS[target[0]].objects.get(pk=target[1])
-        period_changed = previous is None or target != _target(previous) or (booking.inicio, booking.fim) != (previous.inicio, previous.fim)
-        if period_changed and resource is not None and resource.status == 'indisponivel':
-            raise ValidationError({'objeto': 'Este cadastro está indisponível para reservar este período.'})
-        if Equipamento.objects.filter(pk__in=equipment_ids, status='indisponivel').filter(
-                ~Q(pk__in=old_equipment_ids) if not period_changed else Q()).exists():
-            raise ValidationError({'equipamentos': 'Um equipamento selecionado está indisponível.'})
-        if category == 'servico' and booking.material_gasto_id is not None:
-            material = Material.objects.select_for_update().filter(pk=booking.material_gasto_id).first()
-            if material is None:
-                raise ValidationError({'material_gasto': 'Selecione um material válido.'})
-            if material.status == 'indisponivel' and (period_changed or previous.material_gasto_id != material.pk):
-                raise ValidationError({'material_gasto': 'Este material está indisponível.'})
-        booking.full_clean()
-        if booking.situacao == 'confirmado':
-            _check_overlap(booking)
-        if previous:
-            _persist_existing(booking, expected_version)
-        else:
-            booking.save()
-        if category == 'servico':
-            booking.equipamentos.set(equipment_ids)
-        _record(actor, booking, 'editar' if previous else 'criar', before, actor_name=actor_name)
-    return booking
-
-
 def _check_overlap(booking):
     if booking.categoria == 'visita':
         overlap = AgendaVisita.objects.filter(situacao='confirmado', cancelado_em__isnull=True,
@@ -275,25 +192,18 @@ def review_booking(*, actor, category, booking_id, expected_version, decision):
     if decision not in ('aprovar', 'rejeitar'):
         raise ValidationError({'decisao': 'Escolha aceitar ou rejeitar a solicitação.'})
     booking = _load(booking_id, expected_version, category)
-    equipment_ids = list(booking.equipamentos.values_list('pk', flat=True)) if category == 'servico' else []
+    if category == 'equipamento':
+        raise ValidationError({'categoria': 'Agendamentos de equipamento são somente históricos.'})
     with transaction.atomic():
-        _lock_targets(_target(booking), *(('equipamento', pk) for pk in equipment_ids))
+        _lock_targets(_target(booking))
         booking = _load(booking_id, expected_version, category)
         if booking.situacao != 'pendente':
             raise BookingConflict('pedido_avaliado', 'Esta solicitação já foi avaliada.')
         before = _snapshot(booking)
         if decision == 'aprovar':
-            resource = CATEGORY_MODELS[booking.categoria].objects.get(pk=booking.objeto_id) if category != 'visita' else None
-            if resource is not None and resource.status == 'indisponivel':
-                raise ValidationError({'objeto': 'Este cadastro está indisponível para reservar este período.'})
-            if Equipamento.objects.filter(pk__in=equipment_ids, status='indisponivel').exists():
-                raise ValidationError({'equipamentos': 'Um equipamento selecionado está indisponível.'})
-            if category == 'servico' and booking.material_gasto_id is not None:
-                material = Material.objects.select_for_update().get(pk=booking.material_gasto_id)
-                if material.status == 'indisponivel':
-                    raise ValidationError({'material_gasto': 'Este material está indisponível.'})
             booking.full_clean()
-            _check_overlap(booking)
+            if category == 'visita':
+                _check_overlap(booking)
         booking.situacao = 'confirmado' if decision == 'aprovar' else 'rejeitado'
         booking.avaliado_por = actor
         booking.avaliado_em = timezone.now()

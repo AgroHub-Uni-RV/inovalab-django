@@ -15,7 +15,7 @@ from inovalab_app.adapters.host import can_access_panel, is_business_admin
 from inovalab_app.agenda.models import CATEGORIES
 from inovalab_app.agenda.forms import CancelForm
 from inovalab_app.agenda.policies import ADMIN_CANCEL_MESSAGE, can_view_own_bookings, can_cancel_booking
-from inovalab_app.agenda.selectors import month_bounds, own_booking, own_bookings
+from inovalab_app.agenda.selectors import occurs_in_period, month_bounds, own_booking, own_bookings
 from inovalab_app.agenda.services import BookingConflict, cancel_booking
 
 
@@ -91,7 +91,7 @@ class MyBookingsListView(OwnBookingAccessMixin, ListView):
             result = [row for row in result if row.situacao == self.status]
         if bounds:
             start, end = bounds
-            result = [row for row in result if row.inicio < end and row.fim > start]
+            result = [row for row in result if occurs_in_period(row, start, end)]
         if self.query:
             result = [row for row in result if self.query.casefold() in ' '.join((
                 str(row.pk), row.objeto_nome, row.motivo, row.observacoes,

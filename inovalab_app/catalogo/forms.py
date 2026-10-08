@@ -6,7 +6,7 @@ from inovalab_app.catalogo.models import Equipamento, Servico
 class ServicoForm(forms.ModelForm):
     class Meta:
         model = Servico
-        fields = ['nome', 'descricao', 'status']
+        fields = ['titulo', 'descricao', 'prazo']
         widgets = {'descricao': forms.Textarea(attrs={'rows': 4})}
 
 

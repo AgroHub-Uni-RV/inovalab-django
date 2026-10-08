@@ -2,15 +2,11 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 
-from inovalab_app.catalogo.models import Servico
+from inovalab_app.agenda.models import AgendaServico
+from inovalab_app.catalogo.models import Equipamento
+from inovalab_app.materiais.models import Material
 from inovalab_app.tarefas.models import Tarefa
 from inovalab_app.shared.form_times import minute_value
-
-
-ACTION_LABELS = {
-    'iniciar': 'Iniciar execução', 'enviar': 'Enviar para avaliação',
-    'aprovar': 'Aprovar entrega', 'recusar': 'Devolver para criação', 'reabrir': 'Reabrir tarefa',
-}
 
 
 class StrictFormMixin:
@@ -27,7 +23,7 @@ class TaskForm(StrictFormMixin, forms.ModelForm):
 
     class Meta:
         model = Tarefa
-        fields = ['servico', 'descricao', 'responsavel', 'prazo']
+        fields = ['agendamento_servico', 'descricao', 'responsavel', 'prazo', 'equipamento', 'material_gasto', 'quantidade_material_gasto']
         widgets = {
             'descricao': forms.Textarea(attrs={'rows': 4}),
             'prazo': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local', 'step': '60'}),
@@ -36,7 +32,12 @@ class TaskForm(StrictFormMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['servico'].queryset = Servico.objects.filter(Q(status='disponivel') | Q(pk=self.instance.servico_id))
+        self.fields['agendamento_servico'].queryset = AgendaServico.objects.filter(
+            Q(situacao='confirmado', cancelado_em__isnull=True) | Q(pk=self.instance.agendamento_servico_id),
+        ).select_related('servico', 'criado_por')
+        self.fields['agendamento_servico'].label_from_instance = lambda booking: f'#{booking.pk} · {booking.objeto_nome}'
+        self.fields['equipamento'].queryset = Equipamento.objects.filter(Q(excluido_em__isnull=True) | Q(pk=self.instance.equipamento_id))
+        self.fields['material_gasto'].queryset = Material.objects.filter(Q(status='disponivel') | Q(pk=self.instance.material_gasto_id))
         self.fields['responsavel'].queryset = get_user_model().objects.filter(
             Q(is_active=True) | Q(pk=self.instance.responsavel_id),
         ).order_by('username', 'pk')
@@ -55,7 +56,7 @@ class TaskForm(StrictFormMixin, forms.ModelForm):
 
 
 class TransitionForm(StrictFormMixin, forms.Form):
-    acao = forms.ChoiceField(choices=ACTION_LABELS.items())
+    status = forms.ChoiceField(choices=Tarefa._meta.get_field('status').choices)
     versao = forms.IntegerField(min_value=1, widget=forms.HiddenInput)
 
 

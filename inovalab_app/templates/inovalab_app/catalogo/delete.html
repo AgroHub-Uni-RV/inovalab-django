@@ -1,0 +1,2 @@
+{% extends 'inovalab_app/catalogo/base.html' %}
+{% block content %}<div class="detail-sheet"><div class="sheet-content"><h1>Excluir equipamento</h1><p>Confirma a exclusão de <strong>{{ equipment.nome }}</strong>? As referências em tarefas e históricos serão preservadas.</p><form method="post" class="sheet-form">{% csrf_token %}<div class="sheet-actions"><button type="submit">Confirmar exclusão</button><a class="secondary-button" href="{% url 'catalogo:equipamentos-detail' equipment.pk %}">Cancelar</a></div></form></div></div>{% endblock %}

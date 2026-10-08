@@ -1,93 +1,54 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone as dt_timezone
 from unittest.mock import patch
-
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.contrib.auth.models import AnonymousUser
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.test import TestCase, Client
+from rest_framework.test import APIClient
+from inovalab_app.agenda.models import AgendaServico, AgendaEquipamento, AgendaVisita, EventoAgendamento
+from inovalab_app.agenda.services import save_booking, review_booking, cancel_booking, BookingConflict
+from inovalab_app.agenda.selectors import visible_bookings, calendar_weeks, filter_bookings
+from inovalab_app.tests.agenda.helpers import service_data, service_web_data, make_booking, make_service
+from inovalab_app.catalogo.models import Equipamento
 
-from inovalab_app.agenda.models import AgendaEquipamento, AgendaServico, EventoAgendamento
-from inovalab_app.catalogo.models import Equipamento, Servico
-
-
-class BookingCreationFlowTests(TestCase):
+class RequestFixtures:
     @classmethod
     def setUpTestData(cls):
-        cls.admin = get_user_model().objects.create_superuser('criacao-agenda')
-        cls.service = Servico.objects.first()
-        cls.equipment = Equipamento.objects.create(nome='Equipamento do fluxo')
+        cls.admin = get_user_model().objects.create_superuser('gestor-fluxo')
+        cls.owner = get_user_model().objects.create_user('autor-fluxo', is_staff=True)
+        cls.other = get_user_model().objects.create_user('outro-fluxo', is_staff=True)
 
-    def setUp(self):
-        self.client.force_login(self.admin)
+    def create(self, **overrides):
+        return save_booking(actor=self.admin, data=service_data(**overrides))
 
-    def test_entry_requires_choice_before_showing_a_form(self):
-        with patch('inovalab_app.agenda.views.BookingForm') as form:
-            response = self.client.get('/agenda/novo/')
-        self.assertTemplateUsed(response, 'inovalab_app/agenda/choose_category.html')
-        self.assertContains(response, 'class="booking-type-card"', count=3)
-        for url in ('/agenda/visitas/novo/', '/agenda/novo/?categoria=equipamento',
-                    '/agenda/novo/?categoria=servico'):
-            self.assertContains(response, url)
-        self.assertNotContains(response, 'class="sheet-form"')
-        self.assertNotContains(response, 'name="objeto"')
-        form.assert_not_called()
-        self.assertFalse(EventoAgendamento.objects.exists())
+class BookingCreateFlowTests(RequestFixtures, TestCase):
+    def setUp(self): self.client.force_login(self.admin)
 
-    def test_unknown_category_returns_to_choice_without_defaulting_to_service(self):
-        for category in ('espaco', 'invalida'):
-            with self.subTest(category=category):
-                response = self.client.get('/agenda/novo/', {'categoria': category})
-                self.assertContains(response, 'Selecione uma das formas', status_code=400)
-                self.assertTemplateUsed(response, 'inovalab_app/agenda/choose_category.html')
-                self.assertNotContains(response, 'name="objeto"', status_code=400)
+    def test_selection_offers_visit_and_service_without_equipment(self):
+        response=self.client.get('/agenda/novo/')
+        self.assertContains(response, '?categoria=servico')
+        self.assertContains(response, '/agenda/visitas/novo/')
+        self.assertNotContains(response, '?categoria=equipamento')
 
-    def test_selected_forms_only_offer_fields_for_the_chosen_category(self):
-        for category in ('servico', 'equipamento'):
-            with self.subTest(category=category):
-                response = self.client.get('/agenda/novo/', {'categoria': category})
-                self.assertEqual(response.context['form'].category, category)
-                self.assertContains(response, f'type="hidden" name="categoria" value="{category}"')
-                self.assertNotContains(response, '<select name="categoria"')
-                self.assertNotContains(response, 'name="sala"')
-                self.assertContains(response, 'Alterar tipo de agendamento')
-                self.assertContains(response, 'Confirmar agendamento')
-                if category == 'servico':
-                    self.assertContains(response, 'name="material_proprio"')
-                else:
-                    self.assertNotContains(response, 'name="material_proprio"')
+    def test_removed_category_is_rejected_without_writing(self):
+        self.assertEqual(self.client.get('/agenda/novo/?categoria=equipamento').status_code, 400)
+        response=self.client.post('/agenda/novo/', service_web_data(categoria='equipamento'))
+        self.assertTrue(response.context['form'].errors)
+        self.assertFalse(AgendaServico.objects.exists())
 
-    def test_confirmation_validates_before_saving_only_the_selected_local_agenda(self):
-        for category, target, model, other in (
-            ('servico', self.service, AgendaServico, AgendaEquipamento),
-            ('equipamento', self.equipment, AgendaEquipamento, AgendaServico),
-        ):
-            with self.subTest(category=category):
-                url = f'/agenda/novo/?categoria={category}'
-                payload = {'categoria': category, 'objeto': target.pk, 'motivo': 'Pedido do fluxo',
-                           'dia': '2099-11-01', 'hora_inicio': '10:00', 'hora_termino': '11:00'}
-                if category == 'servico':
-                    payload['material_proprio'] = 'sim'
-                self.client.get(url)
-                other_count = other.objects.count()
-                invalid = self.client.post(url, {**payload, 'hora_termino': '09:00'})
-                self.assertIn('hora_termino', invalid.context['form'].errors)
-                self.assertEqual(invalid.context['form']['categoria'].value(), category)
-                self.assertEqual(invalid.context['form']['motivo'].value(), payload['motivo'])
-                self.assertFalse(model.objects.exists())
-                response = self.client.post(url, payload)
-                booking = model.objects.get()
-                self.assertRedirects(response, booking.get_absolute_url())
-                self.assertEqual(booking.eventos.get().acao, 'criar')
-                self.assertEqual(other.objects.count(), other_count)
+    def test_get_form_and_selection_do_not_create_records(self):
+        self.client.get('/agenda/novo/')
+        self.client.get('/agenda/novo/?categoria=servico')
+        self.assertFalse(AgendaServico.objects.exists())
 
-    def test_edit_uses_existing_category_even_when_query_requests_another_type(self):
-        booking = AgendaEquipamento.objects.create(
-            equipamento=self.equipment, criado_por=self.admin, motivo='Agendamento existente',
-            inicio=datetime.fromisoformat('2099-11-01T10:00:00-03:00'),
-            fim=datetime.fromisoformat('2099-11-01T11:00:00-03:00'),
-        )
-        for category in ('servico', 'visita'):
-            with self.subTest(category=category):
-                response = self.client.get(booking.get_absolute_url() + 'editar/', {'categoria': category})
-                self.assertEqual(response.status_code, 200)
-                self.assertEqual(response.context['form'].category, 'equipamento')
-                self.assertContains(response, 'Editar agendamento')
-                self.assertNotContains(response, 'name="material_proprio"')
+    def test_invalid_confirmation_keeps_draft(self):
+        response=self.client.post('/agenda/novo/', service_web_data(prazo_hora=''))
+        self.assertEqual(response.context['form']['titulo'].value(), 'Projeto de teste')
+        self.assertTrue(response.context['form'].errors)
+        self.assertFalse(AgendaServico.objects.exists())
+
+    def test_edit_cannot_change_existing_category(self):
+        booking=self.create()
+        response=self.client.post(f'/agenda/servico/{booking.pk}/editar/', service_web_data(versao=1,categoria='visita'))
+        self.assertTrue(response.context['form'].errors)
+        booking.refresh_from_db(); self.assertEqual(booking.versao,1)

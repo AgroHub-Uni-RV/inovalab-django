@@ -3,7 +3,7 @@ from django.contrib.auth.models import Group
 from django.test import Client, TestCase
 
 from accounts.tests.test_identity import PASSWORD
-from inovalab_app.catalogo.models import Servico
+from inovalab_app.catalogo.models import Equipamento
 from inovalab_app.tests.catalogo.test_web import CASES
 
 
@@ -72,9 +72,9 @@ class CatalogApiTests(TestCase):
         client.force_login(self.admin)
         client.get('/perfil/')
         data = {'nome': 'API com CSRF'}
-        path = '/api/v1/servicos/'
+        path = '/api/v1/equipamentos/'
         self.assertEqual(client.post(path, data, content_type='application/json').status_code, 403)
-        self.assertFalse(Servico.objects.filter(nome=data['nome']).exists())
+        self.assertFalse(Equipamento.objects.filter(nome=data['nome']).exists())
         response = client.post(path, data, content_type='application/json', HTTP_X_CSRFTOKEN=client.cookies['csrftoken'].value)
         self.assertEqual(response.status_code, 201)
 
@@ -95,18 +95,18 @@ class CatalogApiTests(TestCase):
             for invalid in ({'nome': '   '}, {'nome': 'a' * 151}, {'status': 'incorreto'}):
                 response = self.client.post(f'/api/v1/{slug}/', {**data, **invalid}, content_type='application/json')
                 self.assertEqual(response.status_code, 400)
-        self.assertEqual(self.client.post('/api/v1/servicos/', {'nome': 'Serviço', 'status': 'ocupado'}, content_type='application/json').status_code, 400)
+        self.assertEqual(self.client.post('/api/v1/servicos/', {'nome': 'Serviço', 'status': 'ocupado'}, content_type='application/json').status_code, 405)
 
     def test_private_seed_key_is_not_exposed_and_cannot_be_changed(self):
         self.client.force_login(self.admin)
-        entry = Servico.objects.get(codigo_inicial='impressao-3d')
-        path = f'/api/v1/servicos/{entry.pk}/'
+        entry = Equipamento.objects.get(codigo_inicial='impressora-3d')
+        path = f'/api/v1/equipamentos/{entry.pk}/'
         self.assertNotIn('codigo_inicial', self.client.get(path).json())
         response = self.client.patch(path, {'codigo_inicial': 'outro', 'nome': 'Negado'}, content_type='application/json')
         self.assertEqual(response.status_code, 400)
         entry.refresh_from_db()
-        self.assertEqual(entry.codigo_inicial, 'impressao-3d')
-        self.assertEqual(entry.nome, 'Impressão 3D')
+        self.assertEqual(entry.codigo_inicial, 'impressora-3d')
+        self.assertEqual(entry.nome, 'Impressora 3D')
 
     def test_put_requires_required_fields(self):
         self.client.force_login(self.admin)
@@ -115,38 +115,39 @@ class CatalogApiTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('nome', response.json())
 
-    def test_delete_is_not_supported_and_preserves_records(self):
+    def test_delete_removes_from_catalog_and_preserves_records(self):
         self.client.force_login(self.admin)
         for slug, model, _ in CASES:
             entry = self.entries[slug]
-            self.assertEqual(self.client.delete(f'/api/v1/{slug}/{entry.pk}/').status_code, 405)
+            self.assertEqual(self.client.delete(f'/api/v1/{slug}/{entry.pk}/').status_code, 204)
             self.assertTrue(model.objects.filter(pk=entry.pk).exists())
+            self.assertEqual(self.client.get(f'/api/v1/{slug}/{entry.pk}/').status_code, 404)
 
     def test_list_has_stable_pagination_and_order(self):
-        Servico.objects.bulk_create([Servico(nome=f'Página {i:02}') for i in range(30)])
+        Equipamento.objects.bulk_create([Equipamento(nome=f'Página {i:02}') for i in range(30)])
         self.client.force_login(self.user)
-        first = self.client.get('/api/v1/servicos/').json()
-        second = self.client.get('/api/v1/servicos/?page=2').json()
-        self.assertEqual(first['count'], 42)
+        first = self.client.get('/api/v1/equipamentos/').json()
+        second = self.client.get('/api/v1/equipamentos/?page=2').json()
+        self.assertEqual(first['count'], 37)
         self.assertEqual(len(first['results']), 25)
         self.assertIn('page=2', first['next'])
         self.assertIsNone(second['next'])
         ids = [item['id'] for item in first['results'] + second['results']]
-        self.assertEqual(ids, list(Servico.objects.order_by('nome', 'pk').values_list('pk', flat=True)))
+        self.assertEqual(ids, list(Equipamento.objects.order_by('nome', 'pk').values_list('pk', flat=True)))
 
     def test_deactivation_revokes_existing_catalog_session(self):
         self.client.force_login(self.admin)
         self.admin.is_active = False
         self.admin.save(update_fields=['is_active'])
-        self.assertEqual(self.client.get('/api/v1/servicos/').status_code, 403)
+        self.assertEqual(self.client.get('/api/v1/equipamentos/').status_code, 403)
 
     def test_logout_revokes_catalog_api_session(self):
         client = Client(enforce_csrf_checks=True)
         client.force_login(self.admin)
         client.get('/perfil/')
-        self.assertEqual(client.get('/api/v1/servicos/').status_code, 200)
+        self.assertEqual(client.get('/api/v1/equipamentos/').status_code, 200)
         client.post('/sair/', {'csrfmiddlewaretoken': client.cookies['csrftoken'].value})
-        self.assertEqual(client.get('/api/v1/servicos/').status_code, 403)
+        self.assertEqual(client.get('/api/v1/equipamentos/').status_code, 403)
 
     def test_missing_id_returns_404(self):
         self.client.force_login(self.user)

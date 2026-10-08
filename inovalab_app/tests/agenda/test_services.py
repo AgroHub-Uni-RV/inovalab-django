@@ -1,206 +1,76 @@
 from datetime import datetime, timedelta, timezone as dt_timezone
-
+from unittest.mock import patch
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import AnonymousUser, Group
+from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import IntegrityError, connection, transaction
-from django.db.models.deletion import ProtectedError
-from django.http import Http404
-from django.test import TestCase
+from django.test import TestCase, Client
+from rest_framework.test import APIClient
+from inovalab_app.agenda.models import AgendaServico, AgendaEquipamento, AgendaVisita, EventoAgendamento
+from inovalab_app.agenda.services import save_booking, review_booking, cancel_booking, BookingConflict
+from inovalab_app.agenda.selectors import visible_bookings, calendar_weeks, filter_bookings
+from inovalab_app.tests.agenda.helpers import service_data, service_web_data, make_booking, make_service
+from inovalab_app.catalogo.models import Equipamento
 
-from inovalab_app.catalogo.models import Equipamento, Servico
-from inovalab_app.agenda.models import AgendaEquipamento, BOOKING_MODELS, AgendaServico, EventoAgendamento
-from inovalab_app.agenda.selectors import visible_bookings
-from inovalab_app.agenda.services import BookingConflict, cancel_booking, save_booking
-
-
-class BookingServiceTests(TestCase):
+class RequestFixtures:
     @classmethod
     def setUpTestData(cls):
-        cls.admin = get_user_model().objects.create_user('gestor')
-        cls.admin.groups.add(Group.objects.get(name='Administradores'))
-        cls.user = get_user_model().objects.create_user('comum', is_staff=True)
-        cls.service = Servico.objects.first()
-        cls.equipment = Equipamento.objects.create(nome='Impressora')
-        cls.start = datetime.fromisoformat('2026-11-01T14:00:00-03:00')
-        cls.end = datetime.fromisoformat('2026-11-01T15:00:00-03:00')
+        cls.admin = get_user_model().objects.create_superuser('gestor-fluxo')
+        cls.owner = get_user_model().objects.create_user('autor-fluxo', is_staff=True)
+        cls.other = get_user_model().objects.create_user('outro-fluxo', is_staff=True)
 
-    def create_booking(self, **overrides):
-        return save_booking(actor=self.admin, data={
-            'categoria': 'servico', 'objeto': self.service.pk,
-            'motivo': 'Produzir protótipo',
-            'inicio': self.start, 'fim': self.end, **overrides,
-        })
+    def create(self, **overrides):
+        return save_booking(actor=self.admin, data=service_data(**overrides))
 
-    def test_resource_categories_have_one_protected_target_and_actor_event(self):
-        for category, target in (('servico', self.service), ('equipamento', self.equipment)):
-            booking = self.create_booking(categoria=category, objeto=target.pk)
-            self.assertEqual((booking.categoria, booking.objeto_id, booking.versao), (category, target.pk, 1))
-            self.assertIsInstance(booking, BOOKING_MODELS[category])
-            self.assertEqual(booking.criado_por_id, self.admin.pk)
-            self.assertEqual(booking.eventos.get().acao, 'criar')
-            self.assertEqual(len(visible_bookings(self.admin)), (AgendaServico.objects.count() + AgendaEquipamento.objects.count()))
+class BookingServiceTests(RequestFixtures, TestCase):
+    def test_required_text_and_aware_deadline(self):
+        for invalid in ({'titulo': ''}, {'titulo': ' '*2}, {'descricao': ''}, {'prazo': None},
+                        {'prazo': datetime(2099, 1, 1)}, {'titulo': 'x'*151}):
+            with self.subTest(invalid=invalid), self.assertRaises(ValidationError): self.create(**invalid)
+        self.assertFalse(AgendaServico.objects.exists())
 
-    def test_anonymous_and_inactive_admin_cannot_read_or_write_and_staff_cannot_manage(self):
-        booking = self.create_booking()
+    def test_trimmed_fields_and_authorship_record(self):
+        booking = self.create(titulo='  Serviço  ', descricao='  Pedido  ', observacoes='  Obs  ')
+        self.assertEqual((booking.objeto_nome, booking.motivo, booking.observacoes), ('Serviço', 'Pedido', 'Obs'))
+        self.assertEqual(booking.eventos.get().ator_id, self.admin.pk)
+
+    def test_protected_fields_cannot_be_spoofed(self):
+        for name in ('criado_por', 'situacao', 'avaliado_por', 'cancelado_em', 'versao', 'id'):
+            with self.subTest(name=name), self.assertRaises(ValidationError): self.create(**{name: 1})
+
+    def test_inactive_and_anonymous_cannot_write(self):
         self.admin.is_active = False
-        for actor in (AnonymousUser(), self.admin):
-            self.assertFalse(bool(visible_bookings(actor)))
-            with self.assertRaises(PermissionDenied):
-                save_booking(actor=actor, data={})
-            with self.assertRaises(PermissionDenied):
-                cancel_booking(actor=actor, category=booking.categoria, booking_id=booking.pk, expected_version=1)
-        self.assertFalse(bool(visible_bookings(self.user)))
-        with self.assertRaises(PermissionDenied):
-            save_booking(actor=self.user, category=booking.categoria, booking_id=booking.pk, expected_version=1, data={'motivo': 'Alterar'})
-        with self.assertRaises(PermissionDenied):
-            cancel_booking(actor=self.user, category=booking.categoria, booking_id=booking.pk, expected_version=1)
+        for actor in (self.admin, AnonymousUser()):
+            with self.assertRaises(PermissionDenied): save_booking(actor=actor, data=service_data())
 
-    def test_required_text_is_trimmed_and_invalid_data_does_not_create_events(self):
-        booking = self.create_booking(motivo='  Protótipo  ')
-        self.assertEqual(booking.motivo, 'Protótipo')
-        for fields in ({'requerente': ' '}, {'motivo': ''}, {'requerente': 'A' * 151}, {'categoria': 'inexistente'},
-                       {'objeto': 999999}, {'objeto': True}):
-            with self.subTest(fields=fields), self.assertRaises(ValidationError):
-                self.create_booking(**fields)
-        self.assertEqual(((AgendaServico.objects.count() + AgendaEquipamento.objects.count()), EventoAgendamento.objects.count()), (1, 1))
+    def test_admin_reads_all_and_staff_reads_only_own(self):
+        first = self.create()
+        own = save_booking(actor=self.owner, data=service_data())
+        self.assertEqual({row.pk for row in visible_bookings(self.admin)}, {first.pk, own.pk})
+        self.assertEqual([row.pk for row in visible_bookings(self.owner)], [own.pk])
+        self.assertEqual(visible_bookings(self.other), [])
 
-    def test_database_requires_target_and_positive_interval_for_both_types(self):
-        base = {'motivo': 'Reserva', 'inicio': self.start, 'fim': self.end}
-        for category, model in (('servico', AgendaServico), ('equipamento', AgendaEquipamento)):
-            with self.assertRaises(IntegrityError), transaction.atomic():
-                model.objects.create(**base)
-            with self.assertRaises(IntegrityError), transaction.atomic():
-                model.objects.create(**{**base, 'fim': self.start, category: self.service if category == 'servico' else self.equipment})
-
-
-    def test_end_equal_before_start_and_naive_datetimes_are_rejected(self):
-        for fields in ({'fim': self.start}, {'fim': self.start - timedelta(seconds=1)},
-                       {'inicio': self.start.replace(tzinfo=None)}):
-            with self.subTest(fields=fields), self.assertRaises(ValidationError):
-                self.create_booking(**fields)
-        self.assertEqual((AgendaServico.objects.count() + AgendaEquipamento.objects.count()), 0)
-
-    def test_each_category_is_exclusive_and_adjacent_slots_are_allowed(self):
-        for category, target in (('servico', self.service), ('equipamento', self.equipment)):
-            self.create_booking(categoria=category, objeto=target.pk)
-            with self.assertRaises(BookingConflict) as error:
-                self.create_booking(categoria=category, objeto=target.pk, inicio=self.start + timedelta(minutes=30))
-            self.assertEqual(error.exception.code, 'horario_ocupado')
-            self.create_booking(categoria=category, objeto=target.pk, inicio=self.end, fim=self.end + timedelta(hours=1))
-        self.assertEqual((AgendaServico.objects.count() + AgendaEquipamento.objects.count()), 4)
-
-    def test_equal_ids_in_different_categories_do_not_conflict_and_other_objects_are_free(self):
-        self.create_booking()
-        self.create_booking(categoria='equipamento', objeto=self.equipment.pk)
-        other = Servico.objects.create(nome='Outro serviço')
-        self.create_booking(objeto=other.pk)
-        self.assertEqual((AgendaServico.objects.count() + AgendaEquipamento.objects.count()), 3)
-
-    def test_unavailability_blocks_new_period_but_metadata_and_cancellation_preserve_old_reference(self):
-        booking = self.create_booking(categoria='equipamento', objeto=self.equipment.pk)
-        self.equipment.status = 'indisponivel'
-        self.equipment.save()
-        with self.assertRaises(ValidationError):
-            self.create_booking(categoria='equipamento', objeto=self.equipment.pk, inicio=self.end, fim=self.end + timedelta(hours=1))
-        booking = save_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=1, data={'motivo': 'Manter vínculo'})
-        with self.assertRaises(ValidationError):
-            save_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=2, data={'fim': self.end + timedelta(hours=1)})
-        cancel_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=2)
-        self.equipment.refresh_from_db()
-        self.assertEqual(self.equipment.status, 'indisponivel')
-
-    def test_occupied_marker_does_not_block_future_reservation_or_change_catalog_status(self):
-        self.equipment.status = 'ocupado'
-        self.equipment.save()
-        booking = self.create_booking(categoria='equipamento', objeto=self.equipment.pk)
-        cancel_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=1)
-        self.equipment.refresh_from_db()
-        self.assertEqual(self.equipment.status, 'ocupado')
-
-    def test_edit_excludes_self_and_conflicting_update_keeps_all_original_fields(self):
-        booking = self.create_booking()
-        self.create_booking(inicio=self.end, fim=self.end + timedelta(hours=1))
-        booking = save_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=1,
-                               data={'motivo': 'Corrigido', 'inicio': self.start, 'fim': self.end})
-        with self.assertRaises(BookingConflict):
-            save_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=2,
-                         data={'motivo': 'Não salvar', 'fim': self.end + timedelta(minutes=1)})
+    def test_cancel_is_versioned_and_preserves_data_and_history(self):
+        booking = self.create()
+        cancel_booking(actor=self.admin, category='servico', booking_id=booking.pk, expected_version=1)
         booking.refresh_from_db()
-        self.assertEqual((booking.motivo, booking.versao, booking.eventos.count()), ('Corrigido', 2, 2))
+        self.assertEqual(booking.versao, 2)
+        self.assertEqual(booking.servico.titulo, 'Projeto de teste')
+        self.assertEqual(booking.eventos.count(), 2)
 
-    def test_target_change_within_category_releases_old_object_and_rejects_type_change(self):
-        booking = self.create_booking()
-        other = Servico.objects.create(nome='Outro alvo')
-        booking = save_booking(actor=self.admin, category='servico', booking_id=booking.pk, expected_version=1,
-                               data={'categoria': 'servico', 'objeto': other.pk})
-        self.assertEqual(booking.servico_id, other.pk)
-        self.create_booking()
-        with self.assertRaises(ValidationError):
-            save_booking(actor=self.admin, category='servico', booking_id=booking.pk, expected_version=2,
-                         data={'categoria': 'equipamento', 'objeto': self.equipment.pk})
-
-
-    def test_cancellation_hides_booking_preserves_history_and_releases_interval(self):
-        booking = self.create_booking()
-        cancel_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=1)
-        booking.refresh_from_db()
-        self.assertIsNotNone(booking.cancelado_em)
-        self.assertEqual((booking.versao, booking.eventos.count()), (2, 2))
-        self.assertFalse(bool(visible_bookings(self.admin)))
-        with self.assertRaises(Http404):
-            cancel_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=2)
-        self.create_booking()
-
-    def test_old_version_and_protected_fields_never_persist_partially(self):
-        booking = self.create_booking()
-        save_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=1, data={'motivo': 'Nova versão'})
-        for operation in (lambda: save_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=1, data={'motivo': 'Antiga'}),
-                          lambda: cancel_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=1)):
-            with self.assertRaises(BookingConflict) as error:
-                operation()
-            self.assertEqual(error.exception.code, 'versao_desatualizada')
-        for field in ('id', 'versao', 'cancelado_em', 'criado_por', 'servico', 'equipamento', 'espaco',
-                      'espaco_legado_id', 'espaco_legado_nome'):
-            with self.subTest(field=field), self.assertRaises(ValidationError):
-                save_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=2, data={'motivo': 'Não salvar', field: 1})
-        for version in (None, True, 0, -1, 1.5, '2'):
+    def test_invalid_versions_and_category_change_never_mutate(self):
+        booking = self.create()
+        for version in (None, True, '1', 0):
             with self.assertRaises(ValidationError):
-                cancel_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=version)
+                save_booking(actor=self.admin, category='servico', booking_id=booking.pk, expected_version=version, data={'titulo': 'Inválido'})
+        with self.assertRaises(ValidationError):
+            save_booking(actor=self.admin, category='servico', booking_id=booking.pk, expected_version=1, data={'categoria': 'visita'})
         booking.refresh_from_db()
-        self.assertEqual((booking.motivo, booking.versao, booking.eventos.count()), ('Nova versão', 2, 2))
+        self.assertEqual((booking.versao, booking.eventos.count()), (1, 1))
 
-    def test_event_failure_rolls_back_create_and_edit(self):
-        booking = self.create_booking()
-
-        def failing_event(execute, sql, params, many, context):
-            if 'INSERT INTO "agenda_eventoagendamento"' in sql:
-                raise IntegrityError('Falha simulada ao persistir evento')
-            return execute(sql, params, many, context)
-
-        with connection.execute_wrapper(failing_event):
-            with self.assertRaises(IntegrityError):
-                save_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=1, data={'motivo': 'Não persistir'})
-            with self.assertRaises(IntegrityError):
-                self.create_booking(inicio=self.end, fim=self.end + timedelta(hours=1))
+    def test_failed_edit_event_rolls_back_service_and_version(self):
+        booking = self.create()
+        with patch('inovalab_app.agenda.models.EventoAgendamento.objects.create', side_effect=RuntimeError('evento')):
+            with self.assertRaises(RuntimeError):
+                save_booking(actor=self.admin, category='servico', booking_id=booking.pk, expected_version=1, data={'titulo': 'Não salvar'})
         booking.refresh_from_db()
-        self.assertEqual((booking.motivo, booking.versao, booking.eventos.count()), ('Produzir protótipo', 1, 1))
-        self.assertEqual((AgendaServico.objects.count() + AgendaEquipamento.objects.count()), 1)
-
-    def test_equivalent_timezones_do_not_generate_false_date_changes(self):
-        booking = self.create_booking()
-        booking = save_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=1, data={
-            'motivo': 'Alteração real', 'inicio': self.start.astimezone(dt_timezone.utc), 'fim': self.end,
-        })
-        self.assertEqual(set(booking.eventos.get(acao='editar').alteracoes), {'motivo'})
-
-    def test_cross_midnight_and_past_intervals_are_allowed(self):
-        start = datetime.fromisoformat('2025-01-31T23:00:00-03:00')
-        booking = self.create_booking(inicio=start, fim=start + timedelta(hours=2))
-        self.assertEqual(booking.fim.day, 1)
-
-    def test_referenced_objects_are_protected_including_cancelled_bookings(self):
-        booking = self.create_booking()
-        cancel_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk, expected_version=1)
-        with self.assertRaises(ProtectedError):
-            self.service.delete()
+        self.assertEqual((booking.servico.titulo, booking.versao), ('Projeto de teste', 1))

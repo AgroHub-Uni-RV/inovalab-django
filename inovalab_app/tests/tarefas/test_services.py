@@ -1,3 +1,4 @@
+from inovalab_app.tests.agenda.helpers import make_service, make_booking
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -21,11 +22,12 @@ class TaskServiceTests(TestCase):
         cls.admin.groups.add(Group.objects.get(name='Administradores'))
         cls.owner = get_user_model().objects.create_user('ana')
         cls.other = get_user_model().objects.create_user('bruno', is_staff=True)
-        cls.service = Servico.objects.first()
+        cls.service = make_service()
+        cls.booking = make_booking(actor=cls.admin, service=cls.service)
 
     def create_task(self, **overrides):
         return save_task(actor=self.admin, data={
-            'servico': self.service, 'responsavel': self.owner,
+            'agendamento_servico': self.booking, 'responsavel': self.owner,
             'descricao': 'Produzir protótipo', **overrides,
         })
 
@@ -56,14 +58,14 @@ class TaskServiceTests(TestCase):
         task = self.create_task()
         for actor in (self.owner, self.other, AnonymousUser()):
             with self.subTest(actor=actor), self.assertRaises(PermissionDenied):
-                save_task(actor=actor, data={'servico': self.service, 'responsavel': self.owner, 'descricao': 'Negada'})
+                save_task(actor=actor, data={'agendamento_servico': self.booking, 'responsavel': self.owner, 'descricao': 'Negada'})
         with self.assertRaises(PermissionDenied):
             save_task(actor=self.owner, task_id=task.pk, expected_version=1, data={'descricao': 'Negada'})
         self.assertEqual(Tarefa.objects.count(), 1)
 
     def test_superuser_can_manage_without_group_or_staff_policy_shortcut(self):
         actor = get_user_model().objects.create_superuser('tecnico')
-        task = save_task(actor=actor, data={'servico': self.service, 'responsavel': self.owner, 'descricao': 'Técnica'})
+        task = save_task(actor=actor, data={'agendamento_servico': self.booking, 'responsavel': self.owner, 'descricao': 'Técnica'})
         self.assertEqual(task.eventos.get().ator_id, actor.pk)
 
     def test_protected_fields_cannot_bypass_flow_and_invalid_update_is_atomic(self):
@@ -81,8 +83,8 @@ class TaskServiceTests(TestCase):
     def test_new_assignments_require_active_user_and_available_service(self):
         self.other.is_active = False
         self.other.save()
-        unavailable = Servico.objects.create(nome='Indisponível', status='indisponivel')
-        for data in ({'responsavel': self.other}, {'servico': unavailable}):
+        unavailable = make_booking(actor=self.admin, situacao='pendente')
+        for data in ({'responsavel': self.other}, {'agendamento_servico': unavailable}):
             with self.subTest(data=data), self.assertRaises(ValidationError):
                 self.create_task(**data)
         self.assertEqual(Tarefa.objects.count(), 0)
@@ -92,10 +94,10 @@ class TaskServiceTests(TestCase):
         task = self.create_task()
         self.owner.is_active = False
         self.owner.save()
-        self.service.status = 'indisponivel'
-        self.service.save()
+        self.booking.cancelado_em = timezone.now()
+        self.booking.save()
         task = save_task(actor=self.admin, task_id=task.pk, expected_version=1,
-                         data={'descricao': 'Manter referência', 'servico': self.service, 'responsavel': self.owner})
+                         data={'descricao': 'Manter referência', 'agendamento_servico': self.booking, 'responsavel': self.owner})
         task = self.move(task, 'iniciar')
         self.assertEqual(task.status, 'criacao')
         with self.assertRaises(PermissionDenied):

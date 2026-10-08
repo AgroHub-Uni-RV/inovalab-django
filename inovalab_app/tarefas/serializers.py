@@ -32,9 +32,12 @@ class TaskSerializer(StrictPayloadMixin, serializers.ModelSerializer):
 
     class Meta:
         model = Tarefa
-        fields = ['id', 'servico', 'servico_nome', 'descricao', 'responsavel', 'responsavel_nome',
+        fields = ['id', 'agendamento_servico', 'servico', 'servico_nome', 'descricao', 'responsavel', 'responsavel_nome',
+                  'equipamento', 'material_gasto', 'quantidade_material_gasto',
                   'status', 'inicio', 'prazo', 'conclusao', 'versao', 'acoes_permitidas']
-        read_only_fields = ['id', 'status', 'inicio', 'conclusao']
+        read_only_fields = ['id', 'servico', 'status', 'inicio', 'conclusao']
+
+    servico = serializers.IntegerField(source='servico_id', read_only=True)
 
     def get_acoes_permitidas(self, task):
         return allowed_actions(self.context['request'].user, task)
@@ -56,8 +59,14 @@ class TaskSerializer(StrictPayloadMixin, serializers.ModelSerializer):
 
 
 class TransitionSerializer(StrictPayloadMixin, serializers.Serializer):
-    acao = serializers.ChoiceField(choices=list(TRANSITIONS))
+    acao = serializers.ChoiceField(choices=list(TRANSITIONS), required=False)
+    status = serializers.ChoiceField(choices=['demanda', 'criacao', 'avaliacao', 'concluido'], required=False)
     versao = VersionField(min_value=1)
+
+    def validate(self, attrs):
+        if ('acao' in attrs) == ('status' in attrs):
+            raise serializers.ValidationError('Informe somente ação ou status.')
+        return attrs
 
 
 class DeleteSerializer(StrictPayloadMixin, serializers.Serializer):

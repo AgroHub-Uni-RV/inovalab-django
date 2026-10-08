@@ -9,6 +9,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.management import call_command
 from django.db import connection
 from django.db.migrations.recorder import MigrationRecorder
+from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase
 from inovalab_app.models import (AgendaEquipamento, AgendaServico, AgendaVisita, Banner, Equipamento,
                                 EventoAgendamento, EventoTarefa, Material, Servico, Tarefa)
@@ -18,7 +19,9 @@ from inovalab_app.upgrade import LEGACY_CONTENT_TYPES, LEGACY_LEAVES
 class ExistingDatabaseAdoptionTests(TransactionTestCase):
     def setUp(self):
         super().setUp()
-        call_command('seed_inovalab', stdout=StringIO())
+        executor = MigrationExecutor(connection)
+        executor.migrate([('inovalab_app', '0002_preserva_contenttypes')])
+        self.old = executor.loader.project_state([('inovalab_app', '0002_preserva_contenttypes')]).apps
         self.applied_before = set(MigrationRecorder(connection).applied_migrations())
 
     def tearDown(self):
@@ -34,23 +37,35 @@ class ExistingDatabaseAdoptionTests(TransactionTestCase):
             else:
                 ContentType.objects.filter(app_label=old_label, model=model).update(app_label='inovalab_app')
         ContentType.objects.clear_cache()
+        self.old.get_model('inovalab_app', 'Tarefa').objects.all().delete()
+        MigrationExecutor(connection).migrate([('inovalab_app', '0004_exige_agendamento_servico')])
         super().tearDown()
     def test_adoption_preserves_data_m2m_microseconds_permissions_and_admin_history(self):
+        Servico = self.old.get_model('inovalab_app', 'Servico')
+        Equipamento = self.old.get_model('inovalab_app', 'Equipamento')
+        Material = self.old.get_model('inovalab_app', 'Material')
+        Tarefa = self.old.get_model('inovalab_app', 'Tarefa')
+        EventoTarefa = self.old.get_model('inovalab_app', 'EventoTarefa')
+        AgendaServico = self.old.get_model('inovalab_app', 'AgendaServico')
+        AgendaEquipamento = self.old.get_model('inovalab_app', 'AgendaEquipamento')
+        AgendaVisita = self.old.get_model('inovalab_app', 'AgendaVisita')
+        EventoAgendamento = self.old.get_model('inovalab_app', 'EventoAgendamento')
+        Banner = self.old.get_model('inovalab_app', 'Banner')
         actor = get_user_model().objects.create_user('autor-consolidacao')
-        service = Servico.objects.first()
-        machine = Equipamento.objects.first()
+        service = Servico.objects.create(nome='Serviço preservado')
+        machine = Equipamento.objects.create(nome='Máquina preservada')
         material = Material.objects.create(nome='PLA', categoria='Filamento', quantidade='12.125', unidade='g', fonte='Lab')
         instant = datetime(2026, 11, 1, 14, 0, 37, 123456, tzinfo=timezone.utc)
         end = instant.replace(hour=15, second=41, microsecond=654321)
-        task = Tarefa.objects.create(servico=service, responsavel=actor, descricao='Preservar', prazo=instant, versao=7)
-        EventoTarefa.objects.create(tarefa=task, ator=actor, ator_nome='Histórico', acao='criar', status_novo='demanda', alteracoes={'campo': {'novo': 'valor'}})
-        booking = AgendaServico.objects.create(servico=service, inicio=instant, fim=end, motivo='Protótipo', criado_por=actor,
-                                              avaliado_por=actor, material_gasto=material, material_proprio=False, material_gasto_gramas='0.125')
+        task = Tarefa.objects.create(servico=service, responsavel_id=actor.pk, descricao='Preservar', prazo=instant, versao=7)
+        EventoTarefa.objects.create(tarefa=task, ator_id=actor.pk, ator_nome='Histórico', acao='criar', status_novo='demanda', alteracoes={'campo': {'novo': 'valor'}})
+        booking = AgendaServico.objects.create(servico=service, inicio=instant, fim=end, motivo='Protótipo', criado_por_id=actor.pk,
+                                              avaliado_por_id=actor.pk, material_gasto=material, material_proprio=False, material_gasto_gramas='0.125')
         booking.equipamentos.add(machine)
-        AgendaEquipamento.objects.create(equipamento=machine, inicio=instant, fim=end, criado_por=actor, motivo='Máquina')
+        AgendaEquipamento.objects.create(equipamento=machine, inicio=instant, fim=end, criado_por_id=actor.pk, motivo='Máquina')
         AgendaVisita.objects.create(quantidade_pessoas=4, data=date(2026, 11, 2), hora_inicio=time(9, 0, 37, 123456),
-                                   hora_termino=time(10, 0, 41, 654321), criado_por=actor)
-        EventoAgendamento.objects.create(agenda_servico=booking, ator=actor, ator_nome='Autor', acao='criar')
+                                   hora_termino=time(10, 0, 41, 654321), criado_por_id=actor.pk)
+        EventoAgendamento.objects.create(agenda_servico=booking, ator_id=actor.pk, ator_nome='Autor', acao='criar')
         Banner.objects.create(titulo='Banner preservado', banner_img='banners/preservado.webp')
         ct = ContentType.objects.get_for_model(Servico)
         permission = Permission.objects.get(content_type=ct, codename='change_servico')
@@ -59,7 +74,7 @@ class ExistingDatabaseAdoptionTests(TransactionTestCase):
         actor.user_permissions.add(permission)
         actor.groups.add(group)
         log = LogEntry.objects.log_actions(user_id=actor.pk, queryset=Servico.objects.filter(pk=service.pk), action_flag=ADDITION)[0]
-        table_names = [model._meta.db_table for model in apps.get_app_config('inovalab_app').get_models(include_auto_created=True)]
+        table_names = [model._meta.db_table for model in self.old.get_app_config('inovalab_app').get_models(include_auto_created=True)]
         table_names += ['auth_permission', 'auth_group_permissions', get_user_model()._meta.db_table+'_user_permissions',
                         get_user_model()._meta.db_table+'_groups', 'django_admin_log']
         def rows():
@@ -79,7 +94,7 @@ class ExistingDatabaseAdoptionTests(TransactionTestCase):
         for label, migration in LEGACY_LEAVES.items():
             recorder.record_applied(label, migration)
         try:
-            call_command('migrate', fake_initial=True, interactive=False, stdout=StringIO(), verbosity=0)
+            call_command('migrate', 'inovalab_app', '0002_preserva_contenttypes', fake_initial=True, interactive=False, stdout=StringIO(), verbosity=0)
             self.assertEqual(rows(), before)
             ct.refresh_from_db()
             self.assertEqual(ct.app_label, 'inovalab_app')
@@ -98,7 +113,7 @@ class ExistingDatabaseAdoptionTests(TransactionTestCase):
         for label, migration in LEGACY_LEAVES.items():
             recorder.record_applied(label, migration)
         with self.assertRaisesMessage(Exception, 'ContentType conflitante'):
-            call_command('migrate', fake_initial=True, interactive=False, stdout=StringIO())
+            call_command('migrate', 'inovalab_app', '0002_preserva_contenttypes', fake_initial=True, interactive=False, stdout=StringIO())
         self.assertNotIn(('inovalab_app', '0001_initial'), recorder.applied_migrations())
 
     def test_migration_itself_checks_all_collisions_before_changing_labels(self):

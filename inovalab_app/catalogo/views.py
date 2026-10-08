@@ -2,17 +2,20 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import FileResponse, Http404, HttpResponseRedirect
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.generic import CreateView, DetailView, ListView, UpdateView, View
 
 from inovalab_app.adapters.host import is_business_admin
-from inovalab_app.catalogo.services import save_entry
+from inovalab_app.catalogo.services import save_entry, delete_equipment
 from inovalab_app.catalogo.models import Equipamento
 
 
 class CatalogContextMixin:
     category = ''
+
+    def get_queryset(self):
+        return super().get_queryset().filter(excluido_em__isnull=True)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -25,6 +28,7 @@ class CatalogContextMixin:
             'create_url': reverse(f'catalogo:{self.category}-create'),
             'detail_url_name': f'catalogo:{self.category}-detail',
             'update_url_name': f'catalogo:{self.category}-update',
+            'delete_url_name': f'catalogo:{self.category}-delete',
         })
         return context
 
@@ -69,6 +73,17 @@ class CatalogCreateView(LoginRequiredMixin, BusinessAdminRequiredMixin, CatalogW
 
 class CatalogUpdateView(LoginRequiredMixin, BusinessAdminRequiredMixin, CatalogWriteMixin, UpdateView):
     pass
+
+
+class EquipmentDeleteView(LoginRequiredMixin, BusinessAdminRequiredMixin, View):
+    def get(self, request, pk):
+        equipment = get_object_or_404(Equipamento, pk=pk, excluido_em__isnull=True)
+        return render(request, 'inovalab_app/catalogo/delete.html', {'equipment': equipment})
+
+    def post(self, request, pk):
+        delete_equipment(actor=request.user, equipment_id=pk)
+        messages.success(request, 'Equipamento excluído. As referências existentes foram preservadas.')
+        return redirect('catalogo:equipamentos-list')
 
 
 class EquipmentPhotoView(LoginRequiredMixin, View):

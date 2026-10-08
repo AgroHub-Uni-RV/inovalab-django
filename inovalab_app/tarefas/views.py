@@ -10,10 +10,10 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView, V
 
 from inovalab_app.adapters.host import is_business_admin
 from inovalab_app.catalogo.models import Servico
-from inovalab_app.tarefas.forms import ACTION_LABELS, DeleteForm, TaskForm, TransitionForm
+from inovalab_app.tarefas.forms import DeleteForm, TaskForm, TransitionForm
 from inovalab_app.tarefas.models import StatusTarefa, Tarefa
 from inovalab_app.tarefas.selectors import visible_tasks
-from inovalab_app.tarefas.services import PUBLIC_FIELDS, TaskConflict, allowed_actions, delete_task, save_task, transition_task
+from inovalab_app.tarefas.services import PUBLIC_FIELDS, TaskConflict, allowed_actions, delete_task, save_task, transition_task, set_task_status, allowed_statuses
 
 
 class TaskContextMixin:
@@ -46,11 +46,11 @@ class TaskBoardView(LoginRequiredMixin, TaskContextMixin, ListView):
         value = self.request.GET.get('servico', '')
         self.selected_service = value if value.isascii() and value.isdecimal() and len(value) <= 12 else ''
         if self.query:
-            queryset = queryset.filter(Q(descricao__icontains=self.query) | Q(servico__nome__icontains=self.query)
+            queryset = queryset.filter(Q(descricao__icontains=self.query) | Q(agendamento_servico__servico__titulo__icontains=self.query)
                                        | Q(responsavel__username__icontains=self.query)
                                        | Q(responsavel__first_name__icontains=self.query))
         if self.selected_service:
-            queryset = queryset.filter(servico_id=self.selected_service)
+            queryset = queryset.filter(agendamento_servico__servico_id=self.selected_service)
         return queryset
 
     def get_queryset(self):
@@ -71,7 +71,8 @@ class TaskBoardView(LoginRequiredMixin, TaskContextMixin, ListView):
         totals = dict(self.filtered_tasks().order_by().values('status').annotate(total=Count('pk')).values_list('status', 'total'))
         context.update(stat_counts={status: totals.get(status, 0) for status in StatusTarefa.values},
                        query=self.query, selected_service=self.selected_service, selected_status=self.selected_status,
-                       services=Servico.objects.order_by('nome', 'pk'), statuses=StatusTarefa.choices)
+                       services=Servico.objects.filter(pk__in=visible_tasks(self.request.user).values(
+                           'agendamento_servico__servico_id')).order_by('titulo', 'pk'), statuses=StatusTarefa.choices)
         return context
 
 
@@ -82,8 +83,9 @@ class TaskDetailView(LoginRequiredMixin, TaskContextMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['actions'] = [{'name': action, 'label': ACTION_LABELS[action]}
-                              for action in allowed_actions(self.request.user, self.object)]
+        context['status_form'] = TransitionForm(initial={'status': self.object.status, 'versao': self.object.versao})
+        context['status_form'].fields['status'].choices = [(value, label) for value, label in StatusTarefa.choices if value in allowed_statuses(self.request.user, self.object)]
+        context['can_transition'] = bool(allowed_actions(self.request.user, self.object))
         context['events'] = self.object.eventos.all()[:5]
         context['created_event'] = self.object.eventos.filter(acao='criar').first()
         return context
@@ -134,7 +136,7 @@ def transition_view(request, pk):
     if not form.is_valid():
         return operation_error(request, task, 'Confira a ação, a versão e os campos enviados.')
     try:
-        transition_task(actor=request.user, task_id=pk, action=form.cleaned_data['acao'],
+        set_task_status(actor=request.user, task_id=pk, status=form.cleaned_data['status'],
                         expected_version=form.cleaned_data['versao'])
     except TaskConflict as error:
         return operation_error(request, task, str(error), 409)

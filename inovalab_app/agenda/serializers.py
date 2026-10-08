@@ -43,48 +43,34 @@ class AwareDateTimeField(serializers.DateTimeField):
 
 class BookingSerializer(StrictPayloadMixin, serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
-    categoria = serializers.ChoiceField(choices=CATEGORY_MODELS)
-    objeto = VersionField(source='objeto_id', min_value=1, required=False, allow_null=True)
-    objeto_nome = serializers.CharField(read_only=True)
-    motivo = serializers.CharField(required=False)
+    categoria = serializers.ChoiceField(choices=['servico'], default='servico')
+    titulo = serializers.CharField(source='servico.titulo', max_length=150)
+    descricao = serializers.CharField(source='servico.descricao')
+    prazo = AwareDateTimeField(source='servico.prazo')
     observacoes = serializers.CharField(required=False, allow_blank=True)
-    inicio = AwareDateTimeField()
-    fim = AwareDateTimeField()
-    equipamentos = serializers.PrimaryKeyRelatedField(queryset=Equipamento.objects.all(), many=True, required=False,
-                                                      pk_field=VersionField(min_value=1))
-    material_proprio = serializers.BooleanField(allow_null=True, required=False)
-    material_gasto = serializers.PrimaryKeyRelatedField(queryset=Material.objects.all(), allow_null=True, required=False,
-                                                       pk_field=VersionField(min_value=1))
-    material_gasto_gramas = serializers.DecimalField(max_digits=12, decimal_places=3, min_value=Decimal('0.001'),
-                                                    allow_null=True, required=False)
+    objeto_nome = serializers.CharField(read_only=True)
     versao = VersionField(min_value=1, required=False)
     criado_por = serializers.IntegerField(source='criado_por_id', read_only=True)
     criado_por_nome = serializers.CharField(source='criador_nome', read_only=True)
     criado_em = serializers.DateTimeField(read_only=True)
     situacao = serializers.CharField(read_only=True)
+    cancelado_em = serializers.DateTimeField(read_only=True)
     avaliado_por = serializers.IntegerField(source='avaliado_por_id', read_only=True)
     avaliado_em = serializers.DateTimeField(read_only=True)
 
     def to_representation(self, instance):
         if instance.categoria == 'visita':
             return VisitSerializer(instance, context=self.context).data
+        if instance.categoria == 'equipamento':
+            return LegacyEquipmentBookingSerializer(instance, context=self.context).data
         return super().to_representation(instance)
 
     def validate(self, attrs):
-        if 'material_gasto' in attrs:
-            attrs['material_gasto'] = attrs['material_gasto'].pk if attrs['material_gasto'] else None
-        if 'equipamentos' in attrs:
-            attrs['equipamentos'] = [equipment.pk for equipment in attrs['equipamentos']]
+        attrs.update(attrs.pop('servico', {}))
         if self.instance is None and 'versao' in attrs:
             raise serializers.ValidationError({'versao': 'A versão inicial é definida pelo sistema.'})
         if self.instance is not None and 'versao' not in attrs:
             raise serializers.ValidationError({'versao': 'Informe a versão do agendamento.'})
-        if ('categoria' in attrs) != ('objeto_id' in attrs):
-            raise serializers.ValidationError({'objeto': 'Informe categoria e objeto juntos.'})
-        if self.instance is None and 'motivo' not in attrs:
-            raise serializers.ValidationError({'motivo': 'Este campo é obrigatório.'})
-        if 'objeto_id' in attrs:
-            attrs['objeto'] = attrs.pop('objeto_id')
         return attrs
 
     def create(self, validated_data):
@@ -93,7 +79,26 @@ class BookingSerializer(StrictPayloadMixin, serializers.Serializer):
     def update(self, instance, validated_data):
         version = validated_data.pop('versao')
         return save_booking(actor=self.context['request'].user, category=instance.categoria, booking_id=instance.pk,
-                            expected_version=version, data=validated_data)
+            expected_version=version, data=validated_data)
+
+
+class LegacyEquipmentBookingSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    categoria = serializers.CharField(read_only=True)
+    objeto = serializers.IntegerField(source='objeto_id', read_only=True)
+    objeto_nome = serializers.CharField(read_only=True)
+    motivo = serializers.CharField(read_only=True)
+    observacoes = serializers.CharField(read_only=True)
+    inicio = serializers.DateTimeField(read_only=True)
+    fim = serializers.DateTimeField(read_only=True)
+    versao = serializers.IntegerField(read_only=True)
+    situacao = serializers.CharField(read_only=True)
+    cancelado_em = serializers.DateTimeField(read_only=True)
+    criado_por = serializers.IntegerField(source='criado_por_id', read_only=True)
+    criado_por_nome = serializers.CharField(source='criador_nome', read_only=True)
+    criado_em = serializers.DateTimeField(read_only=True)
+
+
 class VisitSerializer(StrictPayloadMixin, serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     categoria = serializers.ChoiceField(choices=['visita'], default='visita')

@@ -1,3 +1,4 @@
+from inovalab_app.tests.agenda.helpers import make_service, make_booking
 from django.test import Client, TestCase
 
 from inovalab_app.tarefas.models import Tarefa
@@ -19,7 +20,7 @@ class TaskApiTests(TaskFixtures, TestCase):
         self.assertEqual(entry['id'], self.mine.pk)
         self.assertEqual(entry['status'], 'demanda')
         self.assertEqual(entry['acoes_permitidas'], ['iniciar'])
-        self.assertEqual(set(entry), {'id', 'servico', 'servico_nome', 'descricao', 'responsavel', 'responsavel_nome',
+        self.assertEqual(set(entry), {'id', 'agendamento_servico', 'equipamento', 'material_gasto', 'quantidade_material_gasto', 'servico', 'servico_nome', 'descricao', 'responsavel', 'responsavel_nome',
                                       'status', 'inicio', 'prazo', 'conclusao', 'versao', 'acoes_permitidas'})
         foreign = f'/api/v1/tarefas/{self.theirs.pk}/'
         for response in (self.client.get(foreign), self.client.patch(foreign, {'descricao': 'Negada', 'versao': 1},
@@ -148,7 +149,7 @@ class TaskApiTests(TaskFixtures, TestCase):
 
     def test_pagination_never_widens_owner_scope(self):
         for index in range(26):
-            save_task(actor=self.admin, data={'servico': self.service, 'responsavel': self.owner, 'descricao': f'Página {index}'})
+            save_task(actor=self.admin, data={'agendamento_servico': self.booking, 'responsavel': self.owner, 'descricao': f'Página {index}'})
         self.client.force_login(self.owner)
         first = self.client.get('/api/v1/tarefas/').json()
         second = self.client.get('/api/v1/tarefas/?page=2').json()
