@@ -68,3 +68,11 @@ class NativeHostTests(TestCase):
         booking = make_booking(actor=self.user)
         self.assertEqual(self.client.get(booking.get_absolute_url()).status_code, 200)
         self.assertEqual(self.client.get(reverse('agenda:creator-photo', args=['servico', booking.pk])).status_code, 404)
+
+    @override_settings(LOGIN_URL='/laboratorio/entrar/?tenant=inovalab')
+    def test_task_modal_exposes_its_prefixed_creation_and_login_routes(self):
+        admin = get_user_model().objects.create_superuser('admin-modal-nativo', password='test-only')
+        self.client.force_login(admin)
+        response = self.client.get(reverse('tarefas:board'))
+        self.assertContains(response, 'data-create-url="/laboratorio/tarefas/nova/"')
+        self.assertContains(response, 'data-login-url="/laboratorio/entrar/?tenant=inovalab"')

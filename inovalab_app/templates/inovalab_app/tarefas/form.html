@@ -1,42 +1,116 @@
-{% extends 'inovalab_app/tarefas/base.html' %}
-{% load static %}
+{% extends task_base|default:'inovalab_app/tarefas/base.html' %}
 {% block content_class %}module-page detail-page{% endblock %}
 {% block content %}
-<div class="detail-sheet">
-  <div class="sheet-topbar"><a class="secondary-button" href="{% url 'tarefas:board' %}">Voltar ao quadro</a><span class="badge {% if object %}{{ object.status }}{% else %}demanda{% endif %}">{% if object %}{{ object.get_status_display }}{% else %}Demanda{% endif %}</span></div>
+<div class="detail-sheet task-form-sheet"{% if not task_modal %} data-task-write-page data-task-return-url="{% if object %}{% url 'tarefas:detail' object.pk %}{% else %}{% url 'tarefas:board' %}{% endif %}"{% endif %}>
+  <div class="sheet-topbar">
+    {% if not task_modal %}<a class="secondary-button" href="{% if object %}{% url 'tarefas:detail' object.pk %}{% else %}{% url 'tarefas:board' %}{% endif %}">{% if object %}Voltar à tarefa{% else %}Voltar ao quadro{% endif %}</a>{% endif %}
+    <span class="badge {% if object %}{{ object.status }}{% else %}demanda{% endif %}">{% if object %}{{ object.get_status_display }}{% else %}Nova demanda{% endif %}</span>
+  </div>
   <div class="sheet-content">
-    <h1>{% if object %}Editar tarefa #{{ object.pk }}{% else %}Nova tarefa{% endif %}</h1>
-    {% if form.errors %}<p role="alert">Confira os erros antes de salvar.</p>{% endif %}
-    <form class="sheet-form" method="post">
+    <div class="task-form-heading">
+      <p class="form-eyebrow">Controle de tarefas</p>
+      <h1>{% if object %}Editar tarefa #{{ object.pk }}{% else %}Nova tarefa{% endif %}</h1>
+      <p>Organize o serviço, a equipe e os recursos necessários. Campos marcados com <span aria-hidden="true">*</span><span class="sr-only">asterisco</span> são obrigatórios.</p>
+    </div>
+    {% if form.errors %}<div class="form-error-summary" role="alert" tabindex="-1"><strong>Confira os erros antes de salvar.</strong><span>Os campos com problema estão destacados abaixo.</span></div>{% endif %}
+    <form class="sheet-form task-form" method="post" action="{{ form_action }}">
       {% csrf_token %}{{ form.non_field_errors }}
       {% for hidden in form.hidden_fields %}{{ hidden }}{{ hidden.errors }}{% endfor %}
-      <div class="form-grid">
-        {% for field in form.visible_fields %}<div class="form-field{% if field.name == 'descricao' %} full-width{% endif %}">{{ field.label_tag }}{{ field }}{{ field.errors }}{% if field.help_text %}<small class="field-help">{{ field.help_text }}</small>{% endif %}</div>{% endfor %}
-      </div>
-      <p class="field-help"><strong>Prazo do serviço:</strong> <output id="task-service-deadline" for="id_agendamento_servico" aria-live="polite">{{ form.selected_service_deadline }}</output></p>
-      <fieldset class="task-materials">
-        <legend>Materiais gastos (opcional)</legend>
-        <p class="field-help">Informe a quantidade gasta de cada material.</p>
-        {{ form.material_formset.management_form }}{{ form.material_formset.non_form_errors }}
-        <div id="task-material-rows">
-          {% for material_form in form.material_formset %}
-            <div class="task-material-row"{% if material_form.DELETE.value %} hidden{% endif %}>
-              {{ material_form.non_field_errors }}
-              <div class="form-grid">
-                <div class="form-field">{{ material_form.material.label_tag }}{{ material_form.material }}{{ material_form.material.errors }}</div>
-                <div class="form-field">{{ material_form.quantidade.label_tag }}{{ material_form.quantidade }}{{ material_form.quantidade.errors }}</div>
-              </div>
-              <label class="task-material-delete">{{ material_form.DELETE }} Remover este material</label>
-            </div>
-          {% endfor %}
+
+      <section class="form-section" aria-labelledby="task-service-title">
+        <div class="form-section-heading">
+          <span class="form-section-number" aria-hidden="true">1</span>
+          <div><h2 id="task-service-title">Serviço e prazo</h2><p>Vincule a tarefa a um serviço confirmado. O prazo é herdado automaticamente.</p></div>
         </div>
-        <button class="secondary-button" type="submit" name="adicionar_material" value="1" id="task-add-material" formnovalidate>Adicionar material</button>
-      </fieldset>
-      <div class="sheet-actions"><button type="submit">Salvar tarefa</button>{% if object %}<a class="secondary-button" href="{% url 'tarefas:detail' object.pk %}">Cancelar</a>{% endif %}</div>
+        <div class="form-grid task-service-grid">
+          <div class="form-field">
+            <label for="{{ form.agendamento_servico.id_for_label }}">{{ form.agendamento_servico.label }} <span aria-hidden="true">*</span></label>
+            {{ form.agendamento_servico }}{{ form.agendamento_servico.errors }}
+            {% if form.agendamento_servico.help_text %}<small class="field-help" id="{{ form.agendamento_servico.id_for_label }}_helptext">{{ form.agendamento_servico.help_text }}</small>{% endif %}
+          </div>
+          <div class="task-deadline-card" aria-live="polite">
+            <span>Prazo do serviço</span>
+            <output id="task-service-deadline" for="id_agendamento_servico">{{ form.selected_service_deadline }}</output>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section" aria-labelledby="task-description-title">
+        <div class="form-section-heading">
+          <span class="form-section-number" aria-hidden="true">2</span>
+          <div><h2 id="task-description-title">Descrição da tarefa</h2><p>Explique o resultado esperado e as informações essenciais para a execução.</p></div>
+        </div>
+        <div class="form-field">
+          <label for="{{ form.descricao.id_for_label }}">{{ form.descricao.label }} <span aria-hidden="true">*</span></label>
+          {{ form.descricao }}{{ form.descricao.errors }}
+        </div>
+      </section>
+
+      <section class="form-section" aria-labelledby="task-resources-title">
+        <div class="form-section-heading">
+          <span class="form-section-number" aria-hidden="true">3</span>
+          <div><h2 id="task-resources-title">Equipe e recursos</h2><p>Defina quem executará a tarefa e quais recursos serão utilizados.</p></div>
+        </div>
+        <div class="task-choice-grid">
+          <fieldset class="task-choice-group" data-task-choice-group="responsaveis">
+            <legend>{{ form.responsaveis.label }} <span aria-hidden="true">*</span></legend>
+            <small class="field-help">{{ form.responsaveis.help_text }}</small>
+            {{ form.responsaveis.errors }}
+            <label class="task-choice-search" for="task-responsible-search">
+              <span>Pesquisar responsáveis</span>
+              <input id="task-responsible-search" type="search" placeholder="Digite um nome" autocomplete="off" data-task-choice-search>
+            </label>
+            <p class="task-choice-count" data-task-choice-count aria-live="polite"></p>
+            <div class="task-choice-options">
+              {% for choice in form.responsaveis %}<label class="task-choice-option" for="{{ choice.id_for_label }}">{{ choice.tag }}<span>{{ choice.choice_label }}</span></label>{% empty %}<p>Nenhum responsável disponível.</p>{% endfor %}
+            </div>
+            <p class="task-choice-empty" data-task-choice-empty hidden>Nenhum responsável encontrado.</p>
+          </fieldset>
+
+          <fieldset class="task-choice-group" data-task-choice-group="equipamentos">
+            <legend>{{ form.equipamentos.label }} <span class="optional-label">Opcional</span></legend>
+            <small class="field-help">{{ form.equipamentos.help_text }}</small>
+            {{ form.equipamentos.errors }}
+            <label class="task-choice-search" for="task-equipment-search">
+              <span>Pesquisar equipamentos</span>
+              <input id="task-equipment-search" type="search" placeholder="Digite o equipamento" autocomplete="off" data-task-choice-search>
+            </label>
+            <p class="task-choice-count" data-task-choice-count aria-live="polite"></p>
+            <div class="task-choice-options">
+              {% for choice in form.equipamentos %}<label class="task-choice-option" for="{{ choice.id_for_label }}">{{ choice.tag }}<span>{{ choice.choice_label }}</span></label>{% empty %}<p>Nenhum equipamento disponível.</p>{% endfor %}
+            </div>
+            <p class="task-choice-empty" data-task-choice-empty hidden>Nenhum equipamento encontrado.</p>
+          </fieldset>
+        </div>
+
+        <fieldset class="task-materials">
+          <legend>Materiais gastos <span class="optional-label">Opcional</span></legend>
+          <p class="field-help">Adicione somente os materiais usados e descreva a quantidade de cada um, por exemplo: 200 g ou 2 unidades.</p>
+          {{ form.material_formset.management_form }}{{ form.material_formset.non_form_errors }}
+          <div id="task-material-rows">
+            {% for material_form in form.material_formset %}
+              <div class="task-material-row"{% if material_form.DELETE.value %} hidden{% endif %}>
+                <div class="task-material-row-heading"><h3 data-task-material-title>Material {{ forloop.counter }}</h3></div>
+                {{ material_form.non_field_errors }}
+                <div class="form-grid">
+                  <div class="form-field">{{ material_form.material.label_tag }}{{ material_form.material }}{{ material_form.material.errors }}</div>
+                  <div class="form-field">{{ material_form.quantidade.label_tag }}{{ material_form.quantidade }}{{ material_form.quantidade.errors }}</div>
+                </div>
+                <label class="task-material-delete">{{ material_form.DELETE }} Remover este material ao salvar</label>
+              </div>
+            {% endfor %}
+          </div>
+          <button class="secondary-button" type="submit" name="adicionar_material" value="1" id="task-add-material" formnovalidate>+ Adicionar material</button>
+        </fieldset>
+      </section>
+
+      <div class="sheet-actions task-form-actions">
+        <button type="submit">{% if object %}Salvar alterações{% else %}Criar tarefa{% endif %}</button>
+        <a class="secondary-button"{% if task_modal %} data-task-close{% endif %} href="{% if object %}{% url 'tarefas:detail' object.pk %}{% else %}{% url 'tarefas:board' %}{% endif %}">Cancelar</a>
+      </div>
     </form>
-    <template id="task-material-template"><div class="task-material-row"><div class="form-grid"><div class="form-field">{{ form.material_formset.empty_form.material.label_tag }}{{ form.material_formset.empty_form.material }}</div><div class="form-field">{{ form.material_formset.empty_form.quantidade.label_tag }}{{ form.material_formset.empty_form.quantidade }}</div></div><label class="task-material-delete">{{ form.material_formset.empty_form.DELETE }} Remover este material</label></div></template>
+    <template id="task-material-template"><div class="task-material-row"><div class="task-material-row-heading"><h3 data-task-material-title>Novo material</h3></div><div class="form-grid"><div class="form-field">{{ form.material_formset.empty_form.material.label_tag }}{{ form.material_formset.empty_form.material }}</div><div class="form-field">{{ form.material_formset.empty_form.quantidade.label_tag }}{{ form.material_formset.empty_form.quantidade }}</div></div><label class="task-material-delete">{{ form.material_formset.empty_form.DELETE }} Remover este material ao salvar</label></div></template>
     {{ form.service_deadlines|json_script:'task-service-deadlines' }}
-    <script src="{% static 'inovalab_app/tarefas/form.js' %}" defer></script>
   </div>
 </div>
 {% endblock %}

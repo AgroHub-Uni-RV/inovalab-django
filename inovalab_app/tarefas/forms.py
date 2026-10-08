@@ -27,13 +27,13 @@ class TaskForm(StrictFormMixin, forms.ModelForm):
         fields = ['agendamento_servico', 'descricao', 'responsaveis', 'equipamentos']
         widgets = {
             'descricao': forms.Textarea(attrs={'rows': 4}),
-            'responsaveis': forms.SelectMultiple(attrs={'size': 5}),
-            'equipamentos': forms.SelectMultiple(attrs={'size': 5}),
+            'responsaveis': forms.CheckboxSelectMultiple,
+            'equipamentos': forms.CheckboxSelectMultiple,
         }
         help_texts = {
             'agendamento_servico': 'A tarefa usa o prazo do serviço vinculado. Horário de Brasília.',
-            'responsaveis': 'Selecione uma ou mais pessoas. No computador, use Ctrl ou Command para selecionar várias.',
-            'equipamentos': 'Opcional. Use Ctrl ou Command para selecionar vários equipamentos.',
+            'responsaveis': 'Selecione pelo menos uma pessoa. Todos os responsáveis acessam e executam a mesma tarefa.',
+            'equipamentos': 'Opcional. Marque todos os equipamentos necessários para a execução.',
         }
 
     def __init__(self, *args, **kwargs):

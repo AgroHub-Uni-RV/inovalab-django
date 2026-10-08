@@ -11,6 +11,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView, V
 from inovalab_app.adapters.host import is_business_admin
 from inovalab_app.catalogo.models import Servico
 from inovalab_app.tarefas.forms import DeleteForm, TaskForm, TransitionForm
+from inovalab_app.tarefas.modal import render_task_form, task_saved
 from inovalab_app.tarefas.models import StatusTarefa, Tarefa
 from inovalab_app.tarefas.selectors import visible_tasks
 from inovalab_app.tarefas.services import PUBLIC_FIELDS, TaskConflict, allowed_actions, delete_task, save_task, transition_task, set_task_status, allowed_statuses
@@ -96,6 +97,14 @@ class TaskWriteMixin(TaskContextMixin):
     form_class = TaskForm
     template_name = 'inovalab_app/tarefas/form.html'
 
+    def render_to_response(self, context, **response_kwargs):
+        return render_task_form(
+            self.request,
+            self.template_name,
+            context,
+            status=response_kwargs.get('status', 200),
+        )
+
     def post(self, request, *args, **kwargs):
         if 'adicionar_material' in request.POST:
             self.object = self.get_object() if 'pk' in kwargs else None
@@ -111,6 +120,7 @@ class TaskWriteMixin(TaskContextMixin):
         return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
+        creating = self.object is None
         try:
             self.object = save_task(
                 actor=self.request.user, task_id=self.object.pk if self.object else None,
@@ -126,8 +136,7 @@ class TaskWriteMixin(TaskContextMixin):
             for field, errors in error.message_dict.items():
                 form.add_error(field if field in form.fields else None, errors)
             return self.form_invalid(form)
-        messages.success(self.request, 'Tarefa salva com sucesso.')
-        return redirect('tarefas:detail', pk=self.object.pk)
+        return task_saved(self.request, self.object, creating=creating)
 
 
 class TaskCreateView(LoginRequiredMixin, AdminRequiredMixin, TaskWriteMixin, CreateView):

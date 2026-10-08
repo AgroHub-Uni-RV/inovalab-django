@@ -76,6 +76,20 @@ h1, h2, h3 { line-height:var(--line-heading); }
 .booking-modal .sheet-actions { flex-wrap:wrap; }
 .booking-modal-success { padding:var(--space-8); }
 .booking-modal[aria-busy=true] .booking-modal-body { pointer-events:none; }
+.task-modal-open { overflow:hidden; }
+.task-modal { --navy:#27348b; --ink:#535353; --paper:#f6f9fd; --lavender:#f2f3ff; box-sizing:border-box; width:min(1080px,calc(100% - 32px)); max-width:1080px; max-height:calc(100dvh - 32px); padding:0; border:0; border-radius:var(--radius-card); color:var(--ink); background:white; overflow:auto; overscroll-behavior:contain; box-shadow:0 16px 64px #0004; }
+.task-modal::backdrop { background:#10173499; }
+.task-modal:not([open]) { display:none; }
+.task-modal-close { position:sticky; display:block; top:var(--space-2); margin:var(--space-2) var(--space-2) -48px auto; z-index:2; width:40px; height:40px; padding:0; border:1px solid #d9e2f0; border-radius:var(--radius-small); background:white; color:var(--navy); font-size:28px; line-height:1; cursor:pointer; }
+.task-modal-close:focus-visible { outline:3px solid #009fd4; outline-offset:2px; }
+.task-modal-status { padding:var(--space-4) var(--space-16) var(--space-4) var(--space-6); }
+.task-modal-status button { margin-left:var(--space-3); }
+.task-modal .detail-sheet { border:0; border-radius:0; }
+.task-modal .sheet-topbar { padding-right:var(--space-16); }
+.task-modal .sheet-actions { flex-wrap:wrap; }
+.task-modal-success { padding:var(--space-10); }
+.task-modal-success h1 { color:var(--navy); }
+.task-modal[aria-busy=true] .task-modal-body { pointer-events:none; opacity:.72; }
 @media(max-width:760px) {
   .booking-modal { width:calc(100% - 16px); max-height:calc(100dvh - 16px); }
   .booking-modal .booking-type-grid { grid-template-columns:repeat(3,minmax(0,1fr)); max-width:none; gap:var(--space-2); }
@@ -84,6 +98,7 @@ h1, h2, h3 { line-height:var(--line-heading); }
   .booking-modal .booking-type-card span { display:none; }
   .booking-modal .booking-type-card .icon { width:var(--space-8); height:var(--space-8); }
   .booking-modal .form-grid { grid-template-columns:minmax(0,1fr); }
+  .task-modal { width:calc(100% - 16px); max-height:calc(100dvh - 16px); }
 }
 @media(max-width:760px) {
   .booking-type-grid { grid-template-columns:minmax(0,1fr); max-width:320px; }

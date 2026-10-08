@@ -1,7 +1,7 @@
 {% extends 'inovalab_app/tarefas/base.html' %}
 {% block content_class %}module-page tasks-page{% endblock %}
 {% block content %}
-<div class="page-heading"><div><h1>Controle de Tarefas</h1></div>{% if can_manage %}<a class="primary-button" href="{% url 'tarefas:create' %}">Adicionar Tarefa {% include 'inovalab_app/shared/icon.html' with name='plus' %}</a>{% endif %}</div>
+<div class="page-heading"><div><h1>Controle de Tarefas</h1></div>{% if can_manage %}<a class="primary-button" data-task-modal-trigger href="{% url 'tarefas:create' %}">Adicionar Tarefa {% include 'inovalab_app/shared/icon.html' with name='plus' %}</a>{% endif %}</div>
 <div class="statistics">
 {% include 'inovalab_app/shared/stat_card.html' with label='Demanda' count=stat_counts.demanda icon='task' %}
 {% include 'inovalab_app/shared/stat_card.html' with label='Criação' count=stat_counts.criacao icon='edit' tone='amber' %}

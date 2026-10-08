@@ -4,7 +4,7 @@ Entrega de 08/10/2026, solicitada pelo responsável. Substitui a seleção unit�
 
 ## Uso
 
-A tarefa exige pelo menos um responsável. O formulário permite selecionar várias pessoas e equipamentos; no computador, usar Ctrl/Command para combinar seleções. Equipamentos são opcionais. Adicionar material cria outra linha com material e quantidade gasta própria; remover material retira somente aquela linha. Sem JavaScript, Adicionar material envia o rascunho para o servidor sem gravar a tarefa, e a opção Remover este material é aplicada ao salvar.
+A tarefa exige pelo menos um responsável. Desde a entrega de [modal e UX das tarefas](27-tarefas-modal-ux.md), o formulário permite selecionar várias pessoas e equipamentos por checkboxes pesquisáveis, sem depender de Ctrl/Command. Equipamentos são opcionais. Adicionar material cria outra linha com material e quantidade gasta própria; remover material retira somente aquela linha. Sem JavaScript, as listas completas de checkboxes permanecem utilizáveis, Adicionar material envia o rascunho para o servidor sem gravar a tarefa, e a opção Remover este material é aplicada ao salvar.
 
 Cada quantidade é texto opcional de até 150 caracteres, como `200 g`, `2 unidades` ou `meia bobina`. Não informar quantidade sem material nem repetir um material. O registro do consumo não altera estoque. O detalhe mostra todos os equipamentos, materiais/quantidades e responsáveis; quadro e dashboard mostram a equipe inteira.
 

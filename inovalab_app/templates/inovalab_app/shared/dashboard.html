@@ -13,7 +13,7 @@
       </a>
       {% empty %}<p class="empty-state">Nenhuma tarefa nesta categoria.</p>{% endfor %}
     </div>
-    <div class="card-action">{% if is_business_admin %}<a class="outline-button" href="{% url 'tarefas:create' %}">+Nova tarefa</a>{% else %}<a class="outline-button" href="{% url 'tarefas:board' %}">Ver minhas tarefas</a>{% endif %}</div>
+    <div class="card-action">{% if is_business_admin %}<a class="outline-button" data-task-modal-trigger href="{% url 'tarefas:create' %}">+Nova tarefa</a>{% else %}<a class="outline-button" href="{% url 'tarefas:board' %}">Ver minhas tarefas</a>{% endif %}</div>
   </section>
   <section class="dashboard-card bookings-panel" aria-labelledby="bookings-title">
     <div class="card-heading"><h2 id="bookings-title">Agendamentos</h2><a class="view-all" href="{% url 'agenda:list' %}">Ver todos</a></div>
