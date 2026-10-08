@@ -63,6 +63,8 @@ class BookingWebTests(RequestFixtures, TestCase):
 
     def test_csrf_and_get_cancel_do_not_change_service(self):
         booking = self.create()
+        review_booking(actor=self.admin, category='servico', booking_id=booking.pk,
+            expected_version=1, decision='aprovar', task_data={'descricao': 'Executar', 'responsaveis': [self.owner]})
         strict = Client(enforce_csrf_checks=True); strict.force_login(self.admin)
         url = f'/agenda/servico/{booking.pk}/cancelar/'
         self.assertEqual(strict.get(url).status_code, 200)

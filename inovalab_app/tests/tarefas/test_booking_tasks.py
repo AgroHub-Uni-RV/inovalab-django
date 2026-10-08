@@ -6,7 +6,8 @@ from django.db import IntegrityError, transaction
 from rest_framework.test import APIClient
 from inovalab_app.tarefas.models import Tarefa
 from inovalab_app.tarefas.forms import TaskForm
-from inovalab_app.agenda.services import save_booking, cancel_booking
+from inovalab_app.agenda.services import cancel_booking
+from inovalab_app.tests.agenda.helpers import make_booking, make_service
 from inovalab_app.catalogo.models import Equipamento
 from inovalab_app.materiais.models import Material
 from inovalab_app.tarefas.services import save_task
@@ -60,8 +61,8 @@ class BookingTaskTests(TestCase):
     def setUpTestData(cls):
         cls.admin = get_user_model().objects.create_superuser('tarefas-gestor')
         cls.owner = get_user_model().objects.create_user('tarefas-dono', is_staff=True)
-        cls.booking = save_booking(actor=cls.admin, data={'categoria': 'servico', 'titulo': 'Projeto',
-            'descricao': 'Descrição', 'prazo': datetime(2099, 1, 1, 17, tzinfo=timezone.utc)})
+        cls.booking = make_booking(service=make_service(titulo='Projeto', descricao='Descrição',
+            prazo=datetime(2099, 1, 1, 17, tzinfo=timezone.utc)), actor=cls.admin)
 
     def test_task_requires_booking_and_responsible(self):
         with self.assertRaises(ValidationError):

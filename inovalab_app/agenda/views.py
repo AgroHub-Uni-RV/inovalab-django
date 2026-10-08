@@ -254,6 +254,15 @@ class BookingReviewView(AdminAgendaAccessMixin, View):
         if not form.is_valid():
             return render(request, 'inovalab_app/agenda/error.html', {'message': 'Confira a decisão, a versão e os campos enviados.',
                                                        'booking': booking}, status=400)
+        if category == 'servico' and form.cleaned_data['decisao'] == 'aprovar':
+            from inovalab_app.agenda.services import _check_version
+            try:
+                _check_version(booking, form.cleaned_data['versao'])
+                if booking.situacao != 'pendente':
+                    raise BookingConflict('pedido_avaliado', 'Esta solicitação já foi avaliada.')
+            except BookingConflict as error:
+                return render(request, 'inovalab_app/agenda/error.html', {'message': str(error), 'booking': booking}, status=409)
+            return redirect('tarefas:confirm-service', pk=pk)
         try:
             saved = review_booking(actor=request.user, category=category, booking_id=pk, expected_version=form.cleaned_data['versao'],
                            decision=form.cleaned_data['decisao'])

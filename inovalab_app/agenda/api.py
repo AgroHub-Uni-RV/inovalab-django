@@ -11,14 +11,16 @@ from rest_framework.viewsets import ModelViewSet
 from inovalab_app.adapters.host import is_business_admin
 from inovalab_app.agenda.policies import ADMIN_CANCEL_MESSAGE, can_access_agenda, can_create_booking, can_cancel_booking
 from inovalab_app.agenda.selectors import filter_bookings, visible_bookings, visible_booking, own_booking
-from inovalab_app.agenda.serializers import BookingSerializer, VisitSerializer, CancelSerializer, EventSerializer
-from inovalab_app.agenda.services import BookingConflict, cancel_booking
+from inovalab_app.agenda.serializers import BookingSerializer, VisitSerializer, CancelSerializer, EventSerializer, ServiceConfirmationSerializer
+from inovalab_app.agenda.services import BookingConflict, cancel_booking, review_booking
 
 
 class AgendaPermission(BasePermission):
     message = 'Esta ação exige uma conta ativa com permissão para acessar a agenda.'
 
     def has_permission(self, request, view):
+        if view.action == 'confirmar':
+            return is_business_admin(request.user)
         if view.action in ('create', 'destroy'):
             return can_create_booking(request.user)
         if view.action in ('update', 'partial_update'):
@@ -84,3 +86,15 @@ class BookingViewSet(ModelViewSet):
     def historico(self, request, pk=None, category=None):
         page = self.paginate_queryset(self.get_object().eventos.all())
         return self.get_paginated_response(EventSerializer(page, many=True).data)
+
+    @action(detail=True, methods=['post'])
+    def confirmar(self, request, pk=None, category=None):
+        booking = self.get_object()
+        if category != 'servico':
+            raise serializers.ValidationError({'categoria': 'Este fluxo confirma somente serviços com tarefa.'})
+        payload = ServiceConfirmationSerializer(data=request.data, context=self.get_serializer_context())
+        payload.is_valid(raise_exception=True)
+        saved = review_booking(actor=request.user, category='servico', booking_id=booking.pk,
+            expected_version=payload.validated_data['versao'], decision='aprovar',
+            task_data=payload.validated_data['tarefa'])
+        return Response(self.get_serializer(saved).data)

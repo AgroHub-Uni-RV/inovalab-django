@@ -51,11 +51,13 @@ class BookingServiceTests(RequestFixtures, TestCase):
 
     def test_cancel_is_versioned_and_preserves_data_and_history(self):
         booking = self.create()
-        cancel_booking(actor=self.admin, category='servico', booking_id=booking.pk, expected_version=1)
+        review_booking(actor=self.admin, category='servico', booking_id=booking.pk,
+            expected_version=1, decision='aprovar', task_data={'descricao': 'Executar', 'responsaveis': [self.owner]})
+        cancel_booking(actor=self.admin, category='servico', booking_id=booking.pk, expected_version=2)
         booking.refresh_from_db()
-        self.assertEqual(booking.versao, 2)
+        self.assertEqual(booking.versao, 3)
         self.assertEqual(booking.servico.titulo, 'Projeto de teste')
-        self.assertEqual(booking.eventos.count(), 2)
+        self.assertEqual(booking.eventos.count(), 3)
 
     def test_invalid_versions_and_category_change_never_mutate(self):
         booking = self.create()

@@ -14,11 +14,12 @@
   const taskRoot = createPath.slice(0, -'nova/'.length);
   const escapedRoot = taskRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const updatePath = new RegExp(`^${escapedRoot}\\d+/editar/$`);
+  const confirmationPath = new RegExp(`^${escapedRoot}confirmar-servico/\\d+/$`);
   const detailPath = new RegExp(`^${escapedRoot}\\d+/$`);
 
   const taskURL = value => {
     const url = new URL(value, location.href);
-    const allowed = url.pathname === createPath || updatePath.test(url.pathname);
+    const allowed = url.pathname === createPath || updatePath.test(url.pathname) || confirmationPath.test(url.pathname);
     return url.origin === location.origin && allowed ? url : null;
   };
   const isLoginURL = value => {
@@ -133,12 +134,14 @@
       }
       const page = new DOMParser().parseFromString(await response.text(), 'text/html');
       const content = page.querySelector('[data-task-modal-content]');
-      if (!content || (!response.ok && response.status !== 409)) {
+      if (!content || (!response.ok && ![400, 409].includes(response.status))) {
         throw new Error('Não foi possível carregar a tarefa.');
       }
       content.querySelectorAll('script:not([type="application/json"])').forEach(script => script.remove());
       render(content);
-      announce(response.status === 409 ? 'A tarefa foi alterada em outra tela. Confira os dados antes de tentar novamente.' : '');
+      announce(response.status === 409 ? (confirmationPath.test(target.pathname)
+        ? 'O agendamento foi alterado ou já avaliado. Confira a mensagem do formulário.'
+        : 'A tarefa foi alterada em outra tela. Confira os dados antes de tentar novamente.') : '');
     } catch (error) {
       if (controller !== request || error.name === 'AbortError') return;
       if (form) {

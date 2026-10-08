@@ -60,8 +60,14 @@ class BookingModalTests(TestCase):
                 self.assertEqual(response.status_code, 201)
                 self.assertNotIn('Location', response)
                 booking = model.objects.get()
-                self.assertEqual(response.json(), {'created': True, 'message': 'Agendamento salvo.',
-                                                  'detail_url': booking.get_absolute_url()})
+                self.assertTrue(response.json()['created'])
+                self.assertEqual(response.json()['detail_url'], booking.get_absolute_url())
+                if category == 'servico':
+                    self.assertEqual(response.json()['next_url'], f'/tarefas/confirmar-servico/{booking.pk}/')
+                    self.assertEqual(booking.situacao, 'pendente')
+                else:
+                    self.assertNotIn('next_url', response.json())
+                    self.assertEqual(booking.situacao, 'confirmado')
                 self.assertEqual((booking.criado_por, booking.eventos.count()), (self.admin, 1))
 
     def test_staff_submission_is_pending_and_conflict_keeps_form_values(self):

@@ -10,6 +10,7 @@ from inovalab_app.agenda.models import EventoAgendamento
 from inovalab_app.agenda.services import CATEGORY_MODELS, save_booking
 from inovalab_app.catalogo.models import Equipamento
 from inovalab_app.materiais.models import Material
+from inovalab_app.tarefas.serializers import TaskSerializer
 
 
 class StrictPayloadMixin:
@@ -133,6 +134,16 @@ class VisitSerializer(StrictPayloadMixin, serializers.Serializer):
 
 class CancelSerializer(StrictPayloadMixin, serializers.Serializer):
     versao = VersionField(min_value=1)
+
+
+class ConfirmationTaskSerializer(TaskSerializer):
+    class Meta(TaskSerializer.Meta):
+        fields = [name for name in TaskSerializer.Meta.fields if name != 'agendamento_servico']
+
+
+class ServiceConfirmationSerializer(StrictPayloadMixin, serializers.Serializer):
+    versao = VersionField(min_value=1)
+    tarefa = ConfirmationTaskSerializer()
 
 
 class EventSerializer(serializers.ModelSerializer):

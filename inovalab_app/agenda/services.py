@@ -1,4 +1,5 @@
 import sqlite3
+from collections.abc import Mapping
 from decimal import Decimal
 from datetime import date, time, datetime, timezone as dt_timezone
 from functools import wraps
@@ -187,7 +188,7 @@ def _check_overlap(booking):
 
 
 @_busy_as_conflict
-def review_booking(*, actor, category, booking_id, expected_version, decision):
+def review_booking(*, actor, category, booking_id, expected_version, decision, task_data=None):
     _require_admin(actor)
     if decision not in ('aprovar', 'rejeitar'):
         raise ValidationError({'decisao': 'Escolha aceitar ou rejeitar a solicitação.'})
@@ -199,6 +200,11 @@ def review_booking(*, actor, category, booking_id, expected_version, decision):
         booking = _load(booking_id, expected_version, category)
         if booking.situacao != 'pendente':
             raise BookingConflict('pedido_avaliado', 'Esta solicitação já foi avaliada.')
+        if category == 'servico' and decision == 'aprovar':
+            if not isinstance(task_data, Mapping):
+                raise ValidationError({'tarefa': 'Crie uma tarefa vinculada para confirmar o serviço.'})
+            if 'agendamento_servico' in task_data:
+                raise ValidationError({'tarefa': 'O serviço da tarefa é definido pela solicitação em confirmação.'})
         before = _snapshot(booking)
         if decision == 'aprovar':
             booking.full_clean()
@@ -208,6 +214,14 @@ def review_booking(*, actor, category, booking_id, expected_version, decision):
         booking.avaliado_por = actor
         booking.avaliado_em = timezone.now()
         _persist_existing(booking, expected_version)
+        if category == 'servico' and decision == 'aprovar':
+            from inovalab_app.tarefas.services import save_task, TaskConflict
+            try:
+                # The confirmed state is visible only inside this transaction.
+                # Any task/link/history failure rolls back the approval too.
+                booking.created_task = save_task(actor=actor, data={**task_data, 'agendamento_servico': booking})
+            except TaskConflict as error:
+                raise BookingConflict('registros_em_alteracao', str(error)) from error
         _record(actor, booking, decision, before)
     return booking
 

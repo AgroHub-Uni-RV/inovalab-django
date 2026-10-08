@@ -1,17 +1,19 @@
 {% extends task_base|default:'inovalab_app/tarefas/base.html' %}
 {% block content_class %}module-page detail-page{% endblock %}
 {% block content %}
-<div class="detail-sheet task-form-sheet"{% if not task_modal %} data-task-write-page data-task-return-url="{% if object %}{% url 'tarefas:detail' object.pk %}{% else %}{% url 'tarefas:board' %}{% endif %}"{% endif %}>
+<div class="detail-sheet task-form-sheet"{% if not task_modal %} data-task-write-page data-task-return-url="{% if confirmation_booking %}{% url 'agenda:requests' %}{% elif object %}{% url 'tarefas:detail' object.pk %}{% else %}{% url 'tarefas:board' %}{% endif %}"{% endif %}>
   <div class="sheet-topbar">
-    {% if not task_modal %}<a class="secondary-button" href="{% if object %}{% url 'tarefas:detail' object.pk %}{% else %}{% url 'tarefas:board' %}{% endif %}">{% if object %}Voltar à tarefa{% else %}Voltar ao quadro{% endif %}</a>{% endif %}
+    {% if not task_modal %}<a class="secondary-button" href="{% if confirmation_booking %}{% url 'agenda:requests' %}{% elif object %}{% url 'tarefas:detail' object.pk %}{% else %}{% url 'tarefas:board' %}{% endif %}">{% if confirmation_booking %}Voltar às solicitações{% elif object %}Voltar à tarefa{% else %}Voltar ao quadro{% endif %}</a>{% endif %}
     <span class="badge {% if object %}{{ object.status }}{% else %}demanda{% endif %}">{% if object %}{{ object.get_status_display }}{% else %}Nova demanda{% endif %}</span>
   </div>
   <div class="sheet-content">
     <div class="task-form-heading">
       <p class="form-eyebrow">Controle de tarefas</p>
-      <h1>{% if object %}Editar tarefa #{{ object.pk }}{% else %}Nova tarefa{% endif %}</h1>
+      <h1>{% if confirmation_booking %}Criar tarefa para confirmar serviço #{{ confirmation_booking.pk }}{% elif object %}Editar tarefa #{{ object.pk }}{% else %}Nova tarefa{% endif %}</h1>
+      {% if confirmation_booking %}<p>O agendamento permanece pendente até salvar esta tarefa. Ao cancelar ou fechar, o serviço não será confirmado.</p>{% endif %}
       <p>Organize o serviço, a equipe e os recursos necessários. Campos marcados com <span aria-hidden="true">*</span><span class="sr-only">asterisco</span> são obrigatórios.</p>
     </div>
+    {% if confirmation_error %}<div class="form-error-summary" role="alert" tabindex="-1">{{ confirmation_error }}</div>{% endif %}
     {% if form.errors %}<div class="form-error-summary" role="alert" tabindex="-1"><strong>Confira os erros antes de salvar.</strong><span>Os campos com problema estão destacados abaixo.</span></div>{% endif %}
     <form class="sheet-form task-form" method="post" action="{{ form_action }}">
       {% csrf_token %}{{ form.non_field_errors }}
@@ -20,7 +22,7 @@
       <section class="form-section" aria-labelledby="task-service-title">
         <div class="form-section-heading">
           <span class="form-section-number" aria-hidden="true">1</span>
-          <div><h2 id="task-service-title">Serviço e prazo</h2><p>Vincule a tarefa a um serviço confirmado. O prazo é herdado automaticamente.</p></div>
+          <div><h2 id="task-service-title">Serviço e prazo</h2><p>{% if confirmation_booking %}O serviço está fixo nesta confirmação.{% else %}Vincule a tarefa a um serviço confirmado.{% endif %} O prazo é herdado automaticamente.</p></div>
         </div>
         <div class="form-grid task-service-grid">
           <div class="form-field">
@@ -105,8 +107,8 @@
       </section>
 
       <div class="sheet-actions task-form-actions">
-        <button type="submit">{% if object %}Salvar alterações{% else %}Criar tarefa{% endif %}</button>
-        <a class="secondary-button"{% if task_modal %} data-task-close{% endif %} href="{% if object %}{% url 'tarefas:detail' object.pk %}{% else %}{% url 'tarefas:board' %}{% endif %}">Cancelar</a>
+        <button type="submit">{% if confirmation_booking %}Criar tarefa e confirmar agendamento{% elif object %}Salvar alterações{% else %}Criar tarefa{% endif %}</button>
+        <a class="secondary-button"{% if task_modal %} data-task-close{% endif %} href="{% if confirmation_booking %}{% url 'agenda:requests' %}{% elif object %}{% url 'tarefas:detail' object.pk %}{% else %}{% url 'tarefas:board' %}{% endif %}">Cancelar</a>
       </div>
     </form>
     <template id="task-material-template"><div class="task-material-row"><div class="task-material-row-heading"><h3 data-task-material-title>Novo material</h3></div><div class="form-grid"><div class="form-field">{{ form.material_formset.empty_form.material.label_tag }}{{ form.material_formset.empty_form.material }}</div><div class="form-field">{{ form.material_formset.empty_form.quantidade.label_tag }}{{ form.material_formset.empty_form.quantidade }}</div></div><label class="task-material-delete">{{ form.material_formset.empty_form.DELETE }} Remover este material ao salvar</label></div></template>

@@ -88,6 +88,27 @@ class TaskForm(StrictFormMixin, forms.ModelForm):
         return self.service_deadlines.get(str(self['agendamento_servico'].value()), 'Selecione um agendamento de serviço.')
 
 
+class ServiceConfirmationTaskForm(TaskForm):
+    agendamento_versao = forms.IntegerField(min_value=1, widget=forms.HiddenInput)
+
+    def __init__(self, *args, booking, **kwargs):
+        self.confirmation_booking = booking
+        super().__init__(*args, **kwargs)
+        field = self.fields['agendamento_servico']
+        field.queryset = AgendaServico.objects.filter(pk=booking.pk).select_related('servico', 'criado_por')
+        field.initial = booking.pk
+        field.disabled = True
+        field.help_text = 'Este serviço será confirmado somente após a criação da tarefa.'
+        self.fields['agendamento_versao'].initial = booking.versao
+        self.fields['descricao'].initial = booking.servico.descricao
+
+    def clean_agendamento_servico(self):
+        submitted = self.data.get('agendamento_servico')
+        if submitted is not None and submitted != str(self.confirmation_booking.pk):
+            raise forms.ValidationError('Não é permitido trocar o serviço durante a confirmação.')
+        return self.cleaned_data['agendamento_servico']
+
+
 class StatusSelect(forms.Select):
     allowed_values = None
 

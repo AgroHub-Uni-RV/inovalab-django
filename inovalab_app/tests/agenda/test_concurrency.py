@@ -76,12 +76,14 @@ class BookingConcurrencyTests(TransactionTestCase):
         user = get_user_model().objects.create_user('solicitante-service', is_staff=True)
         bookings = [save_booking(actor=user, data=self.data) for _ in range(2)]
         results = self.run_parallel(lambda index: review_booking(actor=self.admin, category='servico',
-            booking_id=bookings[index].pk, expected_version=1, decision='aprovar'))
+            booking_id=bookings[index].pk, expected_version=1, decision='aprovar',
+            task_data={'descricao': 'Executar serviço', 'responsaveis': [user]}))
         for index, result in enumerate(results):
             if isinstance(result, BookingConflict):
                 self.assertEqual(result.code, 'agenda_ocupada')
                 review_booking(actor=self.admin, category='servico', booking_id=bookings[index].pk,
-                               expected_version=1, decision='aprovar')
+                               expected_version=1, decision='aprovar',
+                               task_data={'descricao': 'Executar serviço', 'responsaveis': [user]})
         self.assertEqual(AgendaServico.objects.filter(situacao='confirmado').count(), 2)
         self.assertEqual(EventoAgendamento.objects.filter(acao='aprovar').count(), 2)
 
@@ -111,7 +113,19 @@ class BookingConcurrencyTests(TransactionTestCase):
         user = get_user_model().objects.create_user('solicitante', is_staff=True)
         booking = save_booking(actor=user, data=self.data)
         results = self.run_parallel(lambda index: review_booking(actor=self.admin, category=booking.categoria, booking_id=booking.pk,
-                                   expected_version=1, decision=('aprovar', 'rejeitar')[index]))
+                                   expected_version=1, decision=('aprovar', 'rejeitar')[index],
+                                   task_data={'descricao': 'Executar serviço', 'responsaveis': [user]}))
         self.assertEqual(sum(isinstance(result, AgendaServico) for result in results), 1)
         booking.refresh_from_db()
         self.assertEqual((booking.versao, booking.eventos.count()), (2, 2))
+
+    def test_parallel_confirmations_of_same_service_create_only_one_task(self):
+        booking = save_booking(actor=self.admin, data=self.data)
+        results = self.run_parallel(lambda index: review_booking(actor=self.admin, category='servico',
+            booking_id=booking.pk, expected_version=1, decision='aprovar',
+            task_data={'descricao': f'Executar {index}', 'responsaveis': [self.admin]}))
+        self.assertEqual(sum(isinstance(result, AgendaServico) for result in results), 1)
+        self.assertEqual(sum(isinstance(result, BookingConflict) for result in results), 1)
+        booking.refresh_from_db()
+        self.assertEqual((booking.situacao, booking.versao, booking.tarefas.count(), booking.eventos.count()),
+                         ('confirmado', 2, 1, 2))

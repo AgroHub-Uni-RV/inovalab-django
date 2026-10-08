@@ -19,7 +19,9 @@ class RequestFixtures:
         cls.other = get_user_model().objects.create_user('outro-fluxo', is_staff=True)
 
     def create(self, **overrides):
-        return save_booking(actor=self.admin, data=service_data(**overrides))
+        booking = save_booking(actor=self.admin, data=service_data(**overrides))
+        return review_booking(actor=self.admin, category='servico', booking_id=booking.pk,
+            expected_version=1, decision='aprovar', task_data={'descricao': 'Executar', 'responsaveis': [self.owner]})
 
 class AgendaFrontendTests(RequestFixtures, TestCase):
     def test_deadline_at_midnight_marks_only_one_correct_calendar_day(self):
@@ -37,7 +39,7 @@ class AgendaFrontendTests(RequestFixtures, TestCase):
     def test_cancelled_and_pending_do_not_appear_as_calendar_reservations(self):
         confirmed=self.create()
         pending=save_booking(actor=self.owner,data=service_data())
-        cancel_booking(actor=self.admin,category='servico',booking_id=confirmed.pk,expected_version=1)
+        cancel_booking(actor=self.admin,category='servico',booking_id=confirmed.pk,expected_version=2)
         confirmed.refresh_from_db()
         self.assertEqual(sum(day['count'] for week in calendar_weeks([confirmed,pending],'2099-11') for day in week),0)
 

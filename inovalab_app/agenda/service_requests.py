@@ -23,7 +23,7 @@ def save_service_request(*, actor, data, booking_id=None, expected_version=None)
         raise ValidationError({'categoria': 'A categoria não pode ser alterada.'})
     if booking_id is None:
         service = Servico()
-        booking = AgendaServico(criado_por=actor, situacao='confirmado' if is_business_admin(actor) else 'pendente')
+        booking = AgendaServico(criado_por=actor, situacao='pendente')
         before = {}
     else:
         booking = _load(booking_id, expected_version, 'servico')

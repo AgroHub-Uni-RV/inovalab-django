@@ -34,7 +34,9 @@ class BookingApiTests(RequestFixtures, TestCase):
         response = self.api.patch(url, {'titulo': 'Editado', 'versao': 1}, format='json')
         self.assertEqual((response.status_code, response.data['versao']), (200, 2))
         self.assertEqual(self.api.get(url+'historico/').data['count'], 2)
-        self.assertEqual(self.api.delete(url, {'versao': 2}, format='json').status_code, 204)
+        self.assertEqual(self.api.post(url+'confirmar/', {'versao': 2,
+            'tarefa': {'descricao': 'Executar', 'responsaveis': [self.owner.pk]}}, format='json').status_code, 200)
+        self.assertEqual(self.api.delete(url, {'versao': 3}, format='json').status_code, 204)
 
     def test_anonymous_and_ordinary_user_cannot_read_internal_collection(self):
         self.api.logout()
@@ -68,6 +70,8 @@ class BookingApiTests(RequestFixtures, TestCase):
         booking = self.create()
         url = f'/api/v1/agendamentos/servico/{booking.pk}/'
         self.api.patch(url, {'titulo': 'Novo', 'versao': 1}, format='json')
+        self.assertEqual(self.api.post(url+'confirmar/', {'versao': 2,
+            'tarefa': {'descricao': 'Executar', 'responsaveis': [self.owner.pk]}}, format='json').status_code, 200)
         self.assertEqual(self.api.patch(url, {'titulo': 'Perdido', 'versao': 1}, format='json').status_code, 409)
         self.assertEqual(self.api.delete(url, {'versao': 1}, format='json').status_code, 409)
         self.assertEqual(self.api.get(url).data['titulo'], 'Novo')

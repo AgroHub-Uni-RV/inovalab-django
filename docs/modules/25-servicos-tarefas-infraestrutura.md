@@ -4,6 +4,8 @@ Entrega de 08/10/2026, aprovada na [especificação](../superpowers/specs/2026-1
 
 ## Serviço e agendamento
 
+Solicitação posterior de 08/10/2026: serviços passam a ser criados como pendentes também pelo administrador, e sua confirmação exige criar uma tarefa vinculada em transação única. Essa decisão substitui a confirmação automática descrita nesta entrega; consultar o [módulo 28](28-confirmacao-servicos-com-tarefa.md).
+
 Cada solicitação cria um `Servico` próprio com `titulo`, `descricao` e `prazo` obrigatórios. `AgendaServico.servico` é exclusivo (OneToOne) e conserva autoria, situação, avaliação, cancelamento, versão e eventos. O formulário separa `prazo_data` e `prazo_hora`; horários novos/alterados são gravados em minutos, e o minuto inalterado conserva segundos e microssegundos anteriores.
 
 O prazo é uma data limite, sem reservar um intervalo nem um equipamento. Pedidos distintos podem compartilhar título e prazo. Agenda, contadores e dashboard colocam o serviço no dia do prazo, incluindo corretamente meia-noite e limites de mês. Contas comuns criam pendentes; administradores criam confirmados e avaliam pendentes. O cancelamento mantém as regras de autoria e de administração vigentes.

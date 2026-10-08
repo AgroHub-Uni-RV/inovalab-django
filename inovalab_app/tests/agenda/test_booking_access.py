@@ -137,7 +137,8 @@ class NormalBookingAccessTests(TestCase):
                 save_booking(actor=self.user, category=category, booking_id=booking.pk, expected_version=1, data={})
             with self.assertRaises(PermissionDenied):
                 review_booking(actor=self.user, category=category, booking_id=booking.pk, expected_version=1, decision='aprovar')
-            review_booking(actor=self.admin, category=category, booking_id=booking.pk, expected_version=1, decision='aprovar')
+            review_booking(actor=self.admin, category=category, booking_id=booking.pk, expected_version=1, decision='aprovar',
+                task_data={'descricao': 'Executar serviço', 'responsaveis': [self.user]})
             cancel_booking(actor=self.admin, category=category, booking_id=booking.pk, expected_version=2)
             booking.refresh_from_db()
             self.assertIsNotNone(booking.cancelado_em)

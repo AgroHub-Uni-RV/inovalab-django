@@ -6,15 +6,15 @@ from django.db import connection, connections
 from django.db.models.query import QuerySet
 from django.test import TransactionTestCase
 from inovalab_app.agenda.models import AgendaServico
-from inovalab_app.agenda.services import BookingConflict, cancel_booking, save_booking
+from inovalab_app.agenda.services import BookingConflict, cancel_booking
 from inovalab_app.tarefas.services import save_task
-from inovalab_app.tests.agenda.helpers import service_data
+from inovalab_app.tests.agenda.helpers import make_booking
 
 
 class TaskReferenceConcurrencyTests(TransactionTestCase):
     def setUp(self):
         self.actor = get_user_model().objects.create_superuser('gestor-concorrencia-tarefa')
-        self.booking = save_booking(actor=self.actor, data=service_data())
+        self.booking = make_booking(actor=self.actor)
         self.payload = {'agendamento_servico': self.booking, 'responsavel': self.actor, 'descricao': 'Tarefa'}
 
     def test_reference_validation_and_first_write_share_transaction(self):

@@ -10,7 +10,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView, V
 
 from inovalab_app.adapters.host import is_business_admin
 from inovalab_app.catalogo.models import Servico
-from inovalab_app.tarefas.forms import DeleteForm, TaskForm, TransitionForm
+from inovalab_app.tarefas.forms import DeleteForm, ServiceConfirmationTaskForm, TaskForm, TransitionForm
 from inovalab_app.tarefas.modal import render_task_form, task_saved
 from inovalab_app.tarefas.models import StatusTarefa, Tarefa
 from inovalab_app.tarefas.selectors import visible_tasks
@@ -145,6 +145,66 @@ class TaskCreateView(LoginRequiredMixin, AdminRequiredMixin, TaskWriteMixin, Cre
 
 class TaskUpdateView(LoginRequiredMixin, AdminRequiredMixin, TaskWriteMixin, UpdateView):
     pass
+
+
+class ServiceConfirmationTaskView(LoginRequiredMixin, View):
+    def get_booking(self, request, pk):
+        from inovalab_app.agenda.models import AgendaServico
+        if not is_business_admin(request.user):
+            raise PermissionDenied('Somente administradores podem confirmar serviços e criar tarefas.')
+        return get_object_or_404(AgendaServico.objects.select_related('servico', 'criado_por'),
+                                 pk=pk, cancelado_em__isnull=True)
+
+    def render_form(self, request, booking, form, *, status=200, confirmation_error=''):
+        return render_task_form(request, 'inovalab_app/tarefas/form.html', {
+            'form': form, 'object': None, 'confirmation_booking': booking,
+            'confirmation_error': confirmation_error,
+        }, status=status)
+
+    def get(self, request, pk):
+        booking = self.get_booking(request, pk)
+        form = ServiceConfirmationTaskForm(booking=booking)
+        if booking.situacao != 'pendente':
+            return self.render_form(request, booking, form, status=409,
+                confirmation_error='Esta solicitação já foi avaliada. Consulte os dados atualizados.')
+        return self.render_form(request, booking, form)
+
+    def post(self, request, pk):
+        from inovalab_app.agenda.services import BookingConflict, review_booking
+        booking = self.get_booking(request, pk)
+        data = request.POST.copy()
+        if 'adicionar_material' in data:
+            try:
+                total = int(data.get('materiais-TOTAL_FORMS', '0'))
+            except ValueError:
+                total = 0
+            if 0 <= total < 1000:
+                data['materiais-TOTAL_FORMS'] = str(total + 1)
+            return self.render_form(request, booking, ServiceConfirmationTaskForm(data, booking=booking))
+        form = ServiceConfirmationTaskForm(data, booking=booking)
+        if not form.is_valid():
+            return self.render_form(request, booking, form, status=400)
+        try:
+            saved = review_booking(actor=request.user, category='servico', booking_id=pk,
+                expected_version=form.cleaned_data['agendamento_versao'], decision='aprovar',
+                task_data={key: form.cleaned_data[key] for key in PUBLIC_FIELDS - {'agendamento_servico'}
+                           if key in form.cleaned_data})
+        except BookingConflict as error:
+            form.add_error(None, str(error))
+            return self.render_form(request, booking, form, status=409)
+        except ValidationError as error:
+            errors = error.message_dict if hasattr(error, 'message_dict') else {None: error.messages}
+            for field, values in errors.items():
+                form.add_error(field if field in form.fields else None, values)
+            return self.render_form(request, booking, form, status=400)
+        if request.headers.get('X-Task-Modal') == '1':
+            from django.http import JsonResponse
+            response = JsonResponse({'saved': True, 'message': 'Tarefa criada e agendamento confirmado.',
+                'detail_url': reverse('tarefas:detail', kwargs={'pk': saved.created_task.pk})}, status=201)
+            response['Cache-Control'] = 'no-store'
+            return response
+        messages.success(request, 'Tarefa criada e agendamento confirmado.')
+        return redirect('agenda:detail', category='servico', pk=pk)
 
 
 def operation_error(request, task, message, status=400):

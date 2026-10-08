@@ -53,7 +53,7 @@
 .booking-status.confirmado, .booking-status.confirmada { background:#edffd7; color:#488d13; }
 .booking-status.rejeitado, .booking-status.cancelada, .booking-status.recusada { background:#ffd8d9; color:#ae1b23; }
 .booking-review-actions { display:flex; flex-wrap:wrap; gap:var(--space-2); margin:var(--space-3) 0; }
-.module-page .booking-review-actions button[type=submit] { min-height:var(--space-10); font-size:var(--font-label); padding:var(--space-2) var(--space-3); }
+.module-page .booking-review-actions button[type=submit], .module-page .booking-review-actions a.primary-button { min-height:var(--space-10); font-size:var(--font-label); padding:var(--space-2) var(--space-3); }
 .module-page .booking-review-actions button.secondary-button { background:white; color:var(--navy); }
 .cell-name { display:flex; align-items:center; gap:var(--space-6); font-weight:700; }
 .material-thumbnail { background:#d9d9d9; height:76px; width:76px; flex-shrink:0; }

@@ -3,8 +3,15 @@ from inovalab_app.models import (AgendaEquipamento, AgendaServico, AgendaVisita,
                                 Equipamento, EventoAgendamento, EventoTarefa, Material, Servico, Tarefa)
 
 for model in (Material, EventoTarefa,
-              AgendaServico, AgendaVisita, EventoAgendamento, Banner):
+              AgendaVisita, EventoAgendamento, Banner):
     admin.site.register(model)
+
+
+@admin.register(AgendaServico)
+class ServiceBookingAdmin(admin.ModelAdmin):
+    def has_add_permission(self, request):
+        # Native creation/confirmation must include a task and both audit trails.
+        return False
 
 
 @admin.register(Equipamento)

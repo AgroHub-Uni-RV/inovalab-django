@@ -133,6 +133,12 @@
       if (response.status === 201 && response.headers.get('Content-Type')?.includes('application/json')) {
         const result = await response.json();
         if (result.created !== true) throw new Error('Não foi possível confirmar o agendamento.');
+        if (result.next_url) {
+          const next = new URL(result.next_url, location.href);
+          if (next.origin !== location.origin) throw new Error('Destino de confirmação inválido.');
+          location.assign(next.href);
+          return;
+        }
         success(result);
         return;
       }

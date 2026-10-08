@@ -28,7 +28,7 @@ class ServiceRequestTests(TestCase):
         self.assertNotEqual(first.servico_id, second.servico_id)
         self.assertEqual(first.servico.titulo, 'Produzir protótipo')
         self.assertEqual(first.eventos.get().acao, 'criar')
-        self.assertEqual(first.situacao, 'confirmado')
+        self.assertEqual(first.situacao, 'pendente')
 
     def test_normal_request_is_pending_and_preserves_authorship(self):
         booking = save_booking(actor=self.owner, data=self.payload())
