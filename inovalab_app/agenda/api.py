@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError as ModelValidationError
+from django.utils import timezone
 from rest_framework import serializers, status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import action
@@ -12,14 +13,15 @@ from inovalab_app.adapters.host import is_business_admin
 from inovalab_app.agenda.policies import ADMIN_CANCEL_MESSAGE, can_access_agenda, can_create_booking, can_cancel_booking
 from inovalab_app.agenda.selectors import filter_bookings, visible_bookings, visible_booking, own_booking
 from inovalab_app.agenda.serializers import BookingSerializer, VisitSerializer, CancelSerializer, EventSerializer, ServiceConfirmationSerializer
-from inovalab_app.agenda.services import BookingConflict, cancel_booking, review_booking
+from inovalab_app.agenda.serializers import RealizeVisitSerializer
+from inovalab_app.agenda.services import BookingConflict, cancel_booking, review_booking, mark_visit_realized
 
 
 class AgendaPermission(BasePermission):
     message = 'Esta ação exige uma conta ativa com permissão para acessar a agenda.'
 
     def has_permission(self, request, view):
-        if view.action == 'confirmar':
+        if view.action in ('confirmar', 'realizar'):
             return is_business_admin(request.user)
         if view.action in ('create', 'destroy'):
             return can_create_booking(request.user)
@@ -45,6 +47,14 @@ class BookingViewSet(ModelViewSet):
     serializer_class = BookingSerializer
     http_method_names = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options']
 
+    def get_execution_now(self):
+        if not hasattr(self, '_execution_now'):
+            self._execution_now = timezone.now()
+        return self._execution_now
+
+    def get_serializer_context(self):
+        return {**super().get_serializer_context(), 'execution_now': self.get_execution_now()}
+
     def get_serializer_class(self):
         if self.kwargs.get('category') == 'visita' or (
                 self.action == 'create' and isinstance(self.request.data, dict) and self.request.data.get('categoria') == 'visita'):
@@ -52,7 +62,7 @@ class BookingViewSet(ModelViewSet):
         return super().get_serializer_class()
 
     def get_queryset(self):
-        queryset = visible_bookings(self.request.user)
+        queryset = visible_bookings(self.request.user, now=self.get_execution_now())
         if self.action == 'list':
             return filter_bookings(queryset, month=self.request.query_params.get('mes'),
                                    category=self.request.query_params.get('categoria'),
@@ -61,7 +71,7 @@ class BookingViewSet(ModelViewSet):
 
     def get_object(self):
         selector = own_booking if self.action == 'destroy' and not is_business_admin(self.request.user) else visible_booking
-        booking = selector(self.request.user, self.kwargs['category'], int(self.kwargs['pk']))
+        booking = selector(self.request.user, self.kwargs['category'], int(self.kwargs['pk']), now=self.get_execution_now())
         self.check_object_permissions(self.request, booking)
         return booking
 
@@ -97,4 +107,16 @@ class BookingViewSet(ModelViewSet):
         saved = review_booking(actor=request.user, category='servico', booking_id=booking.pk,
             expected_version=payload.validated_data['versao'], decision='aprovar',
             task_data=payload.validated_data['tarefa'])
+        return Response(self.get_serializer(saved).data)
+
+    @action(detail=True, methods=['post'])
+    def realizar(self, request, pk=None, category=None):
+        if category != 'visita':
+            raise serializers.ValidationError({'categoria': 'Esta ação registra somente a realização de visitas.'})
+        booking = self.get_object()
+        payload = RealizeVisitSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        saved = mark_visit_realized(actor=request.user, booking_id=booking.pk,
+                                   expected_version=payload.validated_data['versao'])
+        saved = visible_booking(request.user, 'visita', saved.pk, now=self.get_execution_now())
         return Response(self.get_serializer(saved).data)

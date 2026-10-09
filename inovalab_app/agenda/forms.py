@@ -61,6 +61,10 @@ class CancelForm(StrictFormMixin, forms.Form):
     versao = forms.IntegerField(min_value=1, widget=forms.HiddenInput)
 
 
+class VisitRealizeForm(CancelForm):
+    retorno = forms.CharField(required=False, max_length=2000, widget=forms.HiddenInput)
+
+
 class ReviewForm(StrictFormMixin, forms.Form):
     versao = forms.IntegerField(min_value=1, widget=forms.HiddenInput)
     decisao = forms.ChoiceField(choices=[('aprovar', 'Aceitar'), ('rejeitar', 'Rejeitar')])

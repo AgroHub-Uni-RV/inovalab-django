@@ -7,6 +7,7 @@ from django.utils.dateparse import parse_datetime
 from rest_framework import serializers
 
 from inovalab_app.agenda.models import EventoAgendamento
+from inovalab_app.agenda.execution import prepare_execution
 from inovalab_app.agenda.services import CATEGORY_MODELS, save_booking
 from inovalab_app.catalogo.models import Equipamento
 from inovalab_app.materiais.models import Material
@@ -42,7 +43,21 @@ class AwareDateTimeField(serializers.DateTimeField):
         return super().to_internal_value(data)
 
 
-class BookingSerializer(StrictPayloadMixin, serializers.Serializer):
+class ExecutionSerializerMixin(serializers.Serializer):
+    estado_execucao = serializers.CharField(read_only=True)
+    atrasado = serializers.BooleanField(read_only=True)
+    concluido_com_atraso = serializers.BooleanField(read_only=True)
+    concluido_em = serializers.DateTimeField(source='execucao.concluido_em', read_only=True)
+
+    def to_representation(self, instance):
+        now = self.context.get('execution_now')
+        if now is None:
+            now = timezone.now()
+        prepare_execution([instance], now=now)
+        return super().to_representation(instance)
+
+
+class BookingSerializer(StrictPayloadMixin, ExecutionSerializerMixin):
     id = serializers.IntegerField(read_only=True)
     categoria = serializers.ChoiceField(choices=['servico'], default='servico')
     titulo = serializers.CharField(source='servico.titulo', max_length=150)
@@ -83,7 +98,7 @@ class BookingSerializer(StrictPayloadMixin, serializers.Serializer):
             expected_version=version, data=validated_data)
 
 
-class LegacyEquipmentBookingSerializer(serializers.Serializer):
+class LegacyEquipmentBookingSerializer(ExecutionSerializerMixin):
     id = serializers.IntegerField(read_only=True)
     categoria = serializers.CharField(read_only=True)
     objeto = serializers.IntegerField(source='objeto_id', read_only=True)
@@ -100,13 +115,15 @@ class LegacyEquipmentBookingSerializer(serializers.Serializer):
     criado_em = serializers.DateTimeField(read_only=True)
 
 
-class VisitSerializer(StrictPayloadMixin, serializers.Serializer):
+class VisitSerializer(StrictPayloadMixin, ExecutionSerializerMixin):
     id = serializers.IntegerField(read_only=True)
     categoria = serializers.ChoiceField(choices=['visita'], default='visita')
     quantidade_pessoas = VersionField(min_value=1, max_value=2147483647)
     data = serializers.DateField()
     hora_inicio = serializers.TimeField()
     hora_termino = serializers.TimeField()
+    realizada_em = serializers.DateTimeField(read_only=True)
+    realizada_por = serializers.IntegerField(source='realizada_por_id', read_only=True)
     observacoes = serializers.CharField(required=False, allow_blank=True)
     versao = VersionField(min_value=1, required=False)
     criado_por = serializers.IntegerField(source='criado_por_id', read_only=True)
@@ -134,6 +151,10 @@ class VisitSerializer(StrictPayloadMixin, serializers.Serializer):
 
 class CancelSerializer(StrictPayloadMixin, serializers.Serializer):
     versao = VersionField(min_value=1)
+
+
+class RealizeVisitSerializer(CancelSerializer):
+    pass
 
 
 class ConfirmationTaskSerializer(TaskSerializer):
