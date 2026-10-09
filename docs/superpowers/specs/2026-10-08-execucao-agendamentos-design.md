@@ -1,6 +1,6 @@
 # Gerenciamento e execução de agendamentos: serviços e visitas
 
-Data: 08/10/2026. Etapa: especificação escrita aprovada pelo responsável; plano de implementação aguarda revisão e escolha de execução. Implementação ainda não iniciada.
+Data: 08/10/2026. Etapa: especificação e plano aprovados, implementação entregue em 09/10/2026. Ver regras e verificações em `docs/modules/30-gerenciamento-execucao-agendamentos.md`; migração do banco de trabalho/publicado e deploy permanecem pendentes.
 
 ## Objetivo e decisões aprovadas
 
@@ -127,4 +127,4 @@ As mudanças de resposta da API são aditivas. As autorizações de consulta con
 
 ## Próxima etapa
 
-O responsável aprovou esta especificação escrita. Revisar o plano em `docs/superpowers/plans/2026-10-08-gerenciamento-agendamentos.md` e escolher a execução antes de alterar código ou banco.
+O responsável aprovou a especificação e o plano, executados conforme `docs/superpowers/plans/2026-10-08-gerenciamento-agendamentos.md`. Aguardar sua depuração da entrega; migrar o ambiente escolhido com backup antes de usar a nova versão. Não iniciar outro módulo automaticamente.
