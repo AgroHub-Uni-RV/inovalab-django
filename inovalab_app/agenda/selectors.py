@@ -2,7 +2,7 @@ import calendar
 import re
 from datetime import datetime, timedelta
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Prefetch
 from django.http import Http404
 from django.shortcuts import get_object_or_404
@@ -12,12 +12,11 @@ from inovalab_app.adapters.host import is_business_admin
 from inovalab_app.agenda.models import BOOKING_MODELS, EventoAgendamento
 from inovalab_app.agenda.models import BOOKING_STATUSES, CATEGORIES
 from inovalab_app.agenda.policies import can_access_agenda, can_view_own_bookings
+from inovalab_app.agenda.execution import annotate_service_execution, prepare_execution
 
 
-def _visible_queryset(actor, category, *, personal=False):
+def _booking_queryset(category):
     model = BOOKING_MODELS[category]
-    if not (can_view_own_bookings(actor) if personal else can_access_agenda(actor)):
-        return model.objects.none()
     related = ['criado_por', 'avaliado_por']
     if category != 'visita':
         related.append(category)
@@ -26,7 +25,14 @@ def _visible_queryset(actor, category, *, personal=False):
     query = model.objects.all().select_related(*related).prefetch_related(
         Prefetch('eventos', queryset=EventoAgendamento.objects.filter(acao='criar'), to_attr='eventos_de_criacao'))
     if category == 'servico':
-        query = query.prefetch_related('equipamentos')
+        query = annotate_service_execution(query).prefetch_related('equipamentos')
+    return query
+
+
+def _visible_queryset(actor, category, *, personal=False):
+    if not (can_view_own_bookings(actor) if personal else can_access_agenda(actor)):
+        return BOOKING_MODELS[category].objects.none()
+    query = _booking_queryset(category)
     if not personal:
         query = query.filter(cancelado_em__isnull=True)
     if personal or not is_business_admin(actor):
@@ -34,27 +40,41 @@ def _visible_queryset(actor, category, *, personal=False):
     return query
 
 
-def visible_bookings(actor):
+def visible_bookings(actor, *, now=None):
+    now = now if now is not None else timezone.now()
     rows = []
     for category in BOOKING_MODELS:
         rows.extend(_visible_queryset(actor, category))
-    return sorted(rows, key=lambda row: (row.inicio, row.categoria, row.pk))
+    return prepare_execution(sorted(rows, key=lambda row: (row.inicio, row.categoria, row.pk)), now=now)
 
 
-def visible_booking(actor, category, pk):
+def visible_booking(actor, category, pk, *, now=None):
     if category not in BOOKING_MODELS:
         raise Http404
-    return get_object_or_404(_visible_queryset(actor, category), pk=pk)
+    return prepare_execution([get_object_or_404(_visible_queryset(actor, category), pk=pk)],
+                             now=now if now is not None else timezone.now())[0]
 
 
-def own_bookings(actor):
-    return [row for category in BOOKING_MODELS for row in _visible_queryset(actor, category, personal=True)]
+def own_bookings(actor, *, now=None):
+    now = now if now is not None else timezone.now()
+    return prepare_execution([row for category in BOOKING_MODELS
+                              for row in _visible_queryset(actor, category, personal=True)], now=now)
 
 
-def own_booking(actor, category, pk):
+def own_booking(actor, category, pk, *, now=None):
     if category not in BOOKING_MODELS:
         raise Http404
-    return get_object_or_404(_visible_queryset(actor, category, personal=True), pk=pk)
+    return prepare_execution([get_object_or_404(_visible_queryset(actor, category, personal=True), pk=pk)],
+                             now=now if now is not None else timezone.now())[0]
+
+
+def management_bookings(actor, *, now=None):
+    from inovalab_app.agenda.personal import PersonalBooking
+    if not can_access_agenda(actor) or not is_business_admin(actor):
+        raise PermissionDenied('Somente administradores do laboratório podem gerenciar a agenda.')
+    now = now if now is not None else timezone.now()
+    return [PersonalBooking(row) for row in prepare_execution(
+        [row for category in BOOKING_MODELS for row in _booking_queryset(category)], now=now)]
 
 
 def month_bounds(value):

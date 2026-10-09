@@ -30,6 +30,23 @@ class AgendaControle(models.Model):
         return reverse('agenda:detail', kwargs={'category': self.categoria, 'pk': self.pk})
 
     @property
+    def execucao(self):
+        from inovalab_app.agenda.execution import execution_for
+        return self._execucao if hasattr(self, '_execucao') else execution_for(self)
+
+    @property
+    def estado_execucao(self):
+        return self.execucao.estado
+
+    @property
+    def atrasado(self):
+        return self.execucao.atrasado
+
+    @property
+    def concluido_com_atraso(self):
+        return self.execucao.concluido_com_atraso
+
+    @property
     def criador_nome(self):
         if self.criado_por:
             return self.criado_por.get_full_name() or self.criado_por.username

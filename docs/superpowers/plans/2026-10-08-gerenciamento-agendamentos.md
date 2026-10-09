@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-08-execucao-agendamentos-design.md`, versão aprovada pelo responsável em 08/10/2026.
 
-Etapa: plano escrito para revisão e escolha da execução. Nenhuma implementação autorizada por este documento isoladamente.
+Etapa: plano aprovado para execução nativa. O responsável autorizou nova branch, publicação e merge na main ao final da verificação.
 
 ## Global Constraints
 
@@ -49,7 +49,7 @@ Etapa: plano escrito para revisão e escolha da execução. Nenhuma implementaç
 - Criar testes específicos indicados abaixo; ajustar testes de migração e expectativas antigas somente quando a regra aprovada mudar seu resultado.
 - Criar `scripts/verificar-execucao-agendamentos.cjs` e `docs/modules/30-gerenciamento-execucao-agendamentos.md`: verificação isolada no navegador e documentação da entrega.
 
-## Tarefa 1: Política de execução e leituras agregadas
+## Task 1: Política de execução e leituras agregadas
 
 **Arquivos:** criar `agenda/execution.py` e `tests/agenda/test_execution.py`; alterar `agenda/models.py`, `agenda/selectors.py` (caminhos sob `inovalab_app/`).
 
@@ -80,7 +80,7 @@ Etapa: plano escrito para revisão e escolha da execução. Nenhuma implementaç
 - [ ] **5. Integrar seletores e rodar GREEN:** preparar todas as leituras com um único `timezone.now()` resolvido na entrada, inclusive administrador do gerenciamento, sem consultar tarefas na renderização. Rodar o comando do passo 2 e `.\venv\Scripts\python.exe manage.py test inovalab_app.tests.agenda inovalab_app.tests.shared.test_dashboard --noinput`; esperar `OK` e saída 0.
 - [ ] **6. Commit:** `feat (agenda): calcula execução e alertas dos agendamentos.` Incluir somente arquivos e testes desta tarefa após `git diff --cached --check`.
 
-## Tarefa 2: Persistência e domínio de realização das visitas
+## Task 2: Persistência e domínio de realização das visitas
 
 **Arquivos:** alterar `agenda/models.py`, `services.py`, `policies.py`; criar `migrations/0007_realizacao_visitas.py`, `tests/agenda/test_visit_execution.py`, `tests/test_visit_execution_upgrade.py`; alterar `tests/agenda/test_concurrency.py`, `tests/test_task_links_upgrade.py`, `tests/test_adoption.py`, `tests/test_service_upgrade.py`.
 
@@ -102,7 +102,7 @@ Etapa: plano escrito para revisão e escolha da execução. Nenhuma implementaç
 - [ ] **5. Verificar migração:** em `VisitExecutionUpgradeTests`, migrar de `0006` a `0007`, comparar IDs/dados/eventos antigos e verificar campos nulos, serviço sem colunas extras e visita antiga sem conclusão presumida. Nos três testes existentes que restauram `0006`, restaurar os leaf nodes atuais no teardown; não alterar o alvo histórico que cada teste exercita. Rodar `.\venv\Scripts\python.exe manage.py test inovalab_app.tests.agenda.test_visit_execution inovalab_app.tests.agenda.test_concurrency inovalab_app.tests.test_visit_execution_upgrade inovalab_app.tests.test_task_links_upgrade inovalab_app.tests.test_adoption inovalab_app.tests.test_service_upgrade --noinput` e `.\venv\Scripts\python.exe manage.py makemigrations --check --dry-run`; esperar `OK` e nenhuma alteração pendente. Não executar `migrate` no banco de trabalho nesta etapa.
 - [ ] **6. Commit:** `feat (agenda): registra realização administrativa de visitas.`
 
-## Tarefa 3: Ação web/API e contrato somente leitura
+## Task 3: Ação web/API e contrato somente leitura
 
 **Arquivos:** criar `agenda/execution_views.py`, `tests/agenda/test_execution_api.py`, `tests/agenda/test_execution_actions.py`; alterar `agenda/urls.py`, `api_urls.py`, `api.py`, `serializers.py`, `forms.py`.
 
@@ -125,7 +125,7 @@ Etapa: plano escrito para revisão e escolha da execução. Nenhuma implementaç
 - [ ] **5. Rodar GREEN e regressões:** testar reenvio/conflito com zero eventos extras, tentativa CSRF ausente, strict payload e consulta pessoal sem campos de tarefas. Rodar comando do passo 2 mais `.\venv\Scripts\python.exe manage.py test inovalab_app.tests.agenda.test_api inovalab_app.tests.agenda.test_confirmation_task inovalab_app.tests.agenda.test_booking_access --noinput`; esperar `OK`/saída 0. A confirmação de serviço continua exigindo criação de tarefa na mesma transação.
 - [ ] **6. Commit:** `feat (agenda): expõe encerramento de visitas com versão e permissão.`
 
-## Tarefa 4: Gerenciamento com grupos e seção de atenção
+## Task 4: Gerenciamento com grupos e seção de atenção
 
 **Arquivos:** alterar `agenda/views.py`, templates `agenda/requests.html`, `agenda/list.html`, `agenda/error.html`, `tarefas/form.html` (apenas texto), CSS `shared/modulos.css` e `shared/ui.css`; criar template `agenda/management_card.html`, `agenda/execution_badges.html` e `tests/agenda/test_management_execution.py`; ajustar `tests/agenda/test_requests.py` quando necessário.
 
@@ -150,7 +150,7 @@ Etapa: plano escrito para revisão e escolha da execução. Nenhuma implementaç
 - [ ] **5. Testar filtros e GREEN:** `test_execution_filter_combines_with_tabs_and_clear_resets_everything` verifica valores válidos, inválido 400, pendentes com filtro de execução específico sem resultados, busca/mês preservados, abas sem página antiga e Limpar filtros retornando Todas/primeira página. Verificar que somente admin vê o acesso e que a sidebar continua Agendamentos. Rodar passo 2 e `.\venv\Scripts\python.exe manage.py test inovalab_app.tests.agenda.test_requests inovalab_app.tests.shared.test_clear_filters inovalab_app.tests.agenda.test_confirmation_task --noinput`; esperar `OK`. Atualizar expectativas textuais antigas, não enfraquecer testes de autorização ou confirmação.
 - [ ] **6. Commit:** `feat (agenda): organiza gerenciamento por execução dos agendamentos.`
 
-## Tarefa 5: Apresentação consistente em Agenda, detalhes e dashboard
+## Task 5: Apresentação consistente em Agenda, detalhes e dashboard
 
 **Arquivos:** alterar `agenda/views.py`, `agenda/personal.py`, `shared/dashboard.py`, templates `agenda/filters.html`, `list.html`, `detail.html`, `my_bookings.html`, `my_detail.html`, `shared/dashboard.html`; criar `tests/agenda/test_execution_frontend.py`; alterar `tests/shared/test_dashboard.py`, `tests/portability.py`, `tests/shared/test_clear_filters.py`.
 
@@ -171,7 +171,7 @@ Etapa: plano escrito para revisão e escolha da execução. Nenhuma implementaç
 - [ ] **5. Verificar host e GREEN:** ampliar `NativeHostTests` com `test_visit_execution_uses_host_user_and_prefixed_routes`, conferindo FK `auth.User`, realização admin, rota de retorno `/laboratorio/`, ação e alertas sem exigir Accounts. Rodar comando do passo 2, `.\venv\Scripts\python.exe manage.py test inovalab_app.tests.agenda.test_personal inovalab_app.tests.shared.test_clear_filters --noinput` e `.\venv\Scripts\python.exe manage.py test inovalab_app.tests.portability --settings=inovalab_app.tests.host_settings --noinput`; esperar `OK`. Não aumentar silenciosamente timeout do subprocesso de portabilidade; revisar se novos testes ultrapassarem o limite existente.
 - [ ] **6. Commit:** `feat (agenda): padroniza execução nas telas de agendamentos.`
 
-## Tarefa 6: Verificação ponta a ponta e documentação da entrega
+## Task 6: Verificação ponta a ponta e documentação da entrega
 
 **Arquivos:** criar `scripts/verificar-execucao-agendamentos.cjs`, `docs/modules/30-gerenciamento-execucao-agendamentos.md`; atualizar `AGENTS.md`, a etapa da especificação e as caixas deste plano somente após confirmação dos resultados.
 
