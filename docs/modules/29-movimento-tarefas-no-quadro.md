@@ -10,6 +10,8 @@ O seletor **Mover para…** e o botão **Mover** oferecem a mesma mudança por t
 
 Durante a gravação, os controles aguardam e o quadro informa o resultado. O cartão não muda de coluna antecipadamente: uma consulta atualiza os cartões, contadores e destinos com o estado persistido. Busca, serviço e aba continuam aplicados, incluindo texto ainda em digitação. A página atual é mantida se existir; se o movimento esvaziar a última página, retorna à primeira. Os eventos continuam funcionando após atualizações automáticas dos filtros.
 
+Correção posterior de 08/10/2026: o quadro exige confirmação de que o script compartilhado iniciou a atualização. Se um script antigo em cache ou bloqueado ignorar o evento, recarrega a página por GET preservando filtros e retornando à primeira página, sem reenviar o POST. Os dois scripts usam versão na URL para renovar o cache. O sintoma relatado localmente (status persistido sem atualização visual) foi reproduzido com o script compartilhado da versão anterior; o cache da sessão do responsável não foi inspecionado diretamente.
+
 ## Regras preservadas
 
 - Administradores ativos podem escolher qualquer outro status.
@@ -28,3 +30,5 @@ Comandos executados: `python manage.py test --noinput` (598 testes aprovados), `
 `scripts/verificar-movimento-tarefas.cjs` executa Chromium contra banco dedicado. Exige `TASK_TEST_BASE_URL` e `TASK_TEST_SESSION` de administrador de testes; `TASK_TEST_OWNER_SESSION` habilita o cenário do responsável e `TASK_TEST_AXE_PATH` habilita axe-core. Usa `playwright-core` via `NODE_PATH`. **O script altera status das tarefas do banco dedicado**, restaurando Demanda para preparar o cenário; nunca apontar para produção ou banco pessoal.
 
 Cenários: drag, teclado, toque via seletor, layouts 1366/768/390/360, datas e versão, filtro de coluna única, concorrência real (409), envio duplicado, falha de rede, timeout, resposta atrasada de busca, paginação válida/esvaziada, ausência de JavaScript, permissão do responsável e WCAG A/AA automatizada. Validar posteriormente Firefox/Safari e dispositivos móveis reais; a checagem automática não substitui avaliação manual com leitor de tela.
+
+`scripts/verificar-atualizacao-tarefas.cjs` usa o mesmo servidor/sessão dedicados para verificar arraste com o script compartilhado antigo e bloqueado. Requer Git com o commit `bb5e9c9` disponível para o cenário histórico. Confirma persistência, atualização visual automática, filtros e somente um POST por movimento.

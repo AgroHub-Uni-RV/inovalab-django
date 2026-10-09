@@ -150,7 +150,7 @@
     filterPage(url);
   };
 
-  document.addEventListener('inovalab:refresh-filters', () => {
+  document.addEventListener('inovalab:refresh-filters', event => {
     const form = main.querySelector('form[data-auto-apply]');
     if (!form) return;
     const url = new URL(location.href);
@@ -163,6 +163,8 @@
     // Busca nova ou última página esvaziada retorna à primeira página.
     if (changed) url.searchParams.delete('page');
     filterPage(url, {recoverPage:true});
+    // Confirma ao quadro que a consulta foi iniciada, evitando recarga duplicada.
+    event.preventDefault();
   });
 
   const refreshCategory = (form, field, value = field.value) => {

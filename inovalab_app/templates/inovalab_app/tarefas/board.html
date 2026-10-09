@@ -1,6 +1,6 @@
 {% extends 'inovalab_app/tarefas/base.html' %}
 {% load static %}
-{% block extra_head %}<script src="{% static 'inovalab_app/tarefas/board.js' %}" defer></script>{% endblock %}
+{% block extra_head %}<script src="{% static 'inovalab_app/tarefas/board.js' %}?v=20261008-task-refresh-2" defer></script>{% endblock %}
 {% block content_class %}module-page tasks-page{% endblock %}
 {% block content %}
 <div class="page-heading"><div><h1>Controle de Tarefas</h1></div>{% if can_manage %}<a class="primary-button" data-task-modal-trigger href="{% url 'tarefas:create' %}">Adicionar Tarefa {% include 'inovalab_app/shared/icon.html' with name='plus' %}</a>{% endif %}</div>

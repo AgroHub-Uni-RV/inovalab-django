@@ -69,7 +69,18 @@
       form.elements.status.value = '';
       // Reconsulta o estado persistido mesmo se a conexão cair após a gravação.
       // Nunca repete automaticamente o POST nem move o cartão de modo otimista.
-      document.dispatchEvent(new CustomEvent('inovalab:refresh-filters'));
+      const refresh = new CustomEvent('inovalab:refresh-filters', {cancelable:true});
+      if (document.dispatchEvent(refresh)) {
+        // Um script compartilhado antigo/em cache pode ignorar o evento.
+        // Nesse caso, recarrega por GET, sem repetir a alteração de status.
+        const url = new URL(location.href);
+        const filters = main.querySelector('form[data-auto-apply]');
+        if (filters) {
+          for (const [name, value] of new FormData(filters)) url.searchParams.set(name, value);
+        }
+        url.searchParams.delete('page');
+        location.replace(url);
+      }
     }
   };
   document.addEventListener('submit', event => {
