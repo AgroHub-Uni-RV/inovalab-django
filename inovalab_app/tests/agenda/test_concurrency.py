@@ -2,6 +2,7 @@ from inovalab_app.tests.agenda.helpers import service_data
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, time, datetime
 from threading import Barrier
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.db import connection, connections
@@ -129,3 +130,31 @@ class BookingConcurrencyTests(TransactionTestCase):
         booking.refresh_from_db()
         self.assertEqual((booking.situacao, booking.versao, booking.tarefas.count(), booking.eventos.count()),
                          ('confirmado', 2, 1, 2))
+
+    def test_parallel_realizations_record_once(self):
+        from inovalab_app.agenda.services import mark_visit_realized
+        booking = AgendaVisita.objects.create(quantidade_pessoas=2, data=date(2026, 10, 8),
+            hora_inicio=time(9), hora_termino=time(10), criado_por=self.admin)
+        with patch('django.utils.timezone.now', return_value=booking.inicio):
+            results = self.run_parallel(lambda index: mark_visit_realized(actor=self.admin,
+                booking_id=booking.pk, expected_version=1))
+        self.assertEqual(sum(isinstance(row, AgendaVisita) for row in results), 1)
+        booking.refresh_from_db()
+        self.assertEqual((booking.versao, booking.eventos.filter(acao='realizar').count()), (2, 1))
+        self.assertEqual(booking.realizada_em, booking.inicio)
+
+    def test_parallel_realization_and_edit_cannot_overwrite(self):
+        from inovalab_app.agenda.services import mark_visit_realized
+        booking = AgendaVisita.objects.create(quantidade_pessoas=2, data=date(2026, 10, 8),
+            hora_inicio=time(9), hora_termino=time(10), criado_por=self.admin)
+        with patch('django.utils.timezone.now', return_value=booking.inicio):
+            results = self.run_parallel(lambda index: mark_visit_realized(actor=self.admin,
+                booking_id=booking.pk, expected_version=1) if index == 0 else save_booking(
+                actor=self.admin, category='visita', booking_id=booking.pk, expected_version=1,
+                data={'observacoes': 'Edição concorrente'}))
+        winners = [row for row in results if isinstance(row, AgendaVisita)]
+        self.assertEqual(len(winners), 1)
+        booking.refresh_from_db()
+        self.assertEqual((booking.versao, booking.eventos.count()), (2, 1))
+        self.assertEqual((booking.realizada_em, booking.observacoes),
+                         (winners[0].realizada_em, winners[0].observacoes))

@@ -33,7 +33,8 @@ class ServiceUpgradeTests(TransactionTestCase):
         executor = MigrationExecutor(connection)
         current = max(name for app, name in executor.loader.applied_migrations if app == 'inovalab_app')
         executor.loader.project_state([('inovalab_app', current)]).apps.get_model('inovalab_app', 'Tarefa').objects.all().delete()
-        MigrationExecutor(connection).migrate([('inovalab_app', '0006_tarefas_multiplos_vinculos')])
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
         super().tearDown()
 
     def apply_map(self, value, **kwargs):

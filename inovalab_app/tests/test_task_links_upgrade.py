@@ -12,7 +12,8 @@ class TaskLinksUpgradeTests(TransactionTestCase):
         self.old = executor.loader.project_state([('inovalab_app', '0005_tarefa_prazo_do_servico')]).apps
 
     def tearDown(self):
-        MigrationExecutor(connection).migrate([('inovalab_app', '0006_tarefas_multiplos_vinculos')])
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
         super().tearDown()
 
     def test_migration_copies_all_links_including_deleted_tasks_without_changing_old_rows(self):

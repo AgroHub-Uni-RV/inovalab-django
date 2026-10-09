@@ -96,6 +96,7 @@ def _snapshot(booking):
         values.pop('motivo')
         values.pop('objeto')
         values.update({name: getattr(booking, name) for name in VISIT_FIELDS - {'categoria', 'observacoes'}})
+        values.update(realizada_em=booking.realizada_em, realizada_por=booking.realizada_por_id)
     values['criado_por'] = booking.criado_por_id
     if booking.categoria == 'servico':
         values.update(titulo=booking.servico.titulo, descricao=booking.servico.descricao, prazo=booking.servico.prazo)
@@ -223,6 +224,26 @@ def review_booking(*, actor, category, booking_id, expected_version, decision, t
             except TaskConflict as error:
                 raise BookingConflict('registros_em_alteracao', str(error)) from error
         _record(actor, booking, decision, before)
+    return booking
+
+
+@_busy_as_conflict
+def mark_visit_realized(*, actor, booking_id, expected_version):
+    _require_admin(actor)
+    with transaction.atomic():
+        _lock_targets(('visita', 0))
+        booking = _load(booking_id, expected_version, 'visita')
+        if booking.situacao != 'confirmado':
+            raise BookingConflict('visita_nao_confirmada', 'Somente visitas confirmadas podem ser marcadas como realizadas.')
+        if booking.realizada_em is not None:
+            raise BookingConflict('visita_realizada', 'A realização desta visita já foi registrada. Atualize os dados.')
+        now = timezone.now()
+        if now < booking.inicio:
+            raise ValidationError({'realizacao': 'A visita pode ser marcada como realizada a partir do início.'})
+        before = _snapshot(booking)
+        booking.realizada_em, booking.realizada_por = now, actor
+        _persist_existing(booking, expected_version)
+        _record(actor, booking, 'realizar', before)
     return booking
 
 

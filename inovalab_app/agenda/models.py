@@ -192,6 +192,9 @@ class AgendaVisita(AgendaControle):
     data = models.DateField()
     hora_inicio = models.TimeField()
     hora_termino = models.TimeField()
+    realizada_em = models.DateTimeField(null=True, blank=True, editable=False)
+    realizada_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, editable=False, related_name='visitas_realizadas')
 
     @property
     def inicio(self):
@@ -205,6 +208,8 @@ class AgendaVisita(AgendaControle):
         errors = {}
         if self.hora_inicio and self.hora_termino and self.hora_termino <= self.hora_inicio:
             errors['hora_termino'] = 'O término deve ser posterior ao início, no mesmo dia.'
+        if self.realizada_em and self.data and self.hora_inicio and self.inicio > self.realizada_em:
+            errors['hora_inicio'] = 'O início não pode ser posterior ao registro de realização.'
         self.observacoes = self.observacoes.strip() if isinstance(self.observacoes, str) else self.observacoes
         if errors:
             raise ValidationError(errors)
@@ -232,7 +237,7 @@ class EventoAgendamento(models.Model):
     ator_nome = models.CharField(max_length=150)
     instante = models.DateTimeField(auto_now_add=True)
     acao = models.CharField(max_length=15, choices=[('criar', 'Criar'), ('editar', 'Editar'), ('cancelar', 'Cancelar'),
-                                                  ('aprovar', 'Aprovar'), ('rejeitar', 'Rejeitar')])
+                                                  ('aprovar', 'Aprovar'), ('rejeitar', 'Rejeitar'), ('realizar', 'Realizar')])
     alteracoes = models.JSONField(default=dict)
 
     @property
