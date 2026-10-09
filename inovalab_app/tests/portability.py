@@ -87,3 +87,18 @@ class NativeHostTests(TestCase):
         clean = self.client.get(links[0])
         self.assertEqual(clean.status_code, 200)
         self.assertEqual((clean.context['month'], clean.context['query'], clean.context['selected_category']), ('', '', ''))
+
+    def test_task_board_movement_uses_prefixed_host_routes_and_native_identity(self):
+        from inovalab_app.tarefas.services import save_task
+        admin = get_user_model().objects.create_superuser('admin-movimento-nativo')
+        booking = make_booking(actor=admin)
+        task = save_task(actor=admin, data={'agendamento_servico': booking,
+                         'responsavel': self.user, 'descricao': 'Mover com usuário nativo'})
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('tarefas:board'))
+        self.assertContains(response, f'data-api-url="/laboratorio/api/v1/tarefas/{task.pk}/transicoes/"')
+        self.assertContains(response, f'action="/laboratorio/tarefas/{task.pk}/transicoes/"')
+        moved = self.client.post(reverse('tarefa-transicoes', args=[task.pk]),
+                                 {'status': 'criacao', 'versao': 1}, content_type='application/json')
+        self.assertEqual(moved.status_code, 200)
+        self.assertEqual((moved.json()['status'], moved.json()['versao']), ('criacao', 2))

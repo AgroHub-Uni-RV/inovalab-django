@@ -86,8 +86,10 @@
         throw new Error('Sua sessão pode ter expirado. Entre novamente para continuar.');
       }
       if (!response.ok) {
-        throw new Error(response.status === 403 ? 'Acesso negado. Confira sua sessão e permissões.' :
+        const error = new Error(response.status === 403 ? 'Acesso negado. Confira sua sessão e permissões.' :
           'Não foi possível atualizar o conteúdo. Tente novamente.');
+        error.status = response.status;
+        throw error;
       }
       const html = await response.text();
       if (pending !== request) return;
@@ -103,7 +105,7 @@
       statusTimer = setTimeout(() => announce(), 1500);
     } catch (error) {
       if (pending !== request || error.name === 'AbortError') return;
-      onError?.();
+      if (onError?.(error) === true) return;
       announce(error.message === 'Failed to fetch' ? 'Não foi possível conectar. Tente novamente.' : error.message, retry);
     } finally {
       if (pending === request) {
@@ -114,12 +116,19 @@
     }
   };
 
-  const filterPage = (url, {restoreForm = false, historyMode = 'push'} = {}) => {
+  const filterPage = (url, {restoreForm = false, historyMode = 'push', recoverPage = false} = {}) => {
     clearTimeout(debounce);
     cancelRequest();
     const form = main.querySelector('form[data-auto-apply]');
     if (!form || new URL(url).origin !== location.origin) return;
-    load({url, form, retry: () => restoreForm ? filterPage(url, {restoreForm, historyMode}) :
+    load({url, form, onError: error => {
+      const firstPage = new URL(url);
+      if (recoverPage && error.status === 404 && firstPage.searchParams.has('page')) {
+        firstPage.searchParams.delete('page');
+        filterPage(firstPage, {historyMode});
+        return true;
+      }
+    }, retry: () => restoreForm ? filterPage(url, {restoreForm, historyMode}) :
       applyFilters(main.querySelector('form[data-auto-apply]')), render: page => {
       const incoming = page.querySelector('[data-page-content]');
       const nextForm = incoming?.querySelector('form[data-auto-apply]');
@@ -140,6 +149,21 @@
     url.search = new URLSearchParams(new FormData(form)).toString();
     filterPage(url);
   };
+
+  document.addEventListener('inovalab:refresh-filters', () => {
+    const form = main.querySelector('form[data-auto-apply]');
+    if (!form) return;
+    const url = new URL(location.href);
+    let changed = false;
+    for (const [name, value] of new FormData(form)) {
+      changed ||= (url.searchParams.get(name) || '') !== value;
+      url.searchParams.set(name, value);
+    }
+    // Preserva os filtros ainda em digitação e a página atual quando válida.
+    // Busca nova ou última página esvaziada retorna à primeira página.
+    if (changed) url.searchParams.delete('page');
+    filterPage(url, {recoverPage:true});
+  });
 
   const refreshCategory = (form, field, value = field.value) => {
     clearTimeout(debounce);

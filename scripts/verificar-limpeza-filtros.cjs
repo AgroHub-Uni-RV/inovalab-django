@@ -71,7 +71,7 @@ async function assertClean(page, item) {
         await assertClean(page,taskCase);
         await page.goBack();
         await page.locator('.pagination a[aria-current=page]').filter({hasText:'2'}).waitFor();
-        assert.equal(await page.locator('[name=status]').inputValue(),'demanda');
+        assert.equal(await page.locator('form[data-auto-apply] [name=status]').inputValue(),'demanda');
         await page.goForward();
         await assertClean(page,taskCase);
         // Clear before debounce fires: pending text must not reappear after reset.

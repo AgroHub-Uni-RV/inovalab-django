@@ -64,6 +64,10 @@ class TaskBoardView(LoginRequiredMixin, TaskContextMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         counts = dict(self.get_queryset().order_by().values('status').annotate(total=Count('pk', distinct=True)).values_list('status', 'total'))
+        for task in context['object_list']:
+            destinations = allowed_statuses(self.request.user, task)
+            task.move_choices = [(value, label) for value, label in StatusTarefa.choices
+                                 if value != task.status and value in destinations]
         context['columns'] = [
             {'label': label, 'status': status, 'count': counts.get(status, 0),
              'tasks': [task for task in context['object_list'] if task.status == status]}
