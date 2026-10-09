@@ -18,6 +18,8 @@ from inovalab_app.agenda.execution import annotate_service_execution, prepare_ex
 def _booking_queryset(category):
     model = BOOKING_MODELS[category]
     related = ['criado_por', 'avaliado_por']
+    if category == 'visita':
+        related.append('realizada_por')
     if category != 'visita':
         related.append(category)
     if category == 'servico':

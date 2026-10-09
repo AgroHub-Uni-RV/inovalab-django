@@ -120,6 +120,8 @@ class DashboardTests(TestCase):
 
     def test_booking_tabs_use_exact_week_and_finished_boundaries(self):
         past = self.booking(NOW-timedelta(hours=1), NOW)
+        Tarefa.objects.create(agendamento_servico=past, responsavel=self.user, descricao='Concluído de fato',
+                             status='concluido', inicio=NOW-timedelta(hours=1), conclusao=NOW)
         week = self.booking()
         next_week = datetime(2027, 1, 4, 3, tzinfo=dt_timezone.utc)
         upcoming = self.booking(next_week, next_week+timedelta(hours=1))

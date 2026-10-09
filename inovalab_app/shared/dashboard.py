@@ -69,14 +69,17 @@ def dashboard_context(actor, *, now=None, task_tab='pendentes', booking_tab='sem
     tasks = list(visible_tasks(actor).filter(status__in=TASK_TABS[task_tab][1])[:10])
     for task in tasks:
         task.overdue = bool(task.prazo and task.prazo < now and task.status != 'concluido')
-    all_bookings = sorted([row for row in visible_bookings(actor) if row.situacao == 'confirmado'],
+    all_bookings = sorted([row for row in visible_bookings(actor, now=now) if row.situacao == 'confirmado'],
                           key=lambda row: (row.inicio, row.categoria, row.pk))
     today = timezone.localdate(now)
     monday = today - timedelta(days=today.weekday())
     start = timezone.make_aware(datetime.combine(monday, datetime.min.time()))
     end = start + timedelta(days=7)
     if booking_tab == 'concluidos':
-        bookings = sorted([row for row in all_bookings if row.fim <= now], key=lambda row: (row.fim, row.pk), reverse=True)
+        bookings = sorted([row for row in all_bookings if (
+            row.fim <= now if row.categoria == 'equipamento' else row.estado_execucao == 'concluido')],
+            key=lambda row: (row.fim if row.categoria == 'equipamento' else row.execucao.concluido_em or row.fim,
+                             row.categoria, row.pk), reverse=True)
     elif booking_tab == 'proximos':
         bookings = [row for row in all_bookings if row.inicio >= end]
     else:

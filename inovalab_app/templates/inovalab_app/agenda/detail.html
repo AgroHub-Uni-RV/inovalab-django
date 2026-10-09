@@ -7,7 +7,7 @@
       {% if is_business_admin and booking.categoria != 'equipamento' and not booking.recebido_agrohub %}<a class="primary-button" href="{% url 'agenda:update' booking.categoria booking.pk %}">Editar agendamento</a>{% endif %}
       <span class="sheet-meta booking-creator" aria-label="Criado por {{ creator_name }}"><span class="booking-creator-avatar" aria-hidden="true">{% if creator_has_photo %}<img src="{% url 'agenda:creator-photo' booking.categoria booking.pk %}" alt="">{% else %}{{ creator_name|slice:':1'|upper }}{% endif %}</span><span class="sheet-meta-text">{{ creator_name }}</span></span>
       <span class="sheet-meta sheet-date">{% include 'inovalab_app/shared/icon.html' with name='calendar' %}{{ booking.inicio|date:'d.m.Y' }}</span>
-      <div class="sheet-topbar-tags"><span class="booking-category">{{ booking.categoria_display }}</span>{% if booking.categoria == 'servico' %}<span class="badge booking-status {{ booking.situacao }}"><span class="sr-only">Status do agendamento: </span>{{ booking.get_situacao_display }}</span>{% endif %}</div>
+      <div class="sheet-topbar-tags"><span class="booking-category">{{ booking.categoria_display }}</span>{% if booking.categoria == 'servico' %}<span class="badge booking-status {{ booking.situacao }}"><span class="sr-only">Status do agendamento: </span>{{ booking.get_situacao_display }}</span>{% endif %}{% include 'inovalab_app/agenda/execution_badges.html' %}</div>
     </div>
     <a class="sheet-close" href="{% url 'agenda:list' %}" aria-label="Voltar à agenda">&times;</a>
   </div>
@@ -17,6 +17,7 @@
     {% if booking.categoria != 'servico' or booking.situacao == 'pendente' or agrohub_sync %}<p>{% if agrohub_sync %}Situação no InovaLab: {% endif %}{% if booking.categoria != 'servico' %}<span class="badge booking-status {{ booking.situacao }}">{{ booking.get_situacao_display }}</span>{% endif %}{% if booking.situacao == 'pendente' %} Aguardando confirmação administrativa no InovaLab{% if not agrohub_sync %}{% if booking.categoria != 'servico' %}; o horário ainda não está reservado{% endif %}{% endif %}.{% endif %}</p>{% endif %}
     {% if booking.visita %}<dl class="inline-details"><div><dt>Quantidade de pessoas</dt><dd>{{ booking.quantidade_pessoas }}</dd></div></dl>{% endif %}
     {% if booking.avaliado_em %}<p>Avaliado por <strong>{% if booking.avaliado_por %}{{ booking.avaliado_por.get_full_name|default:booking.avaliado_por.username }}{% else %}Conta removida{% endif %}</strong> em {{ booking.avaliado_em|date:'d/m/Y H:i' }}.</p>{% endif %}
+    {% include 'inovalab_app/agenda/realization_record.html' %}
     <div class="sheet-metadata"><p>Criado por <strong>{{ creator_name }}</strong></p><p>Criado em <strong>{{ booking.criado_em|date:'d/m/Y H:i' }}</strong></p></div>
     <dl class="inline-details"><div><dt>Criado por</dt><dd>{{ booking.criador_nome }}</dd></div><div><dt>Categoria</dt><dd>{{ booking.categoria_display }}</dd></div>{% if booking.categoria == 'servico' %}<div><dt>Prazo</dt><dd>{{ booking.servico.prazo|date:'d/m/Y H:i' }}</dd></div>{% else %}<div><dt>Início</dt><dd>{{ booking.inicio|date:'d/m/Y H:i' }}</dd></div><div><dt>Término</dt><dd>{{ booking.fim|date:'d/m/Y H:i' }}</dd></div>{% endif %}</dl>
 
@@ -25,6 +26,7 @@
     <p>Horários de Brasília.</p>
     {% if is_business_admin and not booking.recebido_agrohub and booking.situacao == 'pendente' and booking.categoria != 'equipamento' %}{% include 'inovalab_app/agenda/review_actions.html' %}{% endif %}
     {% if can_cancel_booking %}<div class="sheet-actions"><a class="secondary-button" href="{% url 'agenda:cancel' booking.categoria booking.pk %}">Cancelar agendamento</a></div>{% endif %}
+    {% if can_mark_visit_realized %}<form class="sheet-actions" method="post" action="{% url 'agenda:visit-realize' booking.pk %}">{% csrf_token %}<input type="hidden" name="versao" value="{{ booking.versao }}"><input type="hidden" name="retorno" value="{{ request.path }}"><button type="submit">Marcar como realizada</button></form>{% endif %}
   </section><aside class="sheet-sidebar"><h2>Histórico</h2>{% for event in events %}<article class="agenda-event"><h3>{{ event.get_acao_display }}</h3><p>{{ event.ator_nome }}</p><p>{{ event.instante|date:'d/m/Y H:i' }}</p></article>{% empty %}<p>Nenhum evento.</p>{% endfor %}<a class="history-link" href="{% url 'agenda:history' booking.categoria booking.pk %}">Histórico completo</a></aside></div>
 </div>
 {% endblock %}

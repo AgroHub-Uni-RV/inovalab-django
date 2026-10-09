@@ -22,7 +22,7 @@
       {% for booking in bookings %}
       <a class="booking-row" href="{{ booking.get_absolute_url }}">
         <span class="booking-date"><strong>{{ booking.inicio|date:'d' }}</strong><span>{{ booking.inicio|date:'M'|upper }}</span></span>
-        <span class="booking-copy"><span class="booking-time">{% if booking.categoria == 'servico' %}Prazo: {{ booking.servico.prazo|date:'H:i' }}{% else %}Das {{ booking.inicio|date:'H:i' }} às {{ booking.fim|date:'H:i' }}{% if booking.inicio|date:'Y-m-d' != booking.fim|date:'Y-m-d' %} · {{ booking.fim|date:'d/m' }}{% endif %}{% endif %}</span><strong>{{ booking.objeto_nome }}</strong><span class="requester">{{ booking.criador_nome }}</span></span>
+        <span class="booking-copy"><span class="booking-time">{% if booking.categoria == 'servico' %}Prazo: {{ booking.servico.prazo|date:'H:i' }}{% else %}Das {{ booking.inicio|date:'H:i' }} às {{ booking.fim|date:'H:i' }}{% if booking.inicio|date:'Y-m-d' != booking.fim|date:'Y-m-d' %} · {{ booking.fim|date:'d/m' }}{% endif %}{% endif %}</span><strong>{{ booking.objeto_nome }}</strong><span class="requester">{{ booking.criador_nome }}</span>{% include 'inovalab_app/agenda/execution_badges.html' %}</span>
       </a>
       {% empty %}<p class="empty-state">Nenhum agendamento neste período.</p>{% endfor %}
     </div>

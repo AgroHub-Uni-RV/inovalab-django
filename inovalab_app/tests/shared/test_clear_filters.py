@@ -58,21 +58,24 @@ class ClearFiltersTests(TestCase):
 
     def test_agenda_clear_removes_month_instead_of_restoring_admin_default(self):
         clean = self.clear('agenda:list', {'q': 'não existe', 'mes': '2026-01',
-                           'situacao': 'pendente', 'categoria': 'visita', 'page': 1}, suffix='?mes=')
+                           'situacao': 'pendente', 'categoria': 'visita', 'execucao': 'atrasado', 'page': 1}, suffix='?mes=')
+        self.assertEqual(clean.context['selected_execution'], '')
         self.assertEqual((clean.context['month'], clean.context['selected_category'],
                           clean.context['selected_situation']), ('', '', ''))
         self.assertEqual(clean.context['calendar_month'], timezone.localdate().strftime('%Y-%m'))
         self.assertEqual({booking.pk for booking in clean.context['object_list']}, {self.own.pk, self.foreign.pk})
 
     def test_requests_clear_includes_all_situations_and_months(self):
-        clean = self.clear('agenda:requests', {'q': 'não existe', 'mes': '2026-01', 'status': 'pendente'})
+        clean = self.clear('agenda:requests', {'q': 'não existe', 'mes': '2026-01', 'status': 'pendente', 'execucao': 'concluido'})
+        self.assertEqual(clean.context['selected_execution'], '')
         self.assertEqual((clean.context['month'], clean.context['selected_status']), ('', ''))
         self.assertEqual(clean.context['paginator'].count, 2)
 
     def test_personal_clear_preserves_owner_isolation(self):
         self.client.force_login(self.owner)
         clean = self.clear('agenda:mine', {'q': 'não existe', 'mes': '2026-01',
-                                         'situacao': 'pendente', 'categoria': 'visita'})
+                                         'situacao': 'pendente', 'categoria': 'visita', 'execucao': 'aguardando_encerramento'})
+        self.assertEqual(clean.context['selected_execution'], '')
         self.assertEqual((clean.context['month'], clean.context['selected_category'],
                           clean.context['selected_situation']), ('', '', ''))
         self.assertEqual([booking.pk for booking in clean.context['object_list']], [self.own.pk])

@@ -3,6 +3,8 @@
   <div class="filter-field"><label for="categoria">Categoria</label><select id="categoria" name="categoria"><option value="">Todas as categorias</option>{% for value,label in categories %}<option value="{{ value }}"{% if selected_category == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
   <div class="filter-field"><label for="situacao">Situação</label><select id="situacao" name="situacao"><option value="">Todas as situações</option>{% for value,label in situations %}<option value="{{ value }}"{% if selected_situation == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
   <div class="filter-field month-field"><label for="mes">Mês (opcional)</label><input id="mes" name="mes" type="month" value="{{ month }}"></div>
+  <div class="filter-field"><label for="execucao">Execução</label><select id="execucao" name="execucao"><option value="">Todos</option>{% for value,label in execution_choices %}<option value="{{ value }}"{% if selected_execution == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
   <span class="filter-label">Filtros</span>
   {% include 'inovalab_app/shared/clear_filters.html' with clear_month=True %}
+  <noscript><button type="submit">Filtrar</button></noscript>
 </form>

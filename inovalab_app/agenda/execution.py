@@ -105,3 +105,11 @@ def filter_execution(rows, value=''):
     if not value:
         return rows
     return [row for row in rows if (row.atrasado if value == 'atrasado' else row.estado_execucao == value)]
+
+
+def realization_actor_name(booking):
+    if not getattr(booking, 'realizada_em', None):
+        return ''
+    if booking.realizada_por:
+        return booking.realizada_por.get_full_name() or booking.realizada_por.username
+    return booking.eventos.filter(acao='realizar').values_list('ator_nome', flat=True).first() or 'Conta removida'

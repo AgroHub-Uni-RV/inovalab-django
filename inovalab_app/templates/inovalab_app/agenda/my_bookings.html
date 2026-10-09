@@ -10,12 +10,13 @@
     <div class="filter-field month-field"><label for="my-month">Mês (opcional)</label><input id="my-month" type="month" name="mes" value="{{ month }}"></div>
     <div class="filter-field"><label for="my-category">Categoria</label><select id="my-category" name="categoria"><option value="">Todas</option>{% for value,label in categories %}<option value="{{ value }}"{% if selected_category == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
     <div class="filter-field"><label for="my-status">Situação</label><select id="my-status" name="situacao"><option value="">Todas</option>{% for value,label in situations %}<option value="{{ value }}"{% if selected_situation == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div class="filter-field"><label for="my-execution">Execução</label><select id="my-execution" name="execucao"><option value="">Todos</option>{% for value,label in execution_choices %}<option value="{{ value }}"{% if selected_execution == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
     <button type="submit">Filtrar</button>
     {% include 'inovalab_app/shared/clear_filters.html' %}
   </form>
   <h2>Agendamentos · {{ paginator.count }}</h2>
   <div class="table-wrapper" tabindex="0" role="region" aria-label="Meus agendamentos"><table><thead><tr><th>Categoria</th><th>Agendamento</th><th>Período</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
-    {% for booking in object_list %}<tr><td>{{ booking.categoria_display }}</td><td><a href="{{ booking.get_absolute_url }}">#{{ booking.pk }} · {{ booking.objeto_nome }}</a></td><td>{% if booking.categoria == 'servico' %}Prazo: {{ booking.servico.prazo|date:'d/m/Y H:i' }}{% else %}{{ booking.inicio|date:'d/m/Y H:i' }}<br>até {{ booking.fim|date:'d/m/Y H:i' }}{% endif %}</td><td><span class="badge booking-status {{ booking.situacao }}">{{ booking.get_situacao_display }}</span></td><td><a href="{{ booking.get_absolute_url }}">Ver detalhes</a></td></tr>{% empty %}<tr><td colspan="5">Nenhum agendamento neste filtro.</td></tr>{% endfor %}
+    {% for booking in object_list %}<tr><td>{{ booking.categoria_display }}</td><td><a href="{{ booking.get_absolute_url }}">#{{ booking.pk }} · {{ booking.objeto_nome }}</a></td><td>{% if booking.categoria == 'servico' %}Prazo: {{ booking.servico.prazo|date:'d/m/Y H:i' }}{% else %}{{ booking.inicio|date:'d/m/Y H:i' }}<br>até {{ booking.fim|date:'d/m/Y H:i' }}{% endif %}</td><td><span class="badge booking-status {{ booking.situacao }}">{{ booking.get_situacao_display }}</span>{% include 'inovalab_app/agenda/execution_badges.html' %}</td><td><a href="{{ booking.get_absolute_url }}">Ver detalhes</a></td></tr>{% empty %}<tr><td colspan="5">Nenhum agendamento neste filtro.</td></tr>{% endfor %}
   </tbody></table></div>
   {% include 'inovalab_app/shared/pagination.html' %}
 </section>

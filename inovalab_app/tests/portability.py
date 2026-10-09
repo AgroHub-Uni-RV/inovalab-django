@@ -11,6 +11,23 @@ from inovalab_app.models import AgendaServico, Servico
 
 
 class NativeHostTests(TestCase):
+    def test_visit_execution_uses_host_user_and_prefixed_routes(self):
+        from inovalab_app.agenda.models import AgendaVisita
+        admin = get_user_model().objects.create_superuser('admin-realizacao-nativo')
+        now = timezone.localtime()
+        visit = AgendaVisita.objects.create(criado_por=self.user, quantidade_pessoas=2,
+            data=now.date()-timedelta(days=1), hora_inicio='09:00', hora_termino='10:00')
+        self.assertEqual(AgendaVisita._meta.get_field('realizada_por').related_model, get_user_model())
+        self.client.force_login(admin)
+        response = self.client.get(reverse('agenda:requests'), {'status': 'confirmada'})
+        self.assertContains(response, 'Aguardando encerramento')
+        self.assertContains(response, f'action="/laboratorio/agenda/visita/{visit.pk}/realizar/"')
+        target = '/laboratorio/agenda/solicitacoes/?status=confirmada'
+        result = self.client.post(reverse('agenda:visit-realize', args=[visit.pk]), {'versao': 1, 'retorno': target})
+        self.assertRedirects(result, target)
+        visit.refresh_from_db()
+        self.assertEqual((visit.realizada_por_id, visit.versao), (admin.pk, 2))
+
     def setUp(self):
         self.user = get_user_model().objects.create_user('equipe-nativa', is_staff=True)
 

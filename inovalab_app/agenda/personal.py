@@ -6,6 +6,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import Http404
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import never_cache
@@ -13,6 +14,7 @@ from django.views.generic import ListView
 
 from inovalab_app.adapters.host import can_access_panel, is_business_admin
 from inovalab_app.agenda.models import CATEGORIES
+from inovalab_app.agenda.execution import EXECUTION_CHOICES, filter_execution, realization_actor_name
 from inovalab_app.agenda.forms import CancelForm
 from inovalab_app.agenda.policies import ADMIN_CANCEL_MESSAGE, can_view_own_bookings, can_cancel_booking
 from inovalab_app.agenda.selectors import occurs_in_period, month_bounds, own_booking, own_bookings
@@ -72,6 +74,7 @@ class MyBookingsListView(OwnBookingAccessMixin, ListView):
             }, status=400)
 
     def get_queryset(self):
+        self.execution_now = timezone.now()
         self.query = self.request.GET.get('q', '').strip()[:150]
         self.month = self.request.GET.get('mes', '')
         self.category = self.request.GET.get('categoria', '')
@@ -83,7 +86,8 @@ class MyBookingsListView(OwnBookingAccessMixin, ListView):
         if self.status and self.status not in PERSONAL_STATUSES:
             raise ValidationError('Selecione uma situação válida.')
         bounds = month_bounds(self.month) if self.month else None
-        rows = own_bookings(self.request.user)
+        self.selected_execution = self.request.GET.get('execucao', '')
+        rows = filter_execution(own_bookings(self.request.user, now=self.execution_now), self.selected_execution)
         result = [PersonalBooking(row) for row in rows]
         if self.category:
             result = [row for row in result if row.categoria == self.category]
@@ -102,7 +106,8 @@ class MyBookingsListView(OwnBookingAccessMixin, ListView):
         return {**super().get_context_data(**kwargs), **personal_context(self.request),
                 'query': self.query, 'month': self.month, 'selected_category': self.category,
                 'selected_situation': self.status, 'categories': CATEGORIES.items(),
-                'situations': PERSONAL_STATUSES.items()}
+                'situations': PERSONAL_STATUSES.items(),
+                'selected_execution': self.selected_execution, 'execution_choices': EXECUTION_CHOICES}
 
 
 @method_decorator(never_cache, name='dispatch')
@@ -113,6 +118,7 @@ class MyBookingDetailView(OwnBookingAccessMixin, View):
         return render(request, 'inovalab_app/agenda/my_detail.html', {
             **personal_context(request), 'booking': PersonalBooking(booking), 'events': events,
             'can_cancel_booking': can_cancel_booking(request.user, booking),
+            'realization_actor_name': realization_actor_name(booking),
         })
 
 

@@ -20,16 +20,21 @@ from inovalab_app.adapters.host import profile_photo_response, has_profile_photo
 
 
 class AgendaAccessMixin(LoginRequiredMixin):
+    def get_execution_now(self):
+        if not hasattr(self, 'execution_now'):
+            self.execution_now = timezone.now()
+        return self.execution_now
+
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated and not can_access_agenda(request.user):
             raise PermissionDenied('Entre com uma conta ativa para acessar a agenda.')
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
-        return visible_bookings(self.request.user)
+        return visible_bookings(self.request.user, now=self.get_execution_now())
 
     def get_object(self, queryset=None):
-        return visible_booking(self.request.user, self.kwargs['category'], self.kwargs['pk'])
+        return visible_booking(self.request.user, self.kwargs['category'], self.kwargs['pk'], now=self.get_execution_now())
 
 
 class AdminAgendaAccessMixin(AgendaAccessMixin):
@@ -72,19 +77,21 @@ class BookingListView(AgendaAccessMixin, ListView):
         self.situation = self.request.GET.get('situacao', self.get_default_situation())
         self.category = self.request.GET.get('categoria', '')
         self.query = self.request.GET.get('q', '').strip()[:150]
+        self.selected_execution = self.request.GET.get('execucao', '')
         queryset = filter_bookings(sorted(super().get_queryset(), key=lambda row: (row.inicio, row.categoria, row.pk)), month=self.month, category=self.category, situation=self.situation)
         if self.query:
             queryset = [row for row in queryset if self.query.casefold() in ' '.join((
                 row.criador_nome, getattr(getattr(row, 'criado_por', None), 'username', ''),
                 row.objeto_nome, row.motivo,
             )).casefold()]
-        return queryset
+        return filter_execution(queryset, self.selected_execution)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(month=self.month, selected_category=self.category, categories=CATEGORIES.items(),
                        calendar_month=self.calendar_month, selected_situation=self.situation,
                        situations=BOOKING_STATUSES.items(), query=self.query,
+                       selected_execution=self.selected_execution, execution_choices=EXECUTION_CHOICES,
                        weeks=calendar_weeks(filter_bookings(self.object_list, month=self.calendar_month), self.calendar_month),
                        category_counts={name: sum(row.situacao == 'confirmado' and row.categoria == name for row in self.object_list)
                                         for name in CATEGORIES})
@@ -96,10 +103,13 @@ class BookingDetailView(AgendaAccessMixin, DetailView):
     template_name = 'inovalab_app/agenda/detail.html'
 
     def get_context_data(self, **kwargs):
+        from inovalab_app.agenda.execution import realization_actor_name
         return {**super().get_context_data(**kwargs), 'events': self.object.eventos.all()[:5],
                 'creator_name': self.object.criador_nome,
                 'creator_has_photo': has_profile_photo(self.object.criado_por),
-                'can_cancel_booking': can_cancel_booking(self.request.user, self.object)}
+                'can_cancel_booking': can_cancel_booking(self.request.user, self.object),
+                'can_mark_visit_realized': can_mark_visit_realized(self.request.user, self.object, now=self.get_execution_now()),
+                'realization_actor_name': realization_actor_name(self.object)}
 
 
 @method_decorator(never_cache, name='dispatch')
