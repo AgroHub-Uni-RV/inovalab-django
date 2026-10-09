@@ -1,6 +1,6 @@
 # Gerenciamento e execução de agendamentos: serviços e visitas
 
-Data: 08/10/2026. Etapa: desenho escrito para revisão do responsável; implementação ainda não iniciada.
+Data: 08/10/2026. Etapa: especificação escrita aprovada pelo responsável; plano de implementação aguarda revisão e escolha de execução. Implementação ainda não iniciada.
 
 ## Objetivo e decisões aprovadas
 
@@ -79,7 +79,7 @@ Uma operação de domínio para Marcar como realizada deve:
 
 A interface oculta a ação antes do início, depois da realização e nos pendentes/recusados/cancelados. Ocultar não substitui a validação de domínio. Não é necessário aguardar o término; visitas com encerramento pendente podem ser registradas normalmente.
 
-Proposta de coerência para revisão: manter as edições atualmente autorizadas, mas impedir uma edição de data/horário que mova o início para depois de `realizada_em`, pois isso tornaria o registro uma realização de visita futura. Alterar observações não remove a realização. Não adicionar ação de desfazer realização, registro de ausência ou remarcação especial nesta entrega.
+Coerência de edição: manter as edições atualmente autorizadas, mas impedir uma edição de data/horário que mova o início para depois de `realizada_em`, pois isso tornaria o registro uma realização de visita futura. Alterar observações não remove a realização. Não adicionar ação de desfazer realização, registro de ausência ou remarcação especial nesta entrega.
 
 As regras atuais de cancelamento permanecem; se um agendamento realizado for cancelado por uma ação já permitida, Cancelado prevalece na exibição, sem apagar o registro de realização ou o histórico.
 
@@ -127,4 +127,4 @@ As mudanças de resposta da API são aditivas. As autorizações de consulta con
 
 ## Próxima etapa
 
-Revisar esta especificação, incluindo os detalhes propostos de edição e apresentação. Após aprovação escrita, preparar o plano de implementação e submetê-lo ao responsável antes de alterar código ou banco.
+O responsável aprovou esta especificação escrita. Revisar o plano em `docs/superpowers/plans/2026-10-08-gerenciamento-agendamentos.md` e escolher a execução antes de alterar código ou banco.
