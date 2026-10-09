@@ -14,7 +14,7 @@
 <a href="{% querystring tab='administradores' page=None %}"{% if selected_tab == 'administradores' %} aria-current="page"{% endif %}>Administradores</a>
 <a href="{% querystring tab='ativos' page=None %}"{% if selected_tab == 'ativos' %} aria-current="page"{% endif %}>Ativos</a>
 <a href="{% querystring tab='inativos' page=None %}"{% if selected_tab == 'inativos' %} aria-current="page"{% endif %}>Inativos</a>
-</nav><form class="user-search" method="get" data-auto-apply><label class="sr-only" for="user-q">Buscar usuário</label><input id="user-q" name="q" value="{{ query }}" placeholder="Buscar usuário"><input type="hidden" name="tab" value="{{ selected_tab }}"><button type="submit" aria-label="Buscar usuários">{% include 'inovalab_app/shared/icon.html' with name='search' %}</button></form></div>
+</nav><form class="user-search" method="get" data-auto-apply><div class="user-search-field"><label class="sr-only" for="user-q">Buscar usuário</label><input id="user-q" name="q" value="{{ query }}" placeholder="Buscar usuário"><input type="hidden" name="tab" value="{{ selected_tab }}"><button type="submit" aria-label="Buscar usuários">{% include 'inovalab_app/shared/icon.html' with name='search' %}</button></div>{% include 'inovalab_app/shared/clear_filters.html' %}</form></div>
 <div class="user-grid">{% for account in object_list %}<article class="user-card">
 <div class="user-photo" aria-hidden="true">{% if account.tem_foto %}<img src="{% url 'accounts:photo' account.pk %}" alt="">{% else %}{% include 'inovalab_app/shared/icon.html' with name='profile' %}{% endif %}</div>
 <h2><a href="{% url 'admin:accounts_user_change' account.pk %}">{{ account.get_full_name|default:account.username }}</a></h2>

@@ -4,4 +4,5 @@
   <div class="filter-field"><label for="situacao">Situação</label><select id="situacao" name="situacao"><option value="">Todas as situações</option>{% for value,label in situations %}<option value="{{ value }}"{% if selected_situation == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
   <div class="filter-field month-field"><label for="mes">Mês (opcional)</label><input id="mes" name="mes" type="month" value="{{ month }}"></div>
   <span class="filter-label">Filtros</span>
+  {% include 'inovalab_app/shared/clear_filters.html' with clear_month=True %}
 </form>

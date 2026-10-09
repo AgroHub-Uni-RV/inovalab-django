@@ -16,6 +16,7 @@
   <div class="filter-field month-field"><label for="mes">Mês (opcional)</label><input id="mes" name="mes" type="month" value="{{ month }}"></div>
   <input type="hidden" name="status" value="{{ selected_status }}">
   <span class="filter-label">Filtros</span>
+  {% include 'inovalab_app/shared/clear_filters.html' %}
 </form>
 <nav class="module-tabs" aria-label="Filtrar solicitações por situação">
   <a href="{% querystring status='' page=None %}"{% if not selected_status %} aria-current="page"{% endif %}>Todas</a>

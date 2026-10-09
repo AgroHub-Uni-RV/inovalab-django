@@ -76,3 +76,14 @@ class NativeHostTests(TestCase):
         response = self.client.get(reverse('tarefas:board'))
         self.assertContains(response, 'data-create-url="/laboratorio/tarefas/nova/"')
         self.assertContains(response, 'data-login-url="/laboratorio/entrar/?tenant=inovalab"')
+
+    def test_clear_filters_keeps_host_prefix_and_clears_admin_month(self):
+        from inovalab_app.tests.shared.test_clear_filters import ClearLinkParser
+        admin = get_user_model().objects.create_superuser('admin-limpar-nativo')
+        self.client.force_login(admin)
+        response = self.client.get('/laboratorio/agenda/?q=pedido&mes=2099-01&categoria=servico&page=1')
+        links = ClearLinkParser(response.content.decode()).links
+        self.assertEqual(links, ['/laboratorio/agenda/?mes='])
+        clean = self.client.get(links[0])
+        self.assertEqual(clean.status_code, 200)
+        self.assertEqual((clean.context['month'], clean.context['query'], clean.context['selected_category']), ('', '', ''))

@@ -229,12 +229,18 @@
 
   document.addEventListener('click', event => {
     if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-    const link = event.target.closest('.module-tabs a, .pagination a');
+    const link = event.target.closest('.module-tabs a, .pagination a, a[data-clear-filters]');
     if (!link || link.target || link.hasAttribute('download') || !main.contains(link) ||
         !main.querySelector('form[data-auto-apply]')) return;
     const url = new URL(link.href);
     if (url.origin !== location.origin || url.pathname !== pagePath) return;
     event.preventDefault();
+    if (link.matches('[data-clear-filters]')) {
+      // Use the clean destination, including blank month when the agenda defaults it.
+      // Never merge pending input, selected tabs or pagination into a reset.
+      filterPage(url, {restoreForm: true});
+      return;
+    }
     const tab = link.closest('.module-tabs');
     let filterChanged = false;
     const current = new URL(location.href);
