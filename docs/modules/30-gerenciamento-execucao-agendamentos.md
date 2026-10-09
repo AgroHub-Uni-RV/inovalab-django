@@ -56,6 +56,7 @@ O SQLite de trabalho e bancos publicados não foram migrados nesta entrega. Ante
 - `node scripts/verificar-execucao-agendamentos.cjs`: grupos, contadores/paginação, filtros/limpeza, realização com um POST/um evento/uma versão, API/detalhes, teclado/celular, sem JS, 403/409/sessão expirada/rede e axe WCAG A/AA.
 - O novo verificador falhou na versão anterior `da6974a` em cópia descartável: grupo Aguardando início ausente. Nenhum arquivo do checkout foi revertido.
 - Regressões: `node scripts/verificar-limpeza-filtros.cjs` e `node scripts/verificar-movimento-tarefas.cjs`, com bancos/sessões descartáveis.
+- Revisão independente final de `da6974a..85f63cf`: nenhum achado crítico, importante ou menor; integração aprovada. O revisor também executou 44 testes direcionados (incluindo concorrência e migração) e os 10 do hospedeiro nativo, todos OK. A suíte completa de 633 testes e o fluxo de execução/axe no navegador foram repetidos pelo implementador na retomada, também OK.
 
 ### Fixtures do navegador
 
