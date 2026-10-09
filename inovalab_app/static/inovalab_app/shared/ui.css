@@ -59,6 +59,9 @@ h1, h2, h3 { line-height:var(--line-heading); }
 .booking-status.cancelado { background:#ffd8d9; color:#ae1b23; }
 .requests-page .statistics:not(.three) { grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); }
 .requests-page .task-board:not(.task-board-filtered) { grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); }
+.requests-page .task-board.execution-board { grid-template-columns:repeat(3,minmax(0,1fr)); }
+@container(max-width:1000px) { .requests-page .task-board.execution-board { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@container(max-width:640px) { .requests-page .task-board.execution-board { grid-template-columns:minmax(0,1fr); } }
 .requests-page .task-column.canceladas > h2, .requests-page .canceladas .kanban-icon, .requests-page .stat-card.gray .stat-icon, .requests-page .booking-status.cancelado { background:#eef0f3; color:#545d6b; }
 .requests-page .stat-card.green .stat-icon { background:#edffd7; color:#70b626; }
 .booking-modal-open { overflow:hidden; }

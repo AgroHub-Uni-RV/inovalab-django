@@ -12,8 +12,9 @@ from inovalab_app.adapters.host import is_business_admin
 from inovalab_app.agenda.forms import BookingForm, CancelForm, ReviewForm
 from inovalab_app.agenda.modal import booking_saved, render_booking
 from inovalab_app.agenda.models import BOOKING_STATUSES, CATEGORIES
-from inovalab_app.agenda.policies import ADMIN_CANCEL_MESSAGE, can_access_agenda, can_create_booking, can_cancel_booking
-from inovalab_app.agenda.selectors import occurs_in_period, calendar_weeks, filter_bookings, month_bounds, visible_bookings, visible_booking
+from inovalab_app.agenda.execution import EXECUTION_CHOICES, filter_execution
+from inovalab_app.agenda.policies import ADMIN_CANCEL_MESSAGE, can_access_agenda, can_create_booking, can_cancel_booking, can_mark_visit_realized
+from inovalab_app.agenda.selectors import occurs_in_period, calendar_weeks, filter_bookings, month_bounds, visible_bookings, visible_booking, management_bookings
 from inovalab_app.agenda.services import PUBLIC_FIELDS, BookingConflict, cancel_booking, review_booking, save_booking
 from inovalab_app.adapters.host import profile_photo_response, has_profile_photo
 
@@ -210,16 +211,17 @@ class BookingReviewListView(AdminAgendaAccessMixin, ListView):
             return render(request, 'inovalab_app/agenda/error.html', {'message': ' '.join(error.messages)}, status=400)
 
     def get_queryset(self):
-        from inovalab_app.agenda.models import BOOKING_MODELS
-        from inovalab_app.agenda.personal import PersonalBooking
+        self.execution_now = timezone.now()
         self.query = self.request.GET.get('q', '').strip()[:150]
         self.month = self.request.GET.get('mes', '')
         self.selected_status = self.request.GET.get('status', '')
+        self.selected_execution = self.request.GET.get('execucao', '')
         if self.selected_status not in ('', 'pendente', 'confirmada', 'cancelada', 'recusada'):
             raise ValidationError('Selecione uma situação válida.')
         bounds = month_bounds(self.month) if self.month else None
-        rows = [PersonalBooking(row) for model in BOOKING_MODELS.values()
-                for row in model.objects.select_related('criado_por').all()]
+        rows = filter_execution(management_bookings(self.request.user, now=self.execution_now), self.selected_execution)
+        for row in rows:
+            row.booking.can_realize = can_mark_visit_realized(self.request.user, row.booking, now=self.execution_now)
         if bounds:
             start, end = bounds
             rows = [row for row in rows if occurs_in_period(row, start, end)]
@@ -242,7 +244,19 @@ class BookingReviewListView(AdminAgendaAccessMixin, ListView):
                        ('confirmada', 'confirmado', 'Confirmadas', 'concluido'),
                        ('cancelada', 'cancelado', 'Canceladas', 'canceladas'),
                        ('recusada', 'rejeitado', 'Recusadas', 'avaliacao'))]
+        confirmed = [row for row in self.reservations if row.situacao == 'confirmado']
+        page = [row for row in context['object_list'] if row.situacao == 'confirmado']
+
+        def group(key, label):
+            return {'key': key, 'label': label,
+                    'count': sum(row.estado_execucao == key for row in confirmed),
+                    'bookings': [row for row in page if row.estado_execucao == key]}
+
         return {**context, 'query': self.query, 'month': self.month, 'selected_status': self.selected_status,
+                'selected_execution': self.selected_execution, 'execution_choices': EXECUTION_CHOICES,
+                'execution_groups': [group(key, label) for key, label in EXECUTION_CHOICES[:3]],
+                'execution_attention': group('aguardando_encerramento', 'Aguardando encerramento'),
+                'historical_equipment': group('nao_aplicavel', 'Equipamentos históricos'),
                 'columns': columns, 'stat_counts': {'all': len(self.reservations),
                                                    **{column['status']: column['count'] for column in columns}}}
 

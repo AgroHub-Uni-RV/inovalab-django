@@ -1,0 +1,29 @@
+<article class="kanban-card" data-booking-key="{{ booking.categoria }}-{{ booking.pk }}">
+  <span class="kanban-icon" aria-hidden="true">{% include 'inovalab_app/shared/icon.html' with name='calendar' %}</span>
+  <div class="kanban-copy">
+    <h3><a href="{% url 'agenda:detail' booking.categoria booking.pk %}">{{ booking.objeto_nome }}</a></h3>
+    <p class="task-description">{{ booking.categoria_display }}{% if booking.categoria == 'visita' %} · {{ booking.quantidade_pessoas }} pessoa{{ booking.quantidade_pessoas|pluralize:'s' }}{% endif %}</p>
+    <span class="kanban-id">#{{ booking.id|stringformat:'03d' }}</span>
+    <span class="kanban-deadline">{% include 'inovalab_app/shared/icon.html' with name='clock' %}<span>{% if booking.categoria == 'servico' %}Prazo: {{ booking.servico.prazo|date:'d/m/Y H:i' }}{% else %}{{ booking.inicio|date:'d/m/Y H:i' }}<br>até {{ booking.fim|date:'d/m/Y H:i' }}{% endif %}</span></span>
+    <span class="kanban-owner">{{ booking.criador_nome }}</span>
+    <span class="badge booking-status {{ booking.situacao }}">{{ booking.get_situacao_display }}</span>
+    {% include 'inovalab_app/agenda/execution_badges.html' %}
+    {% if booking.situacao == 'pendente' %}
+    <form method="post" action="{% url 'agenda:review' booking.categoria booking.pk %}" class="booking-review-actions">
+      {% csrf_token %}<input type="hidden" name="versao" value="{{ booking.versao }}">
+      {% if booking.categoria == 'servico' %}<a class="primary-button" data-task-modal-trigger href="{% url 'tarefas:confirm-service' booking.pk %}">Confirmar</a>{% else %}<button type="submit" name="decisao" value="aprovar">Confirmar</button>{% endif %}
+      <button type="submit" name="decisao" value="rejeitar" class="secondary-button">Recusar</button>
+    </form>{% endif %}
+    {% if booking.can_realize %}
+    <form method="post" action="{% url 'agenda:visit-realize' booking.pk %}" class="booking-execution-actions">
+      {% csrf_token %}<input type="hidden" name="versao" value="{{ booking.versao }}">
+      <input type="hidden" name="retorno" value="{{ return_url }}">
+      <button type="submit">Marcar como realizada</button>
+    </form>{% endif %}
+    {% if booking.situacao == 'confirmado' %}
+    <form method="post" action="{% url 'agenda:cancel' booking.categoria booking.pk %}" class="booking-review-actions">
+      {% csrf_token %}<input type="hidden" name="versao" value="{{ booking.versao }}">
+      <button type="submit" class="secondary-button">Cancelar</button>
+    </form>{% endif %}
+  </div>
+</article>

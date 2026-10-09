@@ -1,10 +1,9 @@
 {% extends 'inovalab_app/agenda/base.html' %}
-{% block title %}Solicitações de agendamento{% endblock %}
+{% block title %}Gerenciamento de agendamentos{% endblock %}
 {% block content_class %}module-page agenda-page requests-page{% endblock %}
 {% block content %}
-<div class="page-heading"><h1>Solicitações de agendamento</h1><a class="secondary-button" href="{% url 'agenda:list' %}">Ver agenda</a></div>
-<p>Solicitações de serviços, equipamentos e visitas do InovaLab.</p>
-<p>Reservas confirmadas também aparecem em <a href="{% url 'agenda:list' %}">Agendamentos</a>.</p>
+<div class="page-heading"><h1>Gerenciamento de agendamentos</h1><a class="secondary-button" href="{% url 'agenda:list' %}">Ver agenda</a></div>
+<p>Acompanhe solicitações, aprovação e execução dos agendamentos do InovaLab.</p>
 <div class="statistics">
 {% include 'inovalab_app/shared/stat_card.html' with label='Todas' count=stat_counts.all icon='calendar' %}
 {% include 'inovalab_app/shared/stat_card.html' with label='Pendentes' count=stat_counts.pendente icon='clock' tone='amber' %}
@@ -12,13 +11,15 @@
 {% include 'inovalab_app/shared/stat_card.html' with label='Canceladas' count=stat_counts.cancelada icon='calendar' tone='gray' %}
 </div>
 <form method="get" class="filter-bar" data-auto-apply>
-  <div class="filter-field search-field"><label for="requests-q">Pesquisar reserva</label><input id="requests-q" name="q" value="{{ query }}" placeholder="Categoria, solicitante, motivo ou número"></div>
+  <div class="filter-field search-field"><label for="requests-q">Pesquisar agendamento</label><input id="requests-q" name="q" value="{{ query }}" placeholder="Categoria, solicitante, descrição ou número"></div>
   <div class="filter-field month-field"><label for="mes">Mês (opcional)</label><input id="mes" name="mes" type="month" value="{{ month }}"></div>
+  <div class="filter-field"><label for="execucao">Execução</label><select id="execucao" name="execucao"><option value="">Todos</option>{% for value,label in execution_choices %}<option value="{{ value }}"{% if selected_execution == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
   <input type="hidden" name="status" value="{{ selected_status }}">
   <span class="filter-label">Filtros</span>
   {% include 'inovalab_app/shared/clear_filters.html' %}
+  <noscript><button type="submit">Filtrar</button></noscript>
 </form>
-<nav class="module-tabs" aria-label="Filtrar solicitações por situação">
+<nav class="module-tabs" aria-label="Filtrar agendamentos por aprovação">
   <a href="{% querystring status='' page=None %}"{% if not selected_status %} aria-current="page"{% endif %}>Todas</a>
   <a href="{% querystring status='pendente' page=None %}"{% if selected_status == 'pendente' %} aria-current="page"{% endif %}>Pendentes</a>
   <a href="{% querystring status='confirmada' page=None %}"{% if selected_status == 'confirmada' %} aria-current="page"{% endif %}>Confirmadas</a>
@@ -26,34 +27,27 @@
   <a href="{% querystring status='recusada' page=None %}"{% if selected_status == 'recusada' %} aria-current="page"{% endif %}>Recusadas</a>
 </nav>
 {% if not object_list %}<p class="empty-notice">{% if selected_status == 'pendente' %}Nenhuma reserva pendente{% elif selected_status == 'confirmada' %}Nenhuma reserva confirmada{% elif selected_status == 'cancelada' %}Nenhuma reserva cancelada{% elif selected_status == 'recusada' %}Nenhuma reserva recusada{% else %}Nenhuma reserva{% endif %} para estes filtros.</p>{% endif %}
+{% if selected_status == 'confirmada' %}
+<div class="task-board execution-board">
+  {% for group in execution_groups %}{% include 'inovalab_app/agenda/execution_group.html' %}{% endfor %}
+</div>
+{% if execution_attention.count %}
+<div class="execution-attention">
+  <p>Estas visitas terminaram sem registro de realização. Confira o ocorrido e registre a realização quando aplicável.</p>
+  {% include 'inovalab_app/agenda/execution_group.html' with group=execution_attention %}
+</div>{% endif %}
+{% if historical_equipment.count %}
+<div class="execution-historical">{% include 'inovalab_app/agenda/execution_group.html' with group=historical_equipment %}</div>
+{% endif %}
+{% else %}
 <div class="task-board{% if selected_status %} task-board-filtered{% endif %}">
 {% for column in columns %}{% if not selected_status or selected_status == column.status %}
 <section class="task-column {{ column.tone }}" aria-label="{{ column.label }}"><h2>{{ column.label }} <span class="sr-only">({{ column.count }})</span></h2>
 <div class="column-cards">{% for booking in column.bookings %}
-  <article class="kanban-card">
-    <span class="kanban-icon" aria-hidden="true">{% include 'inovalab_app/shared/icon.html' with name='calendar' %}</span>
-    <div class="kanban-copy">
-      <h3><a href="{% url 'agenda:detail' booking.categoria booking.pk %}">{{ booking.objeto_nome }}</a></h3>
-      <p class="task-description">{{ booking.categoria_display }}{% if booking.categoria == 'visita' %} · {{ booking.quantidade_pessoas }} pessoa{{ booking.quantidade_pessoas|pluralize:'s' }}{% endif %}</p>
-      <span class="kanban-id">#{{ booking.id|stringformat:'03d' }}</span>
-      <span class="kanban-deadline">{% include 'inovalab_app/shared/icon.html' with name='clock' %}<span>{% if booking.categoria == 'servico' %}Prazo: {{ booking.servico.prazo|date:'d/m/Y H:i' }}{% else %}{{ booking.inicio|date:'d/m/Y H:i' }}<br>até {{ booking.fim|date:'d/m/Y H:i' }}{% endif %}</span></span>
-      <span class="kanban-owner">{{ booking.criador_nome }}</span>
-      <span class="badge booking-status {{ booking.situacao }}">{{ booking.get_situacao_display }}</span>
-      {% if booking.situacao == 'pendente' %}
-      <form method="post" action="{% url 'agenda:review' booking.categoria booking.pk %}" class="booking-review-actions">
-        {% csrf_token %}<input type="hidden" name="versao" value="{{ booking.versao }}">
-        {% if booking.categoria == 'servico' %}<a class="primary-button" data-task-modal-trigger href="{% url 'tarefas:confirm-service' booking.pk %}">Confirmar</a>{% else %}<button type="submit" name="decisao" value="aprovar">Confirmar</button>{% endif %}
-        <button type="submit" name="decisao" value="rejeitar" class="secondary-button">Recusar</button>
-      </form>{% endif %}
-      {% if booking.situacao == 'confirmado' %}
-      <form method="post" action="{% url 'agenda:cancel' booking.categoria booking.pk %}" class="booking-review-actions">
-        {% csrf_token %}<input type="hidden" name="versao" value="{{ booking.versao }}">
-        <button type="submit" class="secondary-button">Cancelar</button>
-      </form>{% endif %}
-    </div>
-  </article>
+  {% include 'inovalab_app/agenda/management_card.html' with return_url=request.get_full_path %}
 {% empty %}<p class="column-empty">Nenhuma reserva nesta página.</p>{% endfor %}</div></section>
 {% endif %}{% endfor %}
 </div>
+{% endif %}
 {% include 'inovalab_app/shared/pagination.html' %}
 {% endblock %}

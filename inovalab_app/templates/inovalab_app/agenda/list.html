@@ -1,7 +1,7 @@
 {% extends 'inovalab_app/agenda/base.html' %}
 {% block content_class %}module-page agenda-page{% endblock %}
 {% block content %}
-<div class="page-heading"><h1>Agendamentos</h1><div class="page-heading-actions"><a class="secondary-button" href="{% url 'agenda:mine' %}">Meus agendamentos</a>{% if is_business_admin %}<a class="secondary-button" href="{% url 'agenda:requests' %}">Solicitações de agendamento</a>{% endif %}<a class="primary-button" href="{% url 'agenda:create' %}">{% if is_business_admin %}Adicionar Agendamento{% else %}Solicitar agendamento{% endif %} {% include 'inovalab_app/shared/icon.html' with name='plus' %}</a></div></div>
+<div class="page-heading"><h1>Agendamentos</h1><div class="page-heading-actions"><a class="secondary-button" href="{% url 'agenda:mine' %}">Meus agendamentos</a>{% if is_business_admin %}<a class="secondary-button" href="{% url 'agenda:requests' %}">Gerenciamento de agendamentos</a>{% endif %}<a class="primary-button" href="{% url 'agenda:create' %}">{% if is_business_admin %}Adicionar Agendamento{% else %}Solicitar agendamento{% endif %} {% include 'inovalab_app/shared/icon.html' with name='plus' %}</a></div></div>
 {% if not is_business_admin %}<p>Seus pedidos aparecem abaixo. Somente agendamentos confirmados reservam horários.</p>{% endif %}
 <div class="statistics two">{% include 'inovalab_app/shared/stat_card.html' with label='Serviços' count=category_counts.servico icon='task' %}{% include 'inovalab_app/shared/stat_card.html' with label='Visitas' count=category_counts.visita icon='warning' tone='green' %}</div>
 {% include 'inovalab_app/agenda/filters.html' %}

@@ -1,0 +1,7 @@
+<section class="task-column execution-column {{ group.key }}" aria-label="{{ group.label }}">
+  <h2>{{ group.label }} <span class="execution-count">({{ group.count }})</span></h2>
+  <div class="column-cards">
+    {% for booking in group.bookings %}{% include 'inovalab_app/agenda/management_card.html' with return_url=request.get_full_path %}
+    {% empty %}<p class="column-empty">{% if group.count %}Nenhum agendamento deste grupo nesta página.{% else %}Nenhum agendamento neste grupo.{% endif %}</p>{% endfor %}
+  </div>
+</section>

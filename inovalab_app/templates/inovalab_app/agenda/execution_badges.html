@@ -1,0 +1,6 @@
+{% if booking.estado_execucao != 'nao_aplicavel' %}
+<span class="execution-badges" aria-label="Execução">
+  <span class="badge execution-status {{ booking.estado_execucao }}">{% if booking.concluido_com_atraso %}Concluído com atraso{% else %}{{ booking.execucao.rotulo }}{% endif %}</span>
+  {% if booking.atrasado %}<span class="badge execution-alert">Atrasado</span>{% endif %}
+</span>
+{% endif %}

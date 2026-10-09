@@ -46,6 +46,23 @@
 .module-page td:last-child { border-right:var(--space-4) solid white; }
 .module-page td a { color:var(--navy); font-weight:600; }
 .badge { display:inline-flex; align-items:center; padding:var(--space-2) var(--space-3); border-radius:var(--radius-small); background:#eee; font-size:var(--font-label); line-height:1.2; }
+.execution-badges { display:inline-flex; flex-wrap:wrap; gap:var(--space-2); align-items:center; max-width:100%; }
+.execution-status { background:var(--lavender); color:var(--navy); }
+.execution-status.concluido { background:#edffd7; color:#295512; }
+.execution-alert, .execution-status.aguardando_encerramento { background:#fff2d7; color:#704600; }
+.kanban-copy .execution-badges { margin-top:var(--space-2); }
+.booking-execution-actions { margin:var(--space-3) 0 0; }
+.module-page .booking-execution-actions button[type=submit] { min-height:44px; padding:var(--space-2) var(--space-3); font-size:var(--font-label); width:100%; }
+.requests-page .execution-column { min-height:240px; }
+.execution-count { font-size:var(--font-label); white-space:nowrap; }
+.execution-attention, .execution-historical { margin-top:var(--space-8); }
+.execution-attention .column-cards, .execution-historical .column-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr)); gap:var(--space-3); }
+.execution-attention .task-column > h2 { background:#fff2d7; color:#704600; }
+.execution-historical .task-column > h2 { background:#eef0f3; color:#545d6b; }
+.requests-page .kanban-card { align-items:flex-start; }
+.requests-page .kanban-icon { width:48px; min-height:48px; }
+.requests-page .kanban-icon .icon { width:32px; height:32px; }
+.requests-page .execution-board .concluido > h2 { color:#295512; }
 .badge.available, .badge.ativo, .badge.concluido { background:#edffd7; color:#488d13; }
 .badge.unavailable, .badge.inativo, .badge.avaliacao { background:#ffd8d9; color:#ae1b23; }
 .badge.agendado, .badge.criacao { background:#fff2d7; color:#a96700; }

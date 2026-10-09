@@ -3,7 +3,7 @@
 {% block content %}
 <div class="detail-sheet task-form-sheet"{% if not task_modal %} data-task-write-page data-task-return-url="{% if confirmation_booking %}{% url 'agenda:requests' %}{% elif object %}{% url 'tarefas:detail' object.pk %}{% else %}{% url 'tarefas:board' %}{% endif %}"{% endif %}>
   <div class="sheet-topbar">
-    {% if not task_modal %}<a class="secondary-button" href="{% if confirmation_booking %}{% url 'agenda:requests' %}{% elif object %}{% url 'tarefas:detail' object.pk %}{% else %}{% url 'tarefas:board' %}{% endif %}">{% if confirmation_booking %}Voltar às solicitações{% elif object %}Voltar à tarefa{% else %}Voltar ao quadro{% endif %}</a>{% endif %}
+    {% if not task_modal %}<a class="secondary-button" href="{% if confirmation_booking %}{% url 'agenda:requests' %}{% elif object %}{% url 'tarefas:detail' object.pk %}{% else %}{% url 'tarefas:board' %}{% endif %}">{% if confirmation_booking %}Voltar ao gerenciamento{% elif object %}Voltar à tarefa{% else %}Voltar ao quadro{% endif %}</a>{% endif %}
     <span class="badge {% if object %}{{ object.status }}{% else %}demanda{% endif %}">{% if object %}{{ object.get_status_display }}{% else %}Nova demanda{% endif %}</span>
   </div>
   <div class="sheet-content">
