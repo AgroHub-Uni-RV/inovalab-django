@@ -8,7 +8,7 @@ from inovalab_app.agenda.policies import can_create_booking, can_view_own_bookin
 class InovalabAccessMiddleware:
     INTERNAL_NAMESPACES = {'core', 'catalogo', 'tarefas', 'agenda', 'materiais'}
     PUBLIC_CONTENT_NAMES = {'inicio', 'sobre', 'servicos', 'contato', 'regimento',
-                            'calendario-funcionamento', 'public-home', 'public-about', 'image'}
+                            'calendario-funcionamento', 'public-home', 'public-about', 'image', 'equipment-photo'}
     PERSONAL_AGENDA_NAMES = {'mine', 'my-detail', 'my-visit-detail', 'visit-list', 'my-cancel'}
 
     def __init__(self, get_response):

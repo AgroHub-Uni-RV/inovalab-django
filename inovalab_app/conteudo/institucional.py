@@ -1,15 +1,17 @@
 from django.contrib import messages
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods, require_safe
 
 from inovalab_app.adapters.host import HostServiceError, send_contact
 from inovalab_app.conteudo.contact_forms import ContactForm
-from inovalab_app.conteudo.institutional_content import ABOUT_TIMELINE, EQUIPMENT, INOVALAB_STATS, REGULATION_SECTIONS, SERVICES, TEAM_MEMBERS
+from inovalab_app.conteudo.institutional_content import ABOUT_TIMELINE, INOVALAB_STATS, REGULATION_SECTIONS, SERVICES, TEAM_MEMBERS
 from inovalab_app.conteudo.functioning_calendar import functioning_calendar_months
 from inovalab_app.conteudo.selectors import published_banners
 from inovalab_app.conteudo.public_events import public_events_context
+from inovalab_app.catalogo.models import Equipamento
+from inovalab_app.catalogo.views import equipment_photo_response
 
 
 def _page(request, template, local, **extra):
@@ -18,7 +20,8 @@ def _page(request, template, local, **extra):
             'title': banner.titulo, 'alt_text': banner.texto_alternativo} if banner else None
     return render(request, 'inovalab_app/conteudo/institucional/'+template+'.html', {
         'local': local, 'hero_banner': hero,
-        'inovalab_stats': INOVALAB_STATS, 'featured_equipment': EQUIPMENT,
+        'inovalab_stats': INOVALAB_STATS,
+        'featured_equipment': Equipamento.objects.filter(excluido_em__isnull=True).defer('foto_webp'),
         'about_timeline': ABOUT_TIMELINE, 'team_members': TEAM_MEMBERS, 'services': SERVICES,
         **extra,
     })
@@ -28,6 +31,15 @@ def _page(request, template, local, **extra):
 @require_safe
 def inicio(request):
     return _page(request, 'home', 'home', **public_events_context())
+
+
+@require_safe
+def equipment_photo(request, pk):
+    equipment = get_object_or_404(Equipamento, pk=pk, excluido_em__isnull=True)
+    if not equipment.foto:
+        from django.http import Http404
+        raise Http404
+    return equipment_photo_response(equipment)
 
 
 @never_cache

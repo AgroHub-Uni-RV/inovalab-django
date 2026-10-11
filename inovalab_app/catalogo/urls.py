@@ -3,7 +3,7 @@ from django.views.generic import RedirectView
 
 from inovalab_app.catalogo.forms import EquipamentoForm, ServicoForm
 from inovalab_app.catalogo.models import Equipamento, Servico
-from inovalab_app.catalogo.views import CatalogCreateView, CatalogDetailView, CatalogListView, CatalogUpdateView, EquipmentPhotoView, EquipmentDeleteView
+from inovalab_app.catalogo.views import CatalogCreateView, CatalogDetailView, CatalogListView, CatalogUpdateView, EquipmentPhotoView, EquipmentDeleteView, EquipmentRestoreView
 
 
 app_name = 'catalogo'
@@ -17,6 +17,7 @@ class RetiredServiceRedirect(RedirectView):
 urlpatterns = [path('', RedirectView.as_view(pattern_name='catalogo:equipamentos-list', permanent=False)),
     path('equipamentos/<int:pk>/excluir/', EquipmentDeleteView.as_view(), name='equipamentos-delete')]
 urlpatterns.append(path('equipamentos/foto/', EquipmentPhotoView.as_view(), name='equipment-photo'))
+urlpatterns.append(path('equipamentos/restaurar-padrao/', EquipmentRestoreView.as_view(), name='equipamentos-restore'))
 
 for category, model, form in (
     ('equipamentos', Equipamento, EquipamentoForm),

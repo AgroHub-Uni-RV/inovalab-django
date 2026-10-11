@@ -168,7 +168,7 @@
   {# ========================= ESTRUTURA ========================= #}
   <section class="inova-section" aria-labelledby="inova-structure-title">
     <div class="inova-container inova-structure">
-      <p class="inova-eyebrow inova-eyebrow--center">Estrutura</p>
+      <p class="inova-eyebrow inova-eyebrow--center">Infraestrutura</p>
       <h2 id="inova-structure-title" class="inova-heading inova-heading--center">Tecnologia que impulsiona ideias</h2>
       <span class="inova-heading-divider inova-heading-divider--brand" aria-hidden="true"></span>
 
@@ -180,15 +180,15 @@
           {% for item in featured_equipment %}
           <li class="inova-equip-card">
             <div class="inova-equip-card__media">
-              {% if item.image %}
-              <img src="{% static item.image %}" alt="{{ item.image_alt|default:item.name }}" width="240" height="144" loading="lazy" decoding="async" />
+              {% if item.foto %}
+              <img src="{% url 'conteudo:equipment-photo' item.pk %}" alt="{{ item.nome }}" width="240" height="144" loading="lazy" decoding="async" />
               {% else %}
-              <img src="{% static item.icon %}" alt="" class="inova-equip-card__fallback-icon" width="96" height="96" loading="lazy" decoding="async" />
+              {% include 'inovalab_app/shared/icon.html' with name='box' %}
               {% endif %}
             </div>
             <div class="inova-equip-card__body">
-              <h3>{{ item.name }}</h3>
-              <p>{{ item.description }}</p>
+              <h3>{{ item.nome }}</h3>
+              <p>{{ item.descricao }}</p>
             </div>
           </li>
           {% endfor %}

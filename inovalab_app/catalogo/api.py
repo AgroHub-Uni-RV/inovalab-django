@@ -35,7 +35,7 @@ class ServicoViewSet(CatalogViewSet):
 
 
 class EquipamentoViewSet(CatalogViewSet):
-    queryset = Equipamento.objects.filter(excluido_em__isnull=True)
+    queryset = Equipamento.objects.filter(excluido_em__isnull=True).defer('foto_webp')
     serializer_class = EquipamentoSerializer
     http_method_names = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options']
 

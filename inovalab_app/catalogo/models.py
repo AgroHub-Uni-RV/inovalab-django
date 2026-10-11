@@ -83,6 +83,7 @@ class Equipamento(CadastroBase):
     codigo_inicial = models.CharField(max_length=40, null=True, blank=True, unique=True, editable=False)
     descricao = models.TextField('descrição', blank=True)
     foto = models.ImageField('foto', upload_to='equipamentos/', storage=EquipmentPhotoStorage(), blank=True)
+    foto_webp = models.BinaryField(default=bytes, blank=True, editable=False)
     status = models.CharField('status', max_length=15, choices=StatusRecurso.choices, default=StatusRecurso.DISPONIVEL)
 
     class Meta:

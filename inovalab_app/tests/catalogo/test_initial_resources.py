@@ -9,8 +9,8 @@ from inovalab_app.catalogo.models import Equipamento
 class InitialResourcesTests(TestCase):
     def test_equipment_matches_supplied_images(self):
         self.assertEqual(set(Equipamento.objects.values_list('nome', flat=True)), {
-            'Plotter de impressão', 'Impressora 3D', 'Corte a laser', 'Plotter de corte',
-            'Óculos de realidade virtual', 'Scanner 3D manual',
+            'Plotter de impressão', 'Impressora 3D', 'Corte a Laser', 'Plotter de corte de madeira e acrílico',
+            'Óculos VR', 'Scanner 3D',
         })
         self.assertFalse(Equipamento.objects.exclude(status='disponivel').exists())
         for entry in Equipamento.objects.all():

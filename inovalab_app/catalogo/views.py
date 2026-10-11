@@ -2,12 +2,13 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import FileResponse, Http404, HttpResponseRedirect
+from io import BytesIO
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.generic import CreateView, DetailView, ListView, UpdateView, View
 
 from inovalab_app.adapters.host import is_business_admin
-from inovalab_app.catalogo.services import save_entry, delete_equipment
+from inovalab_app.catalogo.services import save_entry, delete_equipment, restore_default_equipment
 from inovalab_app.catalogo.models import Equipamento
 
 
@@ -15,7 +16,7 @@ class CatalogContextMixin:
     category = ''
 
     def get_queryset(self):
-        return super().get_queryset().filter(excluido_em__isnull=True)
+        return super().get_queryset().filter(excluido_em__isnull=True).defer('foto_webp')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -92,10 +93,28 @@ class EquipmentPhotoView(LoginRequiredMixin, View):
         if not name:
             raise Http404
         equipment = get_object_or_404(Equipamento, foto=name)
-        try:
-            stream = equipment.foto.open('rb')
-        except OSError as error:
-            raise Http404 from error
-        response = FileResponse(stream)
+        return equipment_photo_response(equipment)
+
+
+def equipment_photo_response(equipment):
+    if equipment.foto_webp:
+        response = FileResponse(BytesIO(bytes(equipment.foto_webp)), content_type='image/webp')
         response['X-Content-Type-Options'] = 'nosniff'
         return response
+    try:
+        stream = equipment.foto.open('rb')
+    except OSError as error:
+        raise Http404 from error
+    response = FileResponse(stream)
+    response['X-Content-Type-Options'] = 'nosniff'
+    return response
+
+
+class EquipmentRestoreView(LoginRequiredMixin, BusinessAdminRequiredMixin, View):
+    def get(self, request):
+        return render(request, 'inovalab_app/catalogo/restore.html')
+
+    def post(self, request):
+        restore_default_equipment(actor=request.user)
+        messages.success(request, 'Equipamentos padrão restaurados. Equipamentos personalizados foram mantidos.')
+        return redirect('catalogo:equipamentos-list')

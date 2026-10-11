@@ -6,6 +6,7 @@ from inovalab_app.conteudo import institucional
 app_name = 'conteudo'
 urlpatterns = [
     path('', institucional.inicio, name='inicio'),
+    path('infraestrutura/<int:pk>/foto/', institucional.equipment_photo, name='equipment-photo'),
     path('sobre/', institucional.sobre, name='sobre'),
     path('servicos/', institucional.servicos, name='servicos'),
     path('contato/', institucional.contato, name='contato'),
