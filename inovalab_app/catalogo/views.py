@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.http import FileResponse, Http404, HttpResponseRedirect
+from django.http import FileResponse, Http404
 from io import BytesIO
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -10,6 +10,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView, V
 from inovalab_app.adapters.host import is_business_admin
 from inovalab_app.catalogo.services import save_entry, delete_equipment, restore_default_equipment
 from inovalab_app.catalogo.models import Equipamento
+from inovalab_app.shared.ui_modal import modal_redirect
 
 
 class CatalogContextMixin:
@@ -65,7 +66,7 @@ class CatalogWriteMixin(CatalogContextMixin):
                 form.add_error(field if field in form.fields else None, field_errors)
             return self.form_invalid(form)
         messages.success(self.request, 'Cadastro salvo com sucesso.')
-        return HttpResponseRedirect(reverse(f'catalogo:{self.category}-detail', args=[self.object.pk]))
+        return modal_redirect(self.request, f'catalogo:{self.category}-detail', self.object.pk)
 
 
 class CatalogCreateView(LoginRequiredMixin, BusinessAdminRequiredMixin, CatalogWriteMixin, CreateView):

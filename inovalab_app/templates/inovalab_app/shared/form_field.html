@@ -1,0 +1,5 @@
+<div class="form-field{% if full_width %} full-width{% endif %}">
+  {{ field.label_tag }}{{ field }}
+  {% if field.errors %}<div id="{{ field.auto_id }}_error">{{ field.errors }}</div>{% endif %}
+  {% if field.help_text %}<small id="{{ field.auto_id }}_helptext" class="field-help">{{ field.help_text }}</small>{% endif %}
+</div>

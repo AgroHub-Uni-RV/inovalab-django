@@ -72,5 +72,6 @@
   document.addEventListener('submit', event => {
     if (event.target.matches('[data-status-autosave]')) event.preventDefault();
   });
+  document.addEventListener('inovalab:content-updated', initialize);
   initialize();
 })();

@@ -1,4 +1,28 @@
 {% extends 'inovalab_app/shared/sheet.html' %}
 {% block title %}{% if object %}Editar banner{% else %}Novo banner{% endif %}{% endblock %}
+{% block sheet_attributes %}data-ui-modal-page data-ui-return-url="{% url 'conteudo:list' %}"{% endblock %}
 {% block sheet_toolbar %}<a class="secondary-button" href="{% url 'conteudo:list' %}">Voltar para banners</a>{% endblock %}
-{% block sheet_content %}<h1>{% if object %}Editar banner{% else %}Novo banner{% endif %}</h1><p>Agendados precisam de início e fim. Para ativo ou inativo, deixe o período vazio.</p>{% if object %}<p>A imagem atual será mantida se você não enviar outra.</p>{% endif %}<form method="post" enctype="multipart/form-data" class="sheet-form">{% csrf_token %}{% include 'inovalab_app/shared/form_fields.html' %}<div class="sheet-actions"><button type="submit">Salvar banner</button>{% if object %}<a class="secondary-button" href="{% url 'conteudo:detail' object.pk %}">Cancelar</a>{% else %}<a class="secondary-button" href="{% url 'conteudo:list' %}">Cancelar</a>{% endif %}</div></form>{% endblock %}
+{% block sheet_content %}
+<h1>{% if object %}Editar banner{% else %}Novo banner{% endif %}</h1><p class="field-help">Prepare a imagem, escolha onde publicar e defina sua exibição.</p>
+{% if form.errors %}<div class="form-error-summary" role="alert" tabindex="-1">Corrija os campos indicados para salvar.{{ form.non_field_errors }}</div>{% endif %}
+<form method="post" enctype="multipart/form-data" class="sheet-form editor-form" data-banner-editor>
+{% csrf_token %}{{ form.versao }}{{ form.versao.errors }}
+<section class="form-section"><div class="form-section-heading"><span class="form-section-number">1</span><div><h2>Conteúdo</h2><p>O texto alternativo descreve a imagem para quem usa leitor de tela.</p></div></div><div class="form-grid">
+{% include 'inovalab_app/shared/form_field.html' with field=form.titulo %}
+{% include 'inovalab_app/shared/form_field.html' with field=form.texto_alternativo %}
+</div></section>
+<section class="form-section" data-image-editor><div class="form-section-heading"><span class="form-section-number">2</span><div><h2>Imagem do banner</h2><p>WebP estático até 5 MiB. Ao editar, enviar outra imagem é opcional.</p></div></div>
+<figure class="form-image-preview"><img data-image-preview {% if object %}src="{% url 'conteudo:image' object.pk %}"{% else %}hidden{% endif %} alt="Prévia do banner"><figcaption data-image-caption>{% if object %}Imagem atual{% else %}Nenhuma imagem selecionada{% endif %}</figcaption></figure>
+{% include 'inovalab_app/shared/form_field.html' with field=form.banner_img %}
+</section>
+<section class="form-section"><div class="form-section-heading"><span class="form-section-number">3</span><div><h2>Publicação</h2><p>Inativo guarda o banner sem publicá-lo. Menores números de ordem aparecem primeiro.</p></div></div><div class="form-grid">
+{% include 'inovalab_app/shared/form_field.html' with field=form.local %}
+{% include 'inovalab_app/shared/form_field.html' with field=form.ordem %}
+{% include 'inovalab_app/shared/form_field.html' with field=form.status %}
+</div></section>
+<section class="form-section" data-banner-period><div class="form-section-heading"><div><h2>Período de exibição</h2><p>Agendados precisam de início e fim em horário de Brasília. Para ativo ou inativo, deixe o período vazio.</p></div></div><div class="form-grid">
+{% include 'inovalab_app/shared/form_field.html' with field=form.inicio_exibicao %}
+{% include 'inovalab_app/shared/form_field.html' with field=form.fim_exibicao %}
+</div><button class="secondary-button" type="button" data-clear-period hidden>Limpar período</button></section>
+<div class="sheet-actions editor-actions"><button type="submit">Salvar banner</button><a class="secondary-button" data-ui-close href="{% if object %}{% url 'conteudo:detail' object.pk %}{% else %}{% url 'conteudo:list' %}{% endif %}">Cancelar</a></div>
+</form>{% endblock %}

@@ -16,6 +16,7 @@ from inovalab_app.conteudo.forms import BannerForm, BannerStatusForm, DeleteBann
 from inovalab_app.conteudo.models import StatusBanner
 from inovalab_app.conteudo.selectors import published_banners, visible_banners
 from inovalab_app.conteudo.services import BannerConflict, delete_banner, save_banner
+from inovalab_app.shared.ui_modal import modal_redirect
 
 
 def require_admin(user):
@@ -92,7 +93,7 @@ def banner_form(request, pk=None):
                     form.add_error(field if field in form.fields else None, values)
             else:
                 messages.success(request, 'Banner salvo com sucesso.')
-                return redirect('conteudo:detail', pk=saved.pk)
+                return modal_redirect(request, 'conteudo:detail', pk=saved.pk)
         elif banner and 'versao' in form.errors:
             response_status = 400
     return render(request, 'inovalab_app/conteudo/form.html', {'form': form, 'object': banner, 'category': 'banners'},

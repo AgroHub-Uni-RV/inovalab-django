@@ -12,6 +12,7 @@ from inovalab_app.materiais.forms import MaterialCreateForm, MaterialUpdateForm
 from inovalab_app.materiais.models import StatusMaterial
 from inovalab_app.materiais.selectors import visible_materials
 from inovalab_app.materiais.services import MaterialConflict, save_material
+from inovalab_app.shared.ui_modal import modal_redirect
 
 
 class MaterialContextMixin:
@@ -85,7 +86,7 @@ def material_form(request, pk=None):
                     form.add_error(field if field in form.fields else None, values)
             else:
                 messages.success(request, 'Material salvo com sucesso.')
-                return redirect('materiais:detail', pk=saved.pk)
+                return modal_redirect(request, 'materiais:detail', pk=saved.pk)
         elif material and 'versao' in form.errors:
             response_status = 400
     return render(request, 'inovalab_app/materiais/form.html', {'form': form, 'object': material, 'category': 'materiais'},

@@ -1,0 +1,11 @@
+{% load static %}
+{% if user.is_authenticated and user.is_active %}
+<dialog id="ui-modal" class="ui-modal" aria-labelledby="ui-modal-title"
+  data-equipment-root="{% url 'catalogo:equipamentos-list' %}" data-material-root="{% url 'materiais:list' %}"
+  {% if is_business_admin %}data-banner-root="{% url 'conteudo:list' %}"{% endif %} data-task-root="{% url 'tarefas:board' %}" data-agenda-root="{% url 'agenda:list' %}">
+  <header class="ui-modal-header"><h2 id="ui-modal-title">Formulário</h2><button type="button" data-ui-close aria-label="Fechar diálogo">&times;</button></header>
+  <p class="ui-modal-status" role="status" aria-live="polite" hidden></p>
+  <div class="ui-modal-body module-page detail-page"></div>
+</dialog>
+<script src="{% static 'inovalab_app/shared/ui-modal.js' %}" defer></script>
+{% endif %}
