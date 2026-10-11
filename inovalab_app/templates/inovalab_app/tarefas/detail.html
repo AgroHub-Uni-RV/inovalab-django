@@ -1,9 +1,12 @@
 {% extends 'inovalab_app/tarefas/base.html' %}
+{% load static %}
+{% block extra_head %}<script src="{% static 'inovalab_app/tarefas/timer.js' %}" defer></script>{% endblock %}
 {% block content_class %}module-page detail-page{% endblock %}
 {% block content %}
 <div class="detail-sheet">
   <div class="sheet-topbar sheet-detail-topbar">
     <div class="sheet-topbar-content">
+      <span class="sheet-meta task-timer" title="Tempo em Criação{% if task.status != 'criacao' %} · pausado{% endif %}">{% include 'inovalab_app/shared/icon.html' with name='clock' %}<span class="sr-only">Tempo em Criação: </span><span data-task-timer data-seconds="{{ execution_seconds }}" data-running="{% if task.criacao_desde %}true{% else %}false{% endif %}">{{ task.tempo_execucao }}</span></span>
       <div class="task-actions"><form class="task-status-form" action="{% url 'tarefas:transition' task.pk %}" method="post">{% csrf_token %}{{ status_form.versao }}{{ status_form.status.label_tag }}{{ status_form.status }}<button type="submit"{% if not can_transition %} disabled{% endif %}>Salvar status</button></form></div>
       <span class="sheet-meta">{% include 'inovalab_app/shared/icon.html' with name='profile' %}<span class="sheet-meta-text"><span class="sr-only">Responsáveis: </span>{{ task.responsaveis_nomes }}</span></span>
       <span class="sheet-meta sheet-date">{% include 'inovalab_app/shared/icon.html' with name='calendar' %}<span class="sr-only">Prazo do serviço: </span>{{ task.prazo|date:'d.m.Y'|default:'Sem prazo' }}</span>

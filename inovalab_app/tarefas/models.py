@@ -1,6 +1,9 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 
 class StatusTarefa(models.TextChoices):
@@ -26,6 +29,8 @@ class Tarefa(models.Model):
     inicio = models.DateTimeField('início', null=True, blank=True, editable=False)
     prazo_legado = models.DateTimeField('prazo anterior', db_column='prazo', null=True, blank=True, editable=False)
     conclusao = models.DateTimeField('conclusão', null=True, blank=True, editable=False)
+    tempo_criacao = models.DurationField('tempo acumulado em criação', default=timedelta, editable=False)
+    criacao_desde = models.DateTimeField(null=True, blank=True, editable=False)
     versao = models.PositiveBigIntegerField(default=1, editable=False)
     excluida_em = models.DateTimeField(null=True, blank=True, editable=False)
 
@@ -35,6 +40,11 @@ class Tarefa(models.Model):
         verbose_name = 'tarefa'
         verbose_name_plural = 'tarefas'
         constraints = [
+            models.CheckConstraint(condition=models.Q(tempo_criacao__gte=timedelta()), name='tarefa_tempo_nao_negativo'),
+            models.CheckConstraint(condition=(
+                models.Q(status='criacao', excluida_em__isnull=True, criacao_desde__isnull=False)
+                | ((~models.Q(status='criacao') | models.Q(excluida_em__isnull=False)) & models.Q(criacao_desde__isnull=True))
+            ), name='tarefa_relogio_coerente'),
             models.CheckConstraint(condition=models.Q(status__in=StatusTarefa.values), name='tarefa_status_valido'),
             models.CheckConstraint(condition=models.Q(versao__gte=1), name='tarefa_versao_positiva'),
             models.CheckConstraint(
@@ -72,6 +82,18 @@ class Tarefa(models.Model):
     @property
     def responsaveis_nomes(self):
         return ', '.join(user.get_full_name() or user.username for user in self.responsaveis.all())
+
+    def execution_seconds(self, now=None):
+        duration = self.tempo_criacao
+        if self.criacao_desde is not None and self.status == StatusTarefa.CRIACAO and self.excluida_em is None:
+            duration += max((now or timezone.now()) - self.criacao_desde, timedelta())
+        return max(0, int(duration.total_seconds()))
+
+    @property
+    def tempo_execucao(self):
+        hours, remainder = divmod(self.execution_seconds(), 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return f'{hours:02d}:{minutes:02d}:{seconds:02d}'
 
 
 class EventoTarefa(models.Model):

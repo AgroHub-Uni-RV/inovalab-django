@@ -41,20 +41,25 @@ class TaskSerializer(StrictPayloadMixin, serializers.ModelSerializer):
     equipamentos = serializers.PrimaryKeyRelatedField(queryset=Equipamento.objects.all(), many=True, required=False)
     materiais_gastos = TaskMaterialSerializer(many=True, required=False)
     acoes_permitidas = serializers.SerializerMethodField()
+    tempo_execucao_segundos = serializers.SerializerMethodField()
 
     class Meta:
         model = Tarefa
         fields = ['id', 'agendamento_servico', 'servico', 'servico_nome', 'descricao', 'responsavel', 'responsavel_nome',
                   'equipamento', 'material_gasto', 'quantidade_material_gasto',
                   'responsaveis', 'equipamentos', 'materiais_gastos',
-                  'status', 'inicio', 'prazo', 'conclusao', 'versao', 'acoes_permitidas']
-        read_only_fields = ['id', 'servico', 'status', 'inicio', 'prazo', 'conclusao']
+                  'status', 'inicio', 'prazo', 'conclusao', 'versao', 'acoes_permitidas',
+                  'tempo_execucao_segundos', 'tempo_criacao', 'criacao_desde']
+        read_only_fields = ['id', 'servico', 'status', 'inicio', 'prazo', 'conclusao', 'tempo_criacao', 'criacao_desde']
         extra_kwargs = {'responsavel': {'required': False}}
 
     servico = serializers.IntegerField(source='servico_id', read_only=True)
 
     def get_acoes_permitidas(self, task):
         return allowed_actions(self.context['request'].user, task)
+
+    def get_tempo_execucao_segundos(self, task):
+        return task.execution_seconds()
 
     def validate(self, attrs):
         if self.instance is None and 'versao' in attrs:

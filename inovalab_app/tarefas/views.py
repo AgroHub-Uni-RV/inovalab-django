@@ -93,6 +93,7 @@ class TaskDetailView(LoginRequiredMixin, TaskContextMixin, DetailView):
         context['can_transition'] = bool(allowed_actions(self.request.user, self.object))
         context['events'] = self.object.eventos.all()[:5]
         context['created_event'] = self.object.eventos.filter(acao='criar').first()
+        context['execution_seconds'] = self.object.execution_seconds()
         return context
 
 

@@ -22,7 +22,8 @@ class TaskApiTests(TaskFixtures, TestCase):
         self.assertEqual(entry['acoes_permitidas'], ['iniciar'])
         self.assertEqual(set(entry), {'id', 'agendamento_servico', 'equipamento', 'material_gasto', 'quantidade_material_gasto', 'servico', 'servico_nome', 'descricao', 'responsavel', 'responsavel_nome',
                                       'responsaveis', 'equipamentos', 'materiais_gastos',
-                                      'status', 'inicio', 'prazo', 'conclusao', 'versao', 'acoes_permitidas'})
+                                  'status', 'inicio', 'prazo', 'conclusao', 'versao', 'acoes_permitidas',
+                                  'tempo_criacao', 'criacao_desde', 'tempo_execucao_segundos'})
         foreign = f'/api/v1/tarefas/{self.theirs.pk}/'
         for response in (self.client.get(foreign), self.client.patch(foreign, {'descricao': 'Negada', 'versao': 1},
                           content_type='application/json'), self.client.get(foreign + 'historico/'),

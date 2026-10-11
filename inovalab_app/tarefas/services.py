@@ -1,6 +1,6 @@
 import sqlite3
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import OperationalError, connection, transaction
@@ -18,7 +18,7 @@ from inovalab_app.tarefas.links import (
 
 
 PUBLIC_FIELDS = {'agendamento_servico', 'descricao'} | LINK_FIELDS | LEGACY_LINK_FIELDS
-TRACKED_FIELDS = (*sorted(PUBLIC_FIELDS - LINK_FIELDS), 'status', 'inicio', 'conclusao', 'excluida_em')
+TRACKED_FIELDS = (*sorted(PUBLIC_FIELDS - LINK_FIELDS), 'status', 'inicio', 'conclusao', 'excluida_em', 'tempo_criacao', 'criacao_desde')
 TRANSITIONS = {
     'iniciar': ('demanda', 'criacao'),
     'enviar': ('criacao', 'avaliacao'),
@@ -57,7 +57,7 @@ def _snapshot(task):
     values = {}
     for name in TRACKED_FIELDS:
         value = getattr(task, task._meta.get_field(name).attname)
-        values[name] = value.isoformat() if isinstance(value, datetime) else value
+        values[name] = value.isoformat() if isinstance(value, datetime) else value.total_seconds() if isinstance(value, timedelta) else value
     return {**values, **link_snapshot(task)}
 
 
@@ -73,6 +73,14 @@ def _record(actor, task, action, before):
 
 @transaction.atomic
 def _persist(actor, task, action, before, expected_version, links=None):
+    # Persist only on state changes; the browser advances the display locally.
+    running = task.status == StatusTarefa.CRIACAO and task.excluida_em is None
+    if task.criacao_desde is not None and not running:
+        task.tempo_criacao += max(timezone.now() - task.criacao_desde, timedelta())
+        task.criacao_desde = None
+    elif task.criacao_desde is None and running:
+        task.criacao_desde = timezone.now()
+    task.full_clean()
     # A conditional UPDATE provides version protection on SQLite too.
     values = {name: getattr(task, task._meta.get_field(name).attname) for name in TRACKED_FIELDS}
     values['versao'] = expected_version + 1
@@ -164,7 +172,6 @@ def transition_task(*, actor, task_id, action, expected_version):
         task.conclusao = timezone.now()
     elif action == 'reabrir':
         task.conclusao = None
-    task.full_clean()
     return _persist(actor, task, action, before, expected_version)
 
 
@@ -200,7 +207,6 @@ def set_task_status(*, actor, task_id, status, expected_version):
         if status != StatusTarefa.DEMANDA and task.inicio is None:
             task.inicio = now
         task.conclusao = now if status == StatusTarefa.CONCLUIDO else None
-        task.full_clean()
         return _persist(actor, task, 'alterar_status', before, expected_version)
     if not is_business_admin(actor) and any(
         source == task.status and destination == status and action in ADMIN_ACTIONS
