@@ -38,9 +38,6 @@ a:focus-visible,button:focus-visible,summary:focus-visible,[tabindex]:focus-visi
   height:24px;
   flex-shrink:0;
 }
-.has-admin-shortcuts > .page-shell > main {
-  padding-right:max(var(--page-gutter),96px);
-}
 .admin-shortcuts {
   position:fixed;
   top:50%;
@@ -91,7 +88,6 @@ a:focus-visible,button:focus-visible,summary:focus-visible,[tabindex]:focus-visi
   display:none;
 }
 @media(max-width:760px) {
-  .has-admin-shortcuts > .page-shell > main { padding-right:80px; }
   .admin-shortcuts { right:max(var(--space-2),env(safe-area-inset-right)); padding:var(--space-1); }
 }
 .sr-only {
