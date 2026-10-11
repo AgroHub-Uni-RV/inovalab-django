@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="{% static 'inovalab_app/shared/modulos.css' %}">
   {% block extra_head %}{% endblock %}
 </head>
-<body class="panel-page">
+<body class="panel-page{% if is_business_admin %} has-admin-shortcuts{% endif %}">
   <a class="skip-link" href="#main">Ir para o conteúdo</a>
   {% include 'inovalab_app/shared/sidebar.html' %}
   <div class="page-shell">
@@ -33,6 +33,7 @@
     </div></main>
     <div id="async-update-status" class="async-update-status" role="status" aria-live="polite" hidden></div>
     <footer class="footer"><div class="footer-inner"><p>Razão Social: FESURV - UNIVERSIDADE DE RIO VERDE CNPJ: 01.815.216/0001-78</p><div class="partner-slots" aria-hidden="true"><span></span><span></span></div></div></footer>
+    {% include 'inovalab_app/shared/admin_shortcuts.html' %}
   </div>
   <script src="{% static 'inovalab_app/shared/painel.js' %}"></script>
   <script src="{% static 'inovalab_app/shared/auto-apply.js' %}?v=20261008-task-refresh-2"></script>

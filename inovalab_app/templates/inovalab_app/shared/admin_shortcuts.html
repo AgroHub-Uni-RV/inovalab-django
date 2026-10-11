@@ -1,0 +1,12 @@
+{% if is_business_admin %}
+<nav class="admin-shortcuts" aria-label="Criação rápida">
+  <a href="{% url 'tarefas:create' %}" data-task-modal-trigger aria-label="Criar tarefa">
+    {% include 'inovalab_app/shared/icon.html' with name='task' %}
+    <span class="admin-shortcut-label" aria-hidden="true">Criar tarefa</span>
+  </a>
+  <a href="{% url 'agenda:create' %}" aria-label="Criar agendamento">
+    {% include 'inovalab_app/shared/icon.html' with name='calendar' %}
+    <span class="admin-shortcut-label" aria-hidden="true">Criar agendamento</span>
+  </a>
+</nav>
+{% endif %}

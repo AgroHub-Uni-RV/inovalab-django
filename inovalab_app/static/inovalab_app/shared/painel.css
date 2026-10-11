@@ -38,6 +38,62 @@ a:focus-visible,button:focus-visible,summary:focus-visible,[tabindex]:focus-visi
   height:24px;
   flex-shrink:0;
 }
+.has-admin-shortcuts > .page-shell > main {
+  padding-right:max(var(--page-gutter),96px);
+}
+.admin-shortcuts {
+  position:fixed;
+  top:50%;
+  right:max(var(--space-4),env(safe-area-inset-right));
+  transform:translateY(-50%);
+  z-index:3;
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-1);
+  padding:var(--space-2);
+  border:1px solid #dfe3ee;
+  border-radius:32px;
+  background:white;
+  box-shadow:0 6px 24px #15214c1f;
+}
+.admin-shortcuts a {
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:44px;
+  height:44px;
+  border-radius:var(--radius-round);
+  background:var(--lavender);
+  color:var(--navy);
+}
+.admin-shortcuts a:hover,.admin-shortcuts a:focus-visible {
+  background:var(--navy);
+  color:white;
+}
+.admin-shortcut-label {
+  position:absolute;
+  right:calc(100% + var(--space-4));
+  padding:var(--space-2) var(--space-3);
+  border-radius:var(--radius-small);
+  background:var(--navy);
+  color:white;
+  font-size:var(--font-small);
+  font-weight:600;
+  white-space:nowrap;
+  pointer-events:none;
+  visibility:hidden;
+}
+.admin-shortcuts a:hover .admin-shortcut-label,.admin-shortcuts a:focus-visible .admin-shortcut-label {
+  visibility:visible;
+}
+.sidebar-open .admin-shortcuts,.booking-modal-open .admin-shortcuts,.task-modal-open .admin-shortcuts,.ui-modal-open .admin-shortcuts {
+  display:none;
+}
+@media(max-width:760px) {
+  .has-admin-shortcuts > .page-shell > main { padding-right:80px; }
+  .admin-shortcuts { right:max(var(--space-2),env(safe-area-inset-right)); padding:var(--space-1); }
+}
 .sr-only {
   position:absolute;
   width:1px;
