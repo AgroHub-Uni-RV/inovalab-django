@@ -94,35 +94,27 @@
             {% for item in featured_equipment %}
             <article class="inova-services-equipment-card">
               <div class="inova-services-equipment-card__media">
-                {% if item.image %}
+                {% if item.foto %}
                 <img
-                  src="{% static item.image %}"
-                  alt="{{ item.image_alt|default:item.name }}"
+                  src="{% url 'conteudo:equipment-photo' item.pk %}"
+                  alt="{{ item.nome }}"
                   width="520"
                   height="410"
                   loading="{% if forloop.first %}eager{% else %}lazy{% endif %}"
                   decoding="async"
                 />
                 {% else %}
-                <img
-                  src="{% static item.icon %}"
-                  alt=""
-                  class="inova-services-equipment-card__fallback-icon"
-                  width="84"
-                  height="84"
-                  loading="lazy"
-                  decoding="async"
-                />
+                <span class="inova-services-equipment-card__fallback-icon" aria-label="Sem foto">{% include 'inovalab_app/shared/icon.html' with name='box' %}</span>
                 {% endif %}
               </div>
               <div class="inova-services-equipment-card__body">
-                <h3>{{ item.name }}</h3>
-                {% if item.description %}
-                <p>{{ item.description }}</p>
+                <h3>{{ item.nome }}</h3>
+                {% if item.descricao %}
+                <p>{{ item.descricao }}</p>
                 {% endif %}
               </div>
             </article>
-            {% endfor %}
+            {% empty %}<p>Nenhum equipamento cadastrado no momento.</p>{% endfor %}
           </div>
 
           <button
