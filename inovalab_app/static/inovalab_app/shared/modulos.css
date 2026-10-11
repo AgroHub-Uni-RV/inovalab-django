@@ -205,6 +205,7 @@
 .sheet-topbar-content .sheet-meta .icon { flex-shrink:0; }
 .sheet-topbar-content .sheet-date { white-space:nowrap; gap:var(--space-3); }
 .task-timer { white-space:nowrap; font-variant-numeric:tabular-nums; }
+.page-heading-actions { display:flex; flex-wrap:wrap; gap:var(--space-3); align-items:center; }
 .sheet-topbar-tags { display:flex; align-items:center; gap:var(--space-3); flex-wrap:wrap; }
 .sheet-detail-topbar .sheet-close { display:inline-flex; align-items:center; justify-content:center; width:var(--control-height); height:var(--control-height); border-radius:var(--radius-control); flex-shrink:0; }
 .sheet-detail-topbar .sheet-close:hover { background:#e2e4f5; }

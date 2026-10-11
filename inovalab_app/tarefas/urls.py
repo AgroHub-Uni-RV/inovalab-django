@@ -6,6 +6,7 @@ from inovalab_app.tarefas import views
 app_name = 'tarefas'
 urlpatterns = [
     path('', views.TaskBoardView.as_view(), name='board'),
+    path('lista/', views.TaskListView.as_view(), name='list'),
     path('nova/', views.TaskCreateView.as_view(), name='create'),
     path('confirmar-servico/<int:pk>/', views.ServiceConfirmationTaskView.as_view(), name='confirm-service'),
     path('<int:pk>/', views.TaskDetailView.as_view(), name='detail'),

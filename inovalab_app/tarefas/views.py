@@ -1,10 +1,14 @@
+from datetime import datetime, time, timedelta
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db.models import Count, Q
+from django.db.models import Case, Count, DateTimeField, F, OuterRef, Q, Subquery, When
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, ListView, UpdateView, View
 
@@ -12,7 +16,8 @@ from inovalab_app.adapters.host import is_business_admin
 from inovalab_app.catalogo.models import Servico
 from inovalab_app.tarefas.forms import DeleteForm, ServiceConfirmationTaskForm, TaskForm, TransitionForm
 from inovalab_app.tarefas.modal import render_task_form, task_saved
-from inovalab_app.tarefas.models import StatusTarefa, Tarefa
+from inovalab_app.tarefas.models import EventoTarefa, StatusTarefa, Tarefa
+from inovalab_app.tarefas.list_filters import TaskListFilters
 from inovalab_app.tarefas.selectors import visible_tasks
 from inovalab_app.tarefas.services import PUBLIC_FIELDS, TaskConflict, allowed_actions, delete_task, save_task, transition_task, set_task_status, allowed_statuses
 
@@ -40,9 +45,13 @@ class TaskBoardView(LoginRequiredMixin, TaskContextMixin, ListView):
     model = Tarefa
     template_name = 'inovalab_app/tarefas/board.html'
     paginate_by = 25
+    recent_completed_only = True
 
     def filtered_tasks(self):
         queryset = super().get_queryset()
+        if self.recent_completed_only:
+            cutoff = timezone.now() - timedelta(days=7)
+            queryset = queryset.filter(~Q(status=StatusTarefa.CONCLUIDO) | Q(conclusao__gte=cutoff))
         self.query = self.request.GET.get('q', '').strip()[:150]
         value = self.request.GET.get('servico', '')
         self.selected_service = value if value.isascii() and value.isdecimal() and len(value) <= 12 else ''
@@ -78,6 +87,39 @@ class TaskBoardView(LoginRequiredMixin, TaskContextMixin, ListView):
                        query=self.query, selected_service=self.selected_service, selected_status=self.selected_status,
                        services=Servico.objects.filter(pk__in=visible_tasks(self.request.user).values(
                            'agendamento_servico__servico_id')).order_by('titulo', 'pk'), statuses=StatusTarefa.choices)
+        return context
+
+
+class TaskListView(TaskBoardView):
+    template_name = 'inovalab_app/tarefas/list.html'
+    recent_completed_only = False
+
+    def filtered_tasks(self):
+        queryset = super().filtered_tasks()
+        self.filter_form = TaskListFilters(self.request.GET, actor=self.request.user)
+        if not self.filter_form.is_valid():
+            return queryset.none()
+        data = self.filter_form.cleaned_data
+        if data.get('responsavel'):
+            queryset = queryset.filter(responsaveis=data['responsavel'])
+        if data.get('de') or data.get('ate'):
+            created = EventoTarefa.objects.filter(tarefa_id=OuterRef('pk'), acao='criar').order_by('instante', 'pk')
+            queryset = queryset.annotate(periodo=Case(
+                When(status=StatusTarefa.CONCLUIDO, then=F('conclusao')),
+                default=Coalesce('inicio', Subquery(created.values('instante')[:1])), output_field=DateTimeField()))
+            if data.get('de'):
+                queryset = queryset.filter(periodo__gte=timezone.make_aware(datetime.combine(data['de'], time.min)))
+            if data.get('ate'):
+                # Avoid overflowing date.max for malformed/extreme input.
+                queryset = queryset.filter(periodo__lte=timezone.make_aware(datetime.combine(data['ate'], time.max)))
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = TaskContextMixin.get_context_data(self, **kwargs)
+        context.update(query=self.query, selected_service=self.selected_service, selected_status=self.selected_status,
+            filter_form=self.filter_form, statuses=StatusTarefa.choices,
+            services=Servico.objects.filter(pk__in=visible_tasks(self.request.user).values(
+                'agendamento_servico__servico_id')).order_by('titulo', 'pk'))
         return context
 
 

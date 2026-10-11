@@ -3,7 +3,8 @@
 {% block extra_head %}<script src="{% static 'inovalab_app/tarefas/board.js' %}?v=20261008-task-refresh-2" defer></script>{% endblock %}
 {% block content_class %}module-page tasks-page{% endblock %}
 {% block content %}
-<div class="page-heading"><div><h1>Controle de Tarefas</h1></div>{% if can_manage %}<a class="primary-button" data-task-modal-trigger href="{% url 'tarefas:create' %}">Adicionar Tarefa {% include 'inovalab_app/shared/icon.html' with name='plus' %}</a>{% endif %}</div>
+<div class="page-heading"><div><h1>Controle de Tarefas</h1></div><div class="page-heading-actions"><a class="secondary-button" href="{% url 'tarefas:list' %}">Lista completa</a>{% if can_manage %}<a class="primary-button" data-task-modal-trigger href="{% url 'tarefas:create' %}">Adicionar Tarefa {% include 'inovalab_app/shared/icon.html' with name='plus' %}</a>{% endif %}</div></div>
+<p class="field-help">Concluídos: últimos 7 dias. Consulte conclusões anteriores na <a href="{% url 'tarefas:list' %}?status=concluido">lista completa</a>.</p>
 <div class="statistics">
 {% include 'inovalab_app/shared/stat_card.html' with label='Demanda' count=stat_counts.demanda icon='task' %}
 {% include 'inovalab_app/shared/stat_card.html' with label='Criação' count=stat_counts.criacao icon='edit' tone='amber' %}

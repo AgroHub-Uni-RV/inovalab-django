@@ -1,0 +1,18 @@
+{% extends 'inovalab_app/tarefas/base.html' %}
+{% block content_class %}module-page tasks-list-page{% endblock %}
+{% block content %}
+<div class="page-heading"><h1>Lista de tarefas</h1><div class="page-heading-actions"><a class="secondary-button" href="{% url 'tarefas:board' %}">Voltar ao quadro</a>{% if can_manage %}<a class="primary-button" data-task-modal-trigger href="{% url 'tarefas:create' %}">Adicionar tarefa</a>{% endif %}</div></div>
+<p class="field-help">Todas as tarefas que você pode acessar, incluindo conclusões anteriores. O período considera a conclusão das concluídas, o início das demais e a criação das ainda não iniciadas.</p>
+<form class="filter-bar" method="get">
+  <div class="filter-field search-field"><label for="list-q">Buscar tarefa</label><input id="list-q" name="q" value="{{ query }}" placeholder="Descrição, serviço ou responsável"></div>
+  <div class="filter-field"><label for="list-service">Serviço</label><select id="list-service" name="servico"><option value="">Todos os serviços</option>{% for service in services %}<option value="{{ service.pk }}"{% if selected_service == service.pk|stringformat:'s' %} selected{% endif %}>{{ service.nome }}</option>{% endfor %}</select></div>
+  <div class="filter-field"><label for="list-status">Status</label><select id="list-status" name="status"><option value="">Todos os status</option>{% for value,label in statuses %}<option value="{{ value }}"{% if selected_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+  {% for field in filter_form %}<div class="filter-field">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
+  <button type="submit">Aplicar filtros</button>{% include 'inovalab_app/shared/clear_filters.html' %}
+</form>
+<p>{{ paginator.count }} tarefa{{ paginator.count|pluralize:"s" }} encontrada{{ paginator.count|pluralize:"s" }}.</p>
+<div class="table-wrapper" role="region" aria-label="Lista completa de tarefas" tabindex="0">
+<table><thead><tr><th scope="col">Tarefa</th><th scope="col">Status</th><th scope="col">Responsáveis</th><th scope="col">Prazo</th><th scope="col">Conclusão</th><th scope="col">Tempo em Criação</th></tr></thead>
+<tbody>{% for task in object_list %}<tr><td><a href="{% url 'tarefas:detail' task.pk %}">#{{ task.pk|stringformat:'03d' }} · {{ task.servico.nome }}</a><p>{{ task.descricao|truncatechars:100 }}</p></td><td><span class="badge {{ task.status }}">{{ task.get_status_display }}</span></td><td>{{ task.responsaveis_nomes }}</td><td>{{ task.prazo|date:'d/m/Y H:i' }}</td><td>{{ task.conclusao|date:'d/m/Y H:i'|default:'—' }}</td><td class="task-timer">{{ task.tempo_execucao }}</td></tr>{% empty %}<tr><td colspan="6">Nenhuma tarefa encontrada.</td></tr>{% endfor %}</tbody></table>
+</div>{% include 'inovalab_app/shared/pagination.html' %}
+{% endblock %}
