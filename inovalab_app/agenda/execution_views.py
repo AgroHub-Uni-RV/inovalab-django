@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.http import QueryDict
-from django.shortcuts import redirect, render
+from django.shortcuts import render
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -14,6 +14,7 @@ from django.views.decorators.cache import never_cache
 from inovalab_app.agenda.forms import VisitRealizeForm
 from inovalab_app.agenda.services import BookingConflict, mark_visit_realized
 from inovalab_app.agenda.views import AdminAgendaAccessMixin, BookingReviewListView
+from inovalab_app.shared.ui_modal import modal_redirect_url
 
 
 def safe_realization_return(request, value, booking):
@@ -65,7 +66,7 @@ class VisitRealizeView(AdminAgendaAccessMixin, View):
                 message = ' '.join(error.messages)
             else:
                 messages.success(request, 'Realização da visita registrada. Histórico preservado.')
-                return redirect(safe_realization_return(request, form.cleaned_data['retorno'], saved))
+                return modal_redirect_url(request, safe_realization_return(request, form.cleaned_data['retorno'], saved))
         return render(request, 'inovalab_app/agenda/error.html', {'booking': booking, 'message': message}, status=status)
 
     def get_visit(self, pk):

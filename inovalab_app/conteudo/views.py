@@ -117,7 +117,7 @@ def banner_delete(request, pk):
                 response_status = 409
             else:
                 messages.success(request, 'Banner excluído com sucesso.')
-                return redirect('conteudo:list')
+                return modal_redirect(request, 'conteudo:list')
         else:
             response_status = 400
     return render(request, 'inovalab_app/conteudo/delete.html', {'form': form, 'object': banner, 'category': 'banners'},

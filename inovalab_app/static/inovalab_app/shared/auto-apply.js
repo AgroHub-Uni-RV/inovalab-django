@@ -29,6 +29,11 @@
     announce();
   };
 
+  document.addEventListener('inovalab:pause-filters', () => {
+    clearTimeout(debounce);
+    cancelRequest();
+  });
+
   const updateMaterial = field => {
     const usesLabMaterial = field.value === 'nao';
     ['id_material_gasto', 'id_material_gasto_gramas'].forEach(id => {

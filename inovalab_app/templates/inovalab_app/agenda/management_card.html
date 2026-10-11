@@ -11,19 +11,16 @@
     {% if booking.situacao == 'pendente' %}
     <form method="post" action="{% url 'agenda:review' booking.categoria booking.pk %}" class="booking-review-actions">
       {% csrf_token %}<input type="hidden" name="versao" value="{{ booking.versao }}">
-      {% if booking.categoria == 'servico' %}<a class="primary-button" data-task-modal-trigger href="{% url 'tarefas:confirm-service' booking.pk %}">Confirmar</a>{% else %}<button type="submit" name="decisao" value="aprovar">Confirmar</button>{% endif %}
-      <button type="submit" name="decisao" value="rejeitar" class="secondary-button">Recusar</button>
+      {% if booking.categoria == 'servico' %}<a class="primary-button" data-task-modal-trigger href="{% url 'tarefas:confirm-service' booking.pk %}">Confirmar</a>{% else %}<button type="submit" name="decisao" value="aprovar" data-confirm-title="Aprovar agendamento" data-confirm-message="Confirma a aprovação do agendamento #{{ booking.pk }}: {{ booking.objeto_nome }}? O horário será reservado.">Confirmar</button>{% endif %}
+      <button type="submit" name="decisao" value="rejeitar" data-confirm-title="Confirmar recusa" data-confirm-message="Confirma a recusa do agendamento #{{ booking.pk }}: {{ booking.objeto_nome }}? A decisão ficará no histórico." class="secondary-button">Recusar</button>
     </form>{% endif %}
     {% if booking.can_realize %}
     <form method="post" action="{% url 'agenda:visit-realize' booking.pk %}" class="booking-execution-actions">
       {% csrf_token %}<input type="hidden" name="versao" value="{{ booking.versao }}">
       <input type="hidden" name="retorno" value="{{ return_url }}">
-      <button type="submit">Marcar como realizada</button>
+      <button type="submit" data-confirm-title="Registrar realização da visita" data-confirm-message="Confirma que a visita #{{ booking.pk }} foi realizada? Seu nome e a data do registro ficarão no histórico.">Marcar como realizada</button>
     </form>{% endif %}
     {% if booking.situacao == 'confirmado' %}
-    <form method="post" action="{% url 'agenda:cancel' booking.categoria booking.pk %}" class="booking-review-actions">
-      {% csrf_token %}<input type="hidden" name="versao" value="{{ booking.versao }}">
-      <button type="submit" class="secondary-button">Cancelar</button>
-    </form>{% endif %}
+    <div class="booking-review-actions"><a class="secondary-button" href="{% url 'agenda:cancel' booking.categoria booking.pk %}">Cancelar</a></div>{% endif %}
   </div>
 </article>

@@ -14,6 +14,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView, V
 
 from inovalab_app.adapters.host import is_business_admin
 from inovalab_app.catalogo.models import Servico
+from inovalab_app.shared.ui_modal import modal_redirect
 from inovalab_app.tarefas.forms import DeleteForm, ServiceConfirmationTaskForm, TaskForm, TransitionForm
 from inovalab_app.tarefas.modal import render_task_form, task_saved
 from inovalab_app.tarefas.models import EventoTarefa, StatusTarefa, Tarefa
@@ -291,7 +292,7 @@ class TaskDeleteView(LoginRequiredMixin, AdminRequiredMixin, View):
         except TaskConflict as error:
             return operation_error(request, task, str(error), 409)
         messages.success(request, 'Tarefa excluída. O histórico foi preservado.')
-        return redirect('tarefas:board')
+        return modal_redirect(request, 'tarefas:board')
 
 
 class TaskHistoryView(LoginRequiredMixin, ListView):

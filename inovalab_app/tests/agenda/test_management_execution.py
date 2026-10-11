@@ -74,7 +74,7 @@ class ManagementExecutionTests(TestCase):
         response = self.client.get('/agenda/solicitacoes/')
         self.assertContains(response, f'/tarefas/confirmar-servico/{pending.pk}/')
         self.assertContains(response, 'Recusar', count=1)
-        self.assertContains(response, '>Cancelar</button>', count=1)
+        self.assertContains(response, '>Cancelar</a>', count=1)
         self.assertContains(response, 'Marcar como realizada', count=1)
         self.assertNotContains(response, 'execution-board')
         self.assertEqual([column['count'] for column in response.context['columns']], [1, 1, 1, 1])

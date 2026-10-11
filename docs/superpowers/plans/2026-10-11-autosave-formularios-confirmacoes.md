@@ -8,3 +8,5 @@ Entrega autorizada em 11/10/2026, preservando regras de negócio, acesso, versã
 4. Converter confirmações existentes em modais compartilhados: excluir tarefa/banner/equipamento, restaurar padrões e cancelar agendamento interno/pessoal. Ações de aprovação, recusa e realização usam diálogo de confirmação antes do POST existente. Não alterar autenticação/recuperação de senha nem a interface técnica nativa do Django Admin. Testar teclado, móvel, erro/conflito, permissões e sem JavaScript; atualizar documentação e orientações. Commit próprio.
 
 Não inclui migrações, deploy ou push. Verificação automatizada Django e Chromium em banco isolado.
+
+Concluído em 11/10/2026: quatro commits de implementação, 658 testes Django aprovados, verificações básicas sem problemas e cenários de Chromium concluídos. Regras e resultados em [documentação do módulo](../../modules/32-autosave-formularios-confirmacoes.md).

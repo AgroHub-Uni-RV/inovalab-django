@@ -3,7 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import FileResponse, Http404
 from io import BytesIO
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.generic import CreateView, DetailView, ListView, UpdateView, View
 
@@ -85,7 +85,7 @@ class EquipmentDeleteView(LoginRequiredMixin, BusinessAdminRequiredMixin, View):
     def post(self, request, pk):
         delete_equipment(actor=request.user, equipment_id=pk)
         messages.success(request, 'Equipamento excluído. As referências existentes foram preservadas.')
-        return redirect('catalogo:equipamentos-list')
+        return modal_redirect(request, 'catalogo:equipamentos-list')
 
 
 class EquipmentPhotoView(LoginRequiredMixin, View):
@@ -118,4 +118,4 @@ class EquipmentRestoreView(LoginRequiredMixin, BusinessAdminRequiredMixin, View)
     def post(self, request):
         restore_default_equipment(actor=request.user)
         messages.success(request, 'Equipamentos padrão restaurados. Equipamentos personalizados foram mantidos.')
-        return redirect('catalogo:equipamentos-list')
+        return modal_redirect(request, 'catalogo:equipamentos-list')

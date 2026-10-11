@@ -26,7 +26,7 @@
     <p>Horários de Brasília.</p>
     {% if is_business_admin and not booking.recebido_agrohub and booking.situacao == 'pendente' and booking.categoria != 'equipamento' %}{% include 'inovalab_app/agenda/review_actions.html' %}{% endif %}
     {% if can_cancel_booking %}<div class="sheet-actions"><a class="secondary-button" href="{% url 'agenda:cancel' booking.categoria booking.pk %}">Cancelar agendamento</a></div>{% endif %}
-    {% if can_mark_visit_realized %}<form class="sheet-actions" method="post" action="{% url 'agenda:visit-realize' booking.pk %}">{% csrf_token %}<input type="hidden" name="versao" value="{{ booking.versao }}"><input type="hidden" name="retorno" value="{{ request.path }}"><button type="submit">Marcar como realizada</button></form>{% endif %}
+    {% if can_mark_visit_realized %}<form class="sheet-actions" method="post" action="{% url 'agenda:visit-realize' booking.pk %}">{% csrf_token %}<input type="hidden" name="versao" value="{{ booking.versao }}"><input type="hidden" name="retorno" value="{{ request.path }}"><button type="submit" data-confirm-title="Registrar realização da visita" data-confirm-message="Confirma que a visita #{{ booking.pk }} foi realizada? Seu nome e a data do registro ficarão no histórico.">Marcar como realizada</button></form>{% endif %}
   </section><aside class="sheet-sidebar"><h2>Histórico</h2>{% for event in events %}<article class="agenda-event"><h3>{{ event.get_acao_display }}</h3><p>{{ event.ator_nome }}</p><p>{{ event.instante|date:'d/m/Y H:i' }}</p></article>{% empty %}<p>Nenhum evento.</p>{% endfor %}<a class="history-link" href="{% url 'agenda:history' booking.categoria booking.pk %}">Histórico completo</a></aside></div>
 </div>
 {% endblock %}

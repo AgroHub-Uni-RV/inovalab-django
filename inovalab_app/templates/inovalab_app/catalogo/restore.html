@@ -1,9 +1,10 @@
 {% extends 'inovalab_app/shared/sheet.html' %}
 {% block title %}Restaurar equipamentos padrão{% endblock %}
-{% block sheet_toolbar %}<a class="secondary-button" href="{% url 'catalogo:equipamentos-list' %}">Voltar para Infraestrutura</a>{% endblock %}
+{% block sheet_attributes %}data-ui-modal-page data-ui-confirmation data-ui-return-url="{% url 'catalogo:equipamentos-list' %}"{% endblock %}
+{% block sheet_toolbar %}<a class="secondary-button" data-ui-close href="{% url 'catalogo:equipamentos-list' %}">Voltar para Infraestrutura</a>{% endblock %}
 {% block sheet_content %}
 <h1>Restaurar equipamentos padrão</h1>
 <p>Os seis equipamentos padrão terão nome, descrição, foto e disponibilidade restaurados. Padrões excluídos voltarão a aparecer no painel e na infraestrutura pública.</p>
 <p>As alterações feitas nesses campos dos padrões serão substituídas. Equipamentos personalizados e vínculos com tarefas e agendamentos serão mantidos.</p>
-<form method="post" class="sheet-form">{% csrf_token %}<div class="sheet-actions"><button type="submit" class="secondary-button">Confirmar restauração</button><a class="secondary-button" href="{% url 'catalogo:equipamentos-list' %}">Cancelar</a></div></form>
+<form method="post" class="sheet-form">{% csrf_token %}<div class="sheet-actions"><button type="submit" class="secondary-button">Confirmar restauração</button><a class="secondary-button" data-ui-close href="{% url 'catalogo:equipamentos-list' %}">Cancelar</a></div></form>
 {% endblock %}

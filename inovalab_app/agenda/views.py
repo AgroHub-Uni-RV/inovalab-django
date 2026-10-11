@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import Http404
+from inovalab_app.shared.ui_modal import modal_redirect
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.generic import DetailView, ListView, View
@@ -192,7 +193,7 @@ class BookingCancelView(AgendaAccessMixin, View):
                 message, response_status = str(error), 409
             else:
                 messages.success(request, 'Agendamento cancelado. Horário liberado e histórico preservado.')
-                return redirect('agenda:requests' if is_business_admin(request.user) else 'agenda:mine')
+                return modal_redirect(request, 'agenda:requests' if is_business_admin(request.user) else 'agenda:mine')
         return render(request, 'inovalab_app/agenda/error.html', {'message': message, 'booking': booking}, status=response_status)
 
 
@@ -296,4 +297,4 @@ class BookingReviewView(AdminAgendaAccessMixin, View):
             return render(request, 'inovalab_app/agenda/error.html', {'message': ' '.join(error.messages), 'booking': booking}, status=400)
         messages.success(request, 'Solicitação aceita. Horário reservado.' if form.cleaned_data['decisao'] == 'aprovar'
                          else 'Solicitação rejeitada.')
-        return redirect('agenda:requests')
+        return modal_redirect(request, 'agenda:requests')

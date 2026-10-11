@@ -10,9 +10,20 @@
   const previews = new Set();
   const escape = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const formPaths = roots.map(root => new RegExp(`^${escape(root)}(?:novo|\\d+/editar)/$`));
+  const taskRoot = new URL(dialog.dataset.taskRoot, location.href).pathname;
+  const agendaRoot = new URL(dialog.dataset.agendaRoot, location.href).pathname;
+  const confirmationPaths = roots.map(root => new RegExp(`^${escape(root)}(?:\\d+/excluir|restaurar-padrao)/$`));
+  confirmationPaths.push(new RegExp(`^${escape(taskRoot)}\\d+/excluir/$`),
+    new RegExp(`^${escape(agendaRoot)}(?:meus/)?(?:servico|equipamento|visita)/\\d+/cancelar/$`));
+  const actionPaths = [new RegExp(`^${escape(agendaRoot)}(?:servico|equipamento|visita)/\\d+/avaliar/$`),
+    new RegExp(`^${escape(agendaRoot)}visita/\\d+/realizar/$`)];
   const mode = value => {
     const url = new URL(value, location.href);
-    return url.origin === location.origin && formPaths.some(pattern => pattern.test(url.pathname)) ? 'form' : null;
+    if (url.origin !== location.origin) return null;
+    if (formPaths.some(pattern => pattern.test(url.pathname))) return 'form';
+    if (confirmationPaths.some(pattern => pattern.test(url.pathname))) return 'confirmation';
+    if (actionPaths.some(pattern => pattern.test(url.pathname))) return 'action';
+    return null;
   };
   const announce = message => { feedback.textContent = message; feedback.hidden = !message; };
   const discardPreviews = () => { previews.forEach(url => URL.revokeObjectURL(url)); previews.clear(); };
@@ -61,10 +72,13 @@
     }
     content.querySelector('.sheet-topbar')?.remove();
     body.replaceChildren(content);
-    title.textContent = content.querySelector('h1')?.textContent || 'Formulário';
+    dialog.classList.toggle('ui-modal-confirmation', content.hasAttribute('data-ui-confirmation'));
+    const heading = content.querySelector('h1');
+    title.textContent = heading?.textContent || 'Formulário';
+    heading?.remove();
     body.querySelectorAll('[data-image-editor]').forEach(imagePreview);
     body.querySelectorAll('[data-banner-editor]').forEach(publication);
-    const focus = body.querySelector('.form-error-summary, .errorlist, h1');
+    const focus = body.querySelector('.form-error-summary, .errorlist') || title;
     if (focus) { focus.tabIndex = -1; focus.focus({preventScroll:true}); }
     body.scrollTop = 0;
   };
@@ -98,7 +112,7 @@
     document.dispatchEvent(new CustomEvent('inovalab:content-updated'));
   };
   const load = async (value, form = null, submitter = null) => {
-    if (saving || form?.dataset.uncertain || !mode(value)) return;
+    if (saving || form?.dataset.uncertain || !mode(value) || (!form && mode(value) === 'action')) return;
     const target = new URL(value, location.href);
     controller?.abort();
     const request = new AbortController();
@@ -134,11 +148,14 @@
       if (!content || (!response.ok && ![400,409].includes(response.status))) throw new Error('Não foi possível concluir. Confira a sessão e a permissão.');
       render(content, target.href, form);
       announce(response.status === 409 ? 'Este registro mudou em outra tela. Recarregue os dados antes de salvar novamente.' : '');
-      if (response.status === 409) {
+      if (response.status === 409 && mode(target.href) !== 'action') {
         const reload = document.createElement('button');
         reload.type = 'button'; reload.textContent = 'Recarregar formulário';
         reload.addEventListener('click', () => load(target.href));
         feedback.append(' ', reload);
+      } else if (response.status === 409) {
+        const link = document.createElement('a'); link.href = location.href;
+        link.textContent = 'Atualizar página'; feedback.append(' ', link);
       }
     } catch {
       if (controller !== request) return;
@@ -158,6 +175,7 @@
     }
   };
   const open = (url, source) => {
+    document.dispatchEvent(new CustomEvent('inovalab:pause-filters'));
     trigger = source;
     if (!dialog.open) dialog.showModal();
     document.body.classList.add('ui-modal-open');
@@ -168,13 +186,35 @@
     const close = event.target.closest('[data-ui-close]');
     if (dialog.open && close) { event.preventDefault(); if (!saving) dialog.close(); return; }
     const link = event.target.closest('a[href]');
-    if (link && !link.target && !link.hasAttribute('download') && mode(link.href)) { event.preventDefault(); open(link.href, link); }
+    if (link && !link.target && !link.hasAttribute('download') && ['form','confirmation'].includes(mode(link.href))) { event.preventDefault(); open(link.href, link); }
     const clear = event.target.closest('[data-clear-period]');
     if (clear) { const form = clear.form || clear.closest('form'); form.elements.inicio_exibicao.value = ''; form.elements.fim_exibicao.value = ''; publication(form); }
   });
   dialog.addEventListener('submit', event => {
     event.preventDefault();
     if (event.target.reportValidity()) load(event.target.action, event.target, event.submitter);
+  });
+  document.addEventListener('submit', event => {
+    const source = event.target, button = event.submitter;
+    if (event.defaultPrevented || dialog.contains(source) || !button?.dataset.confirmMessage || mode(source.action) !== 'action') return;
+    event.preventDefault();
+    if (dialog.open || !source.reportValidity()) return;
+    document.dispatchEvent(new CustomEvent('inovalab:pause-filters'));
+    trigger = button;
+    const content = document.createElement('section');
+    content.className = 'detail-sheet'; content.setAttribute('data-ui-confirmation', '');
+    const section = document.createElement('div'); section.className = 'sheet-content';
+    const heading = document.createElement('h1'); heading.textContent = button.dataset.confirmTitle || 'Confirmar ação';
+    const text = document.createElement('p'); text.textContent = button.dataset.confirmMessage;
+    const form = source.cloneNode(true); form.className = 'sheet-form';
+    form.querySelectorAll('button, a').forEach(control => control.remove());
+    form.querySelectorAll('[id]').forEach(control => control.removeAttribute('id'));
+    if (button.name) { const choice = document.createElement('input'); choice.type = 'hidden'; choice.name = button.name; choice.value = button.value; form.append(choice); }
+    const actions = document.createElement('div'); actions.className = 'sheet-actions';
+    const confirm = document.createElement('button'); confirm.type = 'submit'; confirm.textContent = button.dataset.confirmTitle || 'Confirmar';
+    const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'secondary-button'; cancel.setAttribute('data-ui-close',''); cancel.textContent = 'Voltar';
+    actions.append(confirm, cancel); form.append(actions); section.append(heading, text, form); content.append(section);
+    dialog.showModal(); document.body.classList.add('ui-modal-open'); render(content, source.action);
   });
   dialog.addEventListener('change', event => {
     const editor = event.target.closest('[data-image-editor]');

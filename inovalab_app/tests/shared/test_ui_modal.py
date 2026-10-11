@@ -1,9 +1,15 @@
+from datetime import date, time
+
 from django.test import Client, TestCase
 
 from inovalab_app.catalogo.models import Equipamento
 from inovalab_app.conteudo.models import Banner
 from inovalab_app.materiais.models import Material
 from inovalab_app.tests.conteudo.helpers import BannerFixtures, DATA, image_upload
+from inovalab_app.conteudo.services import save_banner
+from inovalab_app.agenda.models import AgendaVisita
+from inovalab_app.tests.agenda.helpers import make_booking
+from inovalab_app.tarefas.services import save_task
 
 
 class ModalFormTests(BannerFixtures, TestCase):
@@ -57,3 +63,60 @@ class ModalFormTests(BannerFixtures, TestCase):
         self.assertContains(response, 'data-ui-modal-page', status_code=409)
         material.refresh_from_db()
         self.assertEqual(material.nome, 'Novo nome')
+
+
+class ModalConfirmationTests(BannerFixtures, TestCase):
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.admin)
+
+    def test_delete_and_restore_return_success_after_effect(self):
+        equipment = Equipamento.objects.create(nome='Personalizado')
+        banner = save_banner(actor=self.admin, data=DATA, image=image_upload())
+        booking = make_booking(actor=self.admin)
+        task = save_task(actor=self.admin, data={'agendamento_servico': booking,
+                         'responsavel': self.user, 'descricao': 'Excluir no modal'})
+        cases = (
+            (f'/catalogo/equipamentos/{equipment.pk}/excluir/', {}, equipment, 'excluido_em'),
+            (f'/banners/{banner.pk}/excluir/', {'versao': banner.versao}, banner, 'excluido_em'),
+            (f'/tarefas/{task.pk}/excluir/', {'versao': task.versao}, task, 'excluida_em'),
+        )
+        for url, data, model, field in cases:
+            with self.subTest(url=url):
+                self.assertContains(self.client.get(url), 'data-ui-confirmation')
+                self.assertTrue(self.client.post(url, data, HTTP_X_UI_MODAL='1').json()['saved'])
+                model.refresh_from_db()
+                self.assertIsNotNone(getattr(model, field))
+        response = self.client.post('/catalogo/equipamentos/restaurar-padrao/', HTTP_X_UI_MODAL='1')
+        self.assertTrue(response.json()['saved'])
+        equipment.refresh_from_db()
+        self.assertIsNotNone(equipment.excluido_em)
+
+    def test_review_realization_and_cancellation_preserve_versions(self):
+        visit = AgendaVisita.objects.create(quantidade_pessoas=2, data=date(2026, 10, 8),
+                    hora_inicio=time(9), hora_termino=time(10), criado_por=self.admin, situacao='pendente')
+        review = f'/agenda/visita/{visit.pk}/avaliar/'
+        response = self.client.post(review, {'versao': 1, 'decisao': 'aprovar'}, HTTP_X_UI_MODAL='1')
+        self.assertTrue(response.json()['saved'])
+        stale = self.client.post(review, {'versao': 1, 'decisao': 'rejeitar'}, HTTP_X_UI_MODAL='1')
+        self.assertContains(stale, 'data-ui-modal-page', status_code=409)
+        realization = f'/agenda/visita/{visit.pk}/realizar/'
+        self.assertTrue(self.client.post(realization, {'versao': 2}, HTTP_X_UI_MODAL='1').json()['saved'])
+        visit.refresh_from_db()
+        self.assertIsNotNone(visit.realizada_em)
+        cancel = f'/agenda/visita/{visit.pk}/cancelar/'
+        self.assertContains(self.client.get(cancel), 'data-ui-confirmation')
+        self.assertTrue(self.client.post(cancel, {'versao': visit.versao}, HTTP_X_UI_MODAL='1').json()['saved'])
+        visit.refresh_from_db()
+        self.assertIsNotNone(visit.cancelado_em)
+
+    def test_personal_cancel_works_in_modal_for_active_external_owner(self):
+        from django.contrib.auth import get_user_model
+        owner = get_user_model().objects.create_user('titular-modal')
+        visit = AgendaVisita.objects.create(quantidade_pessoas=2, data=date(2099, 10, 8),
+                    hora_inicio=time(9), hora_termino=time(10), criado_por=owner, situacao='pendente')
+        self.client.force_login(owner)
+        url = f'/agenda/meus/visita/{visit.pk}/cancelar/'
+        self.assertContains(self.client.get(url), 'data-ui-confirmation')
+        response = self.client.post(url, {'versao': 1}, HTTP_X_UI_MODAL='1')
+        self.assertEqual(response.json(), {'saved': True, 'redirect_url': '/agenda/meus/'})

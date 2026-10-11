@@ -55,6 +55,7 @@
       const restoreTrigger = !dialog.open && active === trigger;
       next.querySelectorAll('script').forEach(script => script.remove());
       document.querySelector('[data-page-content]').replaceWith(next);
+      document.dispatchEvent(new CustomEvent('inovalab:content-updated'));
       if (restoreTrigger) [...document.querySelectorAll('a[data-task-modal-trigger][href]')]
         .find(link => link.href === trigger.href)?.focus();
     } catch {

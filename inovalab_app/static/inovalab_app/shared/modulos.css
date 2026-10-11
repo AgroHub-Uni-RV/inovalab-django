@@ -247,6 +247,7 @@
 .form-field.full-width { grid-column:1/-1; }
 .ui-modal { width:min(900px,calc(100% - 32px)); max-height:calc(100dvh - 32px); padding:0; border:1px solid #d9dfe9; border-radius:var(--radius-card); color:var(--ink); background:white; box-shadow:0 24px 80px #15214c55; }
 .ui-modal::backdrop { background:#15214c88; }
+.ui-modal.ui-modal-confirmation { width:min(600px,calc(100% - 32px)); }
 .ui-modal-open { overflow:hidden; }
 .ui-modal-header { position:sticky; top:0; z-index:2; display:flex; align-items:center; justify-content:space-between; gap:var(--space-4); padding:var(--space-4) var(--space-6); background:white; border-bottom:1px solid #dfe3ea; }
 .ui-modal-header h2 { margin:0; color:var(--navy); font-size:var(--font-section); }

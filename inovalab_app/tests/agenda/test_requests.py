@@ -327,7 +327,7 @@ class BookingRequestInterfaceTests(BookingRequestFixtures, TestCase):
         self.assertEqual(response.context['stat_counts'],
                          {'all': 4, 'pendente': 0, 'confirmada': 3, 'cancelada': 1, 'recusada': 0})
         self.assertContains(response, 'booking-review-actions', count=3)
-        self.assertContains(response, '>Cancelar</button>', count=3)
+        self.assertContains(response, '>Cancelar</a>', count=3)
         self.assertNotContains(response, 'value="aprovar"')
         self.assertNotContains(response, 'value="rejeitar"')
         self.assertContains(response, 'aria-current="page">Confirmadas</a>')

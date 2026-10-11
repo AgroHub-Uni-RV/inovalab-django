@@ -13,6 +13,7 @@ from django.views.decorators.cache import never_cache
 from django.views.generic import ListView
 
 from inovalab_app.adapters.host import can_access_panel, is_business_admin
+from inovalab_app.shared.ui_modal import modal_redirect
 from inovalab_app.agenda.models import CATEGORIES
 from inovalab_app.agenda.execution import EXECUTION_CHOICES, filter_execution, realization_actor_name
 from inovalab_app.agenda.forms import CancelForm
@@ -156,5 +157,5 @@ class MyBookingCancelView(OwnBookingAccessMixin, View):
                 status = 409
             else:
                 messages.success(request, 'Agendamento cancelado. Horário liberado e histórico preservado.')
-                return redirect('agenda:requests' if is_business_admin(request.user) else 'agenda:mine')
+                return modal_redirect(request, 'agenda:requests' if is_business_admin(request.user) else 'agenda:mine')
         return self.render_form(request, booking, form, status=status)
