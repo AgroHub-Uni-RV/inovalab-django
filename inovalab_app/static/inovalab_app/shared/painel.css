@@ -571,7 +571,6 @@ main {
   min-width:0;
   position:relative;
   container-type:inline-size;
-  border-bottom:18px solid var(--green);
   overflow:hidden;
   display:flex;
   flex-direction:column;
