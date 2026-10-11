@@ -205,6 +205,11 @@
 .sheet-topbar-content .sheet-meta .icon { flex-shrink:0; }
 .sheet-topbar-content .sheet-date { white-space:nowrap; gap:var(--space-3); }
 .task-timer { white-space:nowrap; font-variant-numeric:tabular-nums; }
+.module-page .task-status-autosave .task-status-save { display:none; }
+.sheet-detail-topbar .task-status-form.task-status-autosave { grid-template-columns:auto minmax(100px,160px); }
+@media(max-width:767px) { .sheet-detail-topbar .task-status-form.task-status-autosave { grid-template-columns:minmax(0,1fr); } }
+.task-status-feedback { margin:0; padding:var(--space-4) var(--space-6); color:var(--navy); background:#f4f5ff; }
+.task-status-feedback[hidden] { display:none; }
 .page-heading-actions { display:flex; flex-wrap:wrap; gap:var(--space-3); align-items:center; }
 .sheet-topbar-tags { display:flex; align-items:center; gap:var(--space-3); flex-wrap:wrap; }
 .sheet-detail-topbar .sheet-close { display:inline-flex; align-items:center; justify-content:center; width:var(--control-height); height:var(--control-height); border-radius:var(--radius-control); flex-shrink:0; }
