@@ -23,6 +23,86 @@
   document.querySelectorAll('[data-inova-carousel]').forEach(root => {
     const track = root.querySelector('[data-carousel-track]');
     if (!track) return;
+    if (root.hasAttribute('data-carousel-loop')) {
+      const cards = [...track.children].filter(card => card.matches('article'));
+      const buttons = [...root.querySelectorAll('[data-carousel-prev], [data-carousel-next]')];
+      if (cards.length < 2) return;
+      // Cópias fixas nas duas extremidades mantêm a sequência durante a passagem.
+      // Apenas os originais participam da navegação acessível.
+      const clone = card => {
+        const copy = card.cloneNode(true);
+        copy.setAttribute('aria-hidden', 'true');
+        copy.setAttribute('inert', '');
+        copy.dataset.carouselCopy = '';
+        copy.removeAttribute('id');
+        copy.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+        return copy;
+      };
+      const copies = [...cards.map(clone), ...cards.map(clone)];
+      track.prepend(...copies.slice(0, cards.length));
+      track.append(...copies.slice(cards.length));
+      let stride = 0, start = 0, period = 0, width = 0, enabled = false;
+      let moving = false, target = 0, currentIndex = 0, settleTimer;
+      const pending = [];
+      const position = card => card.getBoundingClientRect().left - track.getBoundingClientRect().left + track.scrollLeft;
+      const normalize = () => {
+        if (!enabled || (track.scrollLeft >= start - 1 && track.scrollLeft < start + period - 1)) return;
+        const left = start + ((track.scrollLeft - start) % period + period) % period;
+        track.scrollTo({left, behavior:'instant'});
+      };
+      const settle = () => {
+        clearTimeout(settleTimer);
+        if (moving && Math.abs(track.scrollLeft - target) > 2) return;
+        normalize();
+        if (enabled) currentIndex = Math.round((track.scrollLeft - start) / stride);
+        moving = false;
+        if (pending.length) {
+          const direction = pending.shift();
+          requestAnimationFrame(() => move(direction));
+        }
+      };
+      const move = direction => {
+        if (!enabled) return;
+        if (moving) { pending.push(direction); return; }
+        normalize();
+        target = track.scrollLeft + direction * stride;
+        moving = true;
+        track.scrollTo({left:target, behavior:matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'});
+        settleTimer = setTimeout(settle, 150);
+      };
+      const measure = () => {
+        const nextStride = cards[1].getBoundingClientRect().left - cards[0].getBoundingClientRect().left;
+        if (nextStride <= 0 || (nextStride === stride && width === track.clientWidth)) return;
+        stride = nextStride;
+        width = track.clientWidth;
+        period = stride * cards.length;
+        enabled = period - (parseFloat(getComputedStyle(track).columnGap) || 0) > width + 1;
+        copies.forEach(copy => { copy.hidden = !enabled; });
+        buttons.forEach(button => { button.hidden = !enabled; });
+        start = position(cards[0]);
+        moving = false;
+        pending.length = 0;
+        clearTimeout(settleTimer);
+        track.scrollTo({left:enabled ? start + ((currentIndex % cards.length + cards.length) % cards.length) * stride : 0, behavior:'instant'});
+      };
+      track.addEventListener('scroll', () => {
+        clearTimeout(settleTimer);
+        settleTimer = setTimeout(settle, 150);
+      }, {passive:true});
+      track.addEventListener('scrollend', settle);
+      track.addEventListener('keydown', event => {
+        if (event.target !== track || !['ArrowLeft', 'ArrowRight'].includes(event.key) || !enabled) return;
+        event.preventDefault();
+        move(event.key === 'ArrowLeft' ? -1 : 1);
+      });
+      root.querySelector('[data-carousel-prev]')?.addEventListener('click', () => move(-1));
+      root.querySelector('[data-carousel-next]')?.addEventListener('click', () => move(1));
+      const observer = new ResizeObserver(measure);
+      observer.observe(track);
+      observer.observe(cards[0]);
+      measure();
+      return;
+    }
     const scroll = direction => {
       const card = track.querySelector('li, article');
       const distance = (card?.getBoundingClientRect().width || 260) + 24;

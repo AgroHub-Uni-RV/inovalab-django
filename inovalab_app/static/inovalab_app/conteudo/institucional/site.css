@@ -51,6 +51,19 @@
 .inova-contact-field textarea { resize:vertical; }
 .inova-contact-form [name=website] { display:none; }
 .institutional-page .inova-carousel__nav span { font-size:28px; line-height:1; }
+.institutional-page .inova-services-equipment { padding-inline:3.75rem; }
+.institutional-page .inova-services-equipment__track { position:relative; }
+.institutional-page .inova-services-equipment__nav.inova-carousel__nav--prev { left:0; right:auto; }
+.institutional-page .inova-services-equipment__nav.inova-carousel__nav--next { right:0; left:auto; }
+@media(max-width:760px) {
+  .institutional-page .inova-services-equipment { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem .75rem; padding-inline:0; }
+  .institutional-page .inova-services-equipment__track { grid-column:1/-1; }
+  .institutional-page .inova-services-equipment__nav { position:static; transform:none; }
+  .institutional-page .inova-services-equipment__nav:hover { transform:scale(1.05); }
+  .institutional-page .inova-services-equipment__nav:active { transform:scale(.96); }
+  .institutional-page .inova-services-equipment__nav.inova-carousel__nav--prev { justify-self:end; }
+  .institutional-page .inova-services-equipment__nav.inova-carousel__nav--next { justify-self:start; }
+}
 .institutional-page .inova-hero__title { font-size:var(--font-display); }
 .institutional-page .inova-hero { aspect-ratio:auto; min-height:23.96vw; }
 .institutional-page .inova-hero__inner { min-width:0; max-width:100%; }

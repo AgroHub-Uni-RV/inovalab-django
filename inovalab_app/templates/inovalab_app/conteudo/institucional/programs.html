@@ -75,7 +75,7 @@
   <section class="inova-services-infrastructure" aria-labelledby="inova-services-infrastructure-title">
     <div class="inova-container">
       <div
-        class="inova-services-infrastructure__layout" data-inova-carousel>
+        class="inova-services-infrastructure__layout" data-inova-carousel data-carousel-loop>
         <div class="inova-services-infrastructure__heading">
           <p class="inova-services-kicker inova-services-kicker--light">Equipamentos</p>
           <h2 id="inova-services-infrastructure-title">Infraestrutura para experimentação</h2>
@@ -119,9 +119,19 @@
 
           <button
             type="button"
+            class="inova-carousel__nav inova-carousel__nav--prev inova-services-equipment__nav"
+            data-carousel-prev
+            aria-label="Ver equipamentos anteriores"
+            hidden
+          >
+            <span aria-hidden="true">‹</span>
+          </button>
+          <button
+            type="button"
             class="inova-carousel__nav inova-carousel__nav--next inova-services-equipment__nav"
             data-carousel-next
             aria-label="Ver próximos equipamentos"
+            hidden
           >
             <span aria-hidden="true">›</span>
           </button>
