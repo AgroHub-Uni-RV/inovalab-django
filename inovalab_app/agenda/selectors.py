@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from inovalab_app.adapters.host import is_business_admin
+from inovalab_app.shared.calendar_events import event_days_in_period
 from inovalab_app.agenda.models import BOOKING_MODELS, EventoAgendamento
 from inovalab_app.agenda.models import BOOKING_STATUSES, CATEGORIES
 from inovalab_app.agenda.policies import can_access_agenda, can_view_own_bookings
@@ -106,9 +107,10 @@ def filter_bookings(queryset, *, month=None, category=None, situation=None):
     return queryset
 
 
-def calendar_weeks(queryset, month):
+def calendar_weeks(queryset, month, *, events=()):
     start, end = month_bounds(month)
     today = timezone.localdate()
+    event_days = event_days_in_period(events, start, end)
     # Count from the entire filtered month, independently of table pagination.
     counts, previews = {}, {}
     for booking in queryset:
@@ -133,7 +135,8 @@ def calendar_weeks(queryset, month):
             day += timedelta(days=1)
     weeks = calendar.Calendar(firstweekday=6).monthdatescalendar(start.year, start.month)
     return [[{'date': day, 'in_month': day.month == start.month, 'count': counts.get(day, 0),
-              'bookings': previews.get(day, []), 'sunday': day.weekday() == 6, 'is_today': day == today}
+              'bookings': previews.get(day, []), 'sunday': day.weekday() == 6, 'is_today': day == today,
+              'events': event_days.get(day, [])}
              for day in week] for week in weeks]
 
 

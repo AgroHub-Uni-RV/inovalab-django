@@ -203,10 +203,11 @@
 .agenda-page .weekday-row { padding-top:var(--space-3); padding-bottom:var(--space-3); }
 .agenda-page .agenda-day { min-height:104px; }
 .agenda-page .agenda-day time { margin-bottom:var(--space-2); }
-.agenda-page .agenda-day.is-today { box-shadow:inset 0 0 0 2px var(--ink); }
+.agenda-page .agenda-day.is-today { background:#fff5df; }
 .agenda-page .agenda-day.is-today time { display:flex; align-items:center; flex-wrap:wrap; gap:var(--space-2); color:var(--ink); }
-.agenda-page .agenda-day.is-today .agenda-day-number { display:inline-flex; align-items:center; justify-content:center; min-width:32px; min-height:32px; padding:var(--space-1); border-radius:var(--radius-small); background:var(--ink); color:white; }
 .agenda-page .agenda-today-label { font-size:var(--font-small); }
+.agenda-page .calendar-event { position:relative; display:block; margin-bottom:var(--space-2); padding:var(--space-2); border-radius:var(--radius-small); background:#eb1b23; color:white; font-size:var(--font-small); font-weight:600; overflow-wrap:anywhere; }
+.agenda-page .calendar-notice { margin:0 0 var(--space-4); padding:0; }
 .agenda-page .calendar-booking { gap:var(--space-1); padding:var(--space-2); }
 .agenda-page .calendar-key { margin:var(--space-4) 0 var(--space-6); }
 .agenda-page .calendar-category { gap:var(--space-2); background:white; color:var(--ink); }

@@ -127,3 +127,65 @@ class EcosystemCalendarTests(TestCase):
         self.assertContains(response, 'class="day reserved event"')
         self.assertEqual(days['2026-10-06']['events'], [])
         self.assertContains(response, 'class="day today"')
+
+    def agenda_days(self, response):
+        return {day['date'].isoformat(): day for week in response.context['weeks']
+                for day in week if day['in_month']}
+
+    def test_agenda_and_dashboard_share_feed_cache_and_escape_event_titles(self):
+        self.page([event(title='<script>Workshop</script>'), event(pk=2, title='Pitch'),
+                   event(pk=3, active=False), event(pk=4, start='invalid')])
+        dashboard = self.client.get('/index/')
+        agenda = self.client.get('/agenda/', {'mes': '2026-10', 'q': 'sem reservas', 'categoria': 'visita'})
+        self.assertEqual(self.agenda_days(agenda)['2026-10-08']['events'],
+                         self.days(dashboard)['2026-10-08']['events'])
+        self.assertEqual(self.agenda_days(agenda)['2026-10-08']['events'], ['<script>Workshop</script>', 'Pitch'])
+        self.assertEqual(agenda.context['paginator'].count, 0)
+        self.assertContains(agenda, '&lt;script&gt;Workshop&lt;/script&gt;')
+        self.assertNotContains(agenda, '<script>Workshop</script>')
+        requests = [row for row in self.stub.state['requests'] if row[1] == FIRST_PAGE]
+        self.assertEqual(len(requests), 1)
+        self.assertIsNone(requests[0][3])
+
+    def test_agenda_events_cover_local_days_across_months_and_exclude_midnight_end(self):
+        self.page([event(start='2026-09-30T02:30:00Z', end='2026-10-02T03:00:00Z'),
+                   event(pk=2, title='Sem término', start='2026-10-31T23:30:00-03:00'),
+                   event(pk=3, title='Instantâneo', start='2026-10-03T10:00:00-03:00',
+                         end='2026-10-03T10:00:00-03:00')])
+        october = self.agenda_days(self.client.get('/agenda/', {'mes': '2026-10'}))
+        self.assertEqual(october['2026-10-01']['events'], ['Workshop AgroHub'])
+        self.assertEqual(october['2026-10-02']['events'], [])
+        self.assertEqual(october['2026-10-03']['events'], ['Instantâneo'])
+        self.assertEqual(october['2026-10-31']['events'], ['Sem término'])
+        september = self.agenda_days(self.client.get('/agenda/', {'mes': '2026-09'}))
+        self.assertEqual(september['2026-09-29']['events'], ['Workshop AgroHub'])
+        self.assertEqual(september['2026-09-30']['events'], ['Workshop AgroHub'])
+        november = self.agenda_days(self.client.get('/agenda/', {'mes': '2026-11'}))
+        self.assertFalse(any(day['events'] for day in november.values()))
+
+    def test_agenda_keeps_today_reservations_and_external_events_independent(self):
+        self.page([event(start='2026-10-06T08:30:00-03:00')])
+        booking = make_booking(actor=self.user, prazo=NOW)
+        with patch('django.utils.timezone.now', return_value=NOW):
+            response = self.client.get('/agenda/', {'mes': '2026-10'})
+        day = self.agenda_days(response)['2026-10-06']
+        self.assertTrue(day['is_today'])
+        self.assertEqual(day['events'], ['Workshop AgroHub'])
+        self.assertEqual(day['count'], 1)
+        self.assertEqual(response.context['paginator'].count, 1)
+        self.assertContains(response, booking.get_absolute_url())
+        self.assertContains(response, 'aria-current="date"', count=1)
+        self.assertContains(response, 'class="calendar-event"', count=1)
+
+    def test_agenda_provider_failure_preserves_reservations_and_recovers(self):
+        make_booking(actor=self.user, prazo=NOW)
+        self.page([], status=503)
+        failed = self.client.get('/agenda/', {'mes': '2026-10'})
+        self.assertEqual(failed.status_code, 200)
+        self.assertContains(failed, 'Não foi possível carregar os eventos do AgroHub.')
+        self.assertEqual(self.agenda_days(failed)['2026-10-06']['count'], 1)
+        self.assertFalse(any(day['events'] for day in self.agenda_days(failed).values()))
+        self.page([event()])
+        recovered = self.client.get('/agenda/', {'mes': '2026-10'})
+        self.assertNotContains(recovered, 'Não foi possível carregar os eventos do AgroHub.')
+        self.assertEqual(self.agenda_days(recovered)['2026-10-08']['events'], ['Workshop AgroHub'])

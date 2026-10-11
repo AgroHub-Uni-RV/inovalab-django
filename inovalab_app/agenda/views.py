@@ -18,6 +18,7 @@ from inovalab_app.agenda.policies import ADMIN_CANCEL_MESSAGE, can_access_agenda
 from inovalab_app.agenda.selectors import occurs_in_period, calendar_weeks, filter_bookings, month_bounds, visible_bookings, visible_booking, management_bookings
 from inovalab_app.agenda.services import PUBLIC_FIELDS, BookingConflict, cancel_booking, review_booking, save_booking
 from inovalab_app.adapters.host import profile_photo_response, has_profile_photo
+from inovalab_app.shared.agrohub_events import load_events
 
 
 class AgendaAccessMixin(LoginRequiredMixin):
@@ -89,11 +90,13 @@ class BookingListView(AgendaAccessMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        events, unavailable = load_events()
         context.update(month=self.month, selected_category=self.category, categories=CATEGORIES.items(),
                        calendar_month=self.calendar_month, selected_situation=self.situation,
                        situations=BOOKING_STATUSES.items(), query=self.query,
                        selected_execution=self.selected_execution, execution_choices=EXECUTION_CHOICES,
-                       weeks=calendar_weeks(filter_bookings(self.object_list, month=self.calendar_month), self.calendar_month),
+                       weeks=calendar_weeks(filter_bookings(self.object_list, month=self.calendar_month), self.calendar_month,
+                                            events=events), events_unavailable=unavailable,
                        category_counts={name: sum(row.situacao == 'confirmado' and row.categoria == name for row in self.object_list)
                                         for name in CATEGORIES})
         return context

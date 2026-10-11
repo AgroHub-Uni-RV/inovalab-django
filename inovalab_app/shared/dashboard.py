@@ -8,6 +8,7 @@ from django.utils.dates import MONTHS
 from inovalab_app.adapters.host import is_business_admin
 from inovalab_app.agenda.selectors import visible_bookings, occurs_in_period
 from inovalab_app.tarefas.selectors import visible_tasks
+from inovalab_app.shared.calendar_events import event_days_in_period
 
 TASK_TABS = {'pendentes': ('Pendentes', ['demanda']),
              'andamento': ('Em andamento', ['criacao', 'avaliacao']),
@@ -38,17 +39,7 @@ def _months(bookings, today, events=()):
         while day <= final:
             counts[day] = counts.get(day, 0) + 1
             day += timedelta(days=1)
-    event_days = {}
-    for event in events:
-        begin, end = event['start'], event['end'] or event['start']
-        if begin >= last or end < first:
-            continue
-        day = timezone.localtime(max(begin, first)).date()
-        # Término à meia-noite não ocupa o dia seguinte; início=fim ocupa um dia.
-        final = timezone.localtime(min(max(begin, end-timedelta(microseconds=1)), last-timedelta(microseconds=1))).date()
-        while day <= final:
-            event_days.setdefault(day, []).append(event['title'])
-            day += timedelta(days=1)
+    event_days = event_days_in_period(events, first, last)
     months = []
     for offset in range(6):
         date = _month_date(today.year, today.month, offset)
