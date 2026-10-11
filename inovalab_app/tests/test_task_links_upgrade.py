@@ -35,7 +35,10 @@ class TaskLinksUpgradeTests(TransactionTestCase):
         before = list(Task.objects.order_by('pk').values())
         before_events = list(events.objects.order_by('pk').values())
         MigrationExecutor(connection).migrate([('inovalab_app', '0006_tarefas_multiplos_vinculos')])
-        from inovalab_app.tarefas.models import EventoTarefa, Tarefa
+        upgraded = MigrationExecutor(connection).loader.project_state(
+            [('inovalab_app', '0006_tarefas_multiplos_vinculos')]).apps
+        EventoTarefa = upgraded.get_model('inovalab_app', 'EventoTarefa')
+        Tarefa = upgraded.get_model('inovalab_app', 'Tarefa')
         self.assertEqual(list(Tarefa.objects.order_by('pk').values()), before)
         self.assertEqual(list(EventoTarefa.objects.order_by('pk').values()), before_events)
         for task in Tarefa.objects.all():
@@ -43,4 +46,4 @@ class TaskLinksUpgradeTests(TransactionTestCase):
             self.assertEqual(list(task.equipamentos.values_list('pk', flat=True)), [equipment.pk])
             self.assertEqual((task.materiais_gastos.get().material_id, task.materiais_gastos.get().quantidade),
                              (material.pk, 'meia bobina'))
-            self.assertEqual(task.prazo, deadline)
+            self.assertEqual(task.agendamento_servico.servico.prazo, deadline)

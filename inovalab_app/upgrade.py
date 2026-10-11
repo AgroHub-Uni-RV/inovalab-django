@@ -93,6 +93,8 @@ def validate_existing_schema(connection):
                 column = columns[field.column]
                 db_field = field.target_field if field.is_relation else field
                 expected_type = _type_family(db_field.get_internal_type())
+                if expected_type == 'DurationField' and not connection.features.has_native_duration_field:
+                    expected_type = 'BigIntegerField'
                 actual_type = _type_family(connection.introspection.get_field_type(column.type_code, column))
                 # SQLite stores all integer widths as INTEGER.
                 integer_width = connection.vendor == 'sqlite' and expected_type.endswith('IntegerField') and actual_type.endswith('IntegerField')

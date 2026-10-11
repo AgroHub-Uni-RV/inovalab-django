@@ -2,10 +2,8 @@ import json
 from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
-
-from inovalab_app.agenda.models import AgendaServico
-from inovalab_app.tarefas.models import Tarefa
+from django.db import connections, transaction
+from django.db.migrations.loader import MigrationLoader
 
 
 def unique_object(pairs):
@@ -36,6 +34,15 @@ class Command(BaseCommand):
         ):
             raise CommandError('Informe um objeto JSON com IDs de tarefas como chaves e IDs inteiros positivos de agendamentos.')
         alias = options['database']
+        # This command is also run between 0003 and 0004. Load the installed
+        # model state so later fields do not require migrations not yet applied.
+        loader = MigrationLoader(connections[alias])
+        installed = [node for node in loader.applied_migrations if node[0] == 'inovalab_app']
+        if not installed or max(installed)[1] < '0003_prepara_servicos_solicitados':
+            raise CommandError('Aplique primeiro a migração 0003 de preparação dos serviços.')
+        state = loader.project_state([max(installed)]).apps
+        Tarefa = state.get_model('inovalab_app', 'Tarefa')
+        AgendaServico = state.get_model('inovalab_app', 'AgendaServico')
         with transaction.atomic(using=alias):
             validated = []
             for key, booking_id in mapping.items():

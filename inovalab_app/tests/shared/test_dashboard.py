@@ -31,6 +31,7 @@ class DashboardTests(TestCase):
         task = Tarefa.objects.create(agendamento_servico=self.task_booking, descricao='Descrição real',
             responsavel=responsible or self.user, status=status,
             inicio=NOW-timedelta(days=1) if status != 'demanda' else None,
+            criacao_desde=NOW-timedelta(days=1) if status == 'criacao' else None,
             conclusao=NOW if status == 'concluido' else None, **kwargs)
         task.responsaveis.add(responsible or self.user)
         return task

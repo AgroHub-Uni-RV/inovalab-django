@@ -45,7 +45,6 @@ class ServiceUpgradeTests(TransactionTestCase):
 
     def test_services_are_individualized_without_changing_booking_task_or_history_ids(self):
         from inovalab_app.agenda.models import AgendaServico
-        from inovalab_app.tarefas.models import Tarefa
         rows = list(AgendaServico.objects.filter(pk__in=[row.pk for row in self.bookings]))
         self.assertEqual(len({row.servico_id for row in rows}), 2)
         self.assertEqual(rows[0].servico.descricao, 'Pedido antigo')
@@ -53,6 +52,8 @@ class ServiceUpgradeTests(TransactionTestCase):
         self.assertEqual(rows[0].inicio_legado, self.bookings[0].inicio)
         self.apply_map({str(self.task.pk): rows[0].pk})
         MigrationExecutor(connection).migrate([('inovalab_app', '0004_exige_agendamento_servico')])
+        Tarefa = MigrationExecutor(connection).loader.project_state(
+            [('inovalab_app', '0004_exige_agendamento_servico')]).apps.get_model('inovalab_app', 'Tarefa')
         task = Tarefa.objects.get(pk=self.task.pk)
         self.assertEqual((task.agendamento_servico_id, task.versao), (rows[0].pk, 8))
         self.assertEqual(task.eventos.get().alteracoes, {'legado': True})
@@ -62,7 +63,8 @@ class ServiceUpgradeTests(TransactionTestCase):
             MigrationExecutor(connection).migrate([('inovalab_app', '0004_exige_agendamento_servico')])
 
     def test_dry_run_and_invalid_map_do_not_partially_assign_tasks(self):
-        from inovalab_app.tarefas.models import Tarefa
+        Tarefa = MigrationExecutor(connection).loader.project_state(
+            [('inovalab_app', '0003_prepara_servicos_solicitados')]).apps.get_model('inovalab_app', 'Tarefa')
         self.apply_map({str(self.task.pk): self.bookings[0].pk}, dry_run=True)
         self.assertIsNone(Tarefa.objects.get(pk=self.task.pk).agendamento_servico_id)
         with self.assertRaises(CommandError):

@@ -4,6 +4,8 @@
     "agendaservico_tipo_material_valido": "CHECK ((material_gasto_id IS NULL OR (NOT material_proprio AND material_proprio IS NOT NULL)))"
   },
   "sqlite": {
+    "tarefa_tempo_nao_negativo": "CHECK (tempo_criacao >= 0)",
+    "tarefa_relogio_coerente": "CHECK (((criacao_desde IS NOT NULL AND excluida_em IS NULL AND status = 'criacao') OR ((NOT (status = 'criacao') OR excluida_em IS NOT NULL) AND criacao_desde IS NULL)))",
     "servico_status_valido": "CHECK (status IN ('disponivel', 'indisponivel'))",
     "equipamento_status_valido": "CHECK (status IN ('disponivel', 'ocupado', 'indisponivel'))",
     "material_versao_positiva": "CHECK (versao >= 1)",
@@ -33,6 +35,8 @@
     "banner_status_valido": "CHECK (status IN ('ativo', 'inativo', 'agendado'))"
   },
   "postgresql": {
+    "tarefa_tempo_nao_negativo": "CHECK ((tempo_criacao >= '00:00:00'::interval))",
+    "tarefa_relogio_coerente": "CHECK ((((criacao_desde IS NOT NULL) AND (excluida_em IS NULL) AND ((status)::text = 'criacao'::text)) OR (((NOT ((status)::text = 'criacao'::text)) OR (excluida_em IS NOT NULL)) AND (criacao_desde IS NULL))))",
     "servico_status_valido": "CHECK (((status)::text = ANY ((ARRAY['disponivel'::character varying, 'indisponivel'::character varying])::text[])))",
     "equipamento_status_valido": "CHECK (((status)::text = ANY ((ARRAY['disponivel'::character varying, 'ocupado'::character varying, 'indisponivel'::character varying])::text[])))",
     "material_quantidade_valida": "CHECK (((quantidade >= (0)::numeric) AND (quantidade <= 999999999.999)))",
