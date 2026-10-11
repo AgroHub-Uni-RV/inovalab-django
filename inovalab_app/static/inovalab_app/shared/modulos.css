@@ -195,7 +195,8 @@
 .agenda-page .filter-bar { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); margin-bottom:var(--space-6); }
 .agenda-page .filter-bar .filter-field { width:100%; }
 .agenda-page .filter-bar .search-field { grid-column:span 2; }
-.agenda-page .filter-label,.agenda-page .filter-clear { justify-self:end; }
+.agenda-page .agenda-filter-actions { grid-column:span 2; display:flex; align-items:center; flex-wrap:wrap; gap:var(--space-6); }
+.agenda-page .agenda-filter-actions .filter-clear { width:auto; }
 .agenda-page .agenda-calendar-caption { margin:0 0 var(--space-3); }
 .agenda-page .monthly-calendar-wrapper { margin:0 0 var(--space-4); }
 .agenda-page .monthly-calendar { min-width:700px; }
@@ -217,7 +218,7 @@
 @container(max-width:450px) {
   .agenda-page .statistics.two,.agenda-page .filter-bar { grid-template-columns:minmax(0,1fr); }
   .agenda-page .filter-bar .search-field { grid-column:auto; }
-  .agenda-page .filter-label { justify-self:start; min-height:auto; }
+  .agenda-page .agenda-filter-actions { grid-column:auto; gap:var(--space-4); }
 }
 .detail-sheet { background:white; border:1px solid #e3e3e3; border-radius:var(--radius-card); overflow:hidden; }
 .sheet-topbar { padding:var(--space-6) var(--space-8); background:var(--lavender); display:flex; align-items:center; justify-content:space-between; gap:var(--space-5); flex-wrap:wrap; color:var(--navy); }

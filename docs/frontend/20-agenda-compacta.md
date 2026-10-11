@@ -13,6 +13,8 @@ Os ajustes ficam restritos a `.agenda-page`. Mantida a sequência: título/açõ
 
 ## Verificação
 
+Ajuste após depuração: “Filtros” e “Limpar filtros” ficam no mesmo grupo, próximos e alinhados ao centro, logo depois de Execução. O grupo ocupa duas colunas da grade e adapta-se à coluna única no celular; mantém a ordem, o botão compartilhado e a alternativa Filtrar sem JavaScript. Conferidos alinhamento e distância em seis larguras no Chromium, além dos cenários abaixo; os 206 testes passaram novamente.
+
 `venv/Scripts/python.exe manage.py test inovalab_app.tests.agenda inovalab_app.tests.shared.test_clear_filters --noinput`: 206 testes passaram. `venv/Scripts/python.exe manage.py check`: sem problemas. `git diff --check`: aprovado.
 
 Chromium em banco isolado, em 1920, 1366, 900, 768, 390 e 320 px, com dois meses: ordem preservada, mesmas cores/bordas/arredondamentos, mesmas reservas, sem transbordamento externo e padding original. Na amostra de 1366 px, o calendário passou de 1282,8 para 766,8 px e de 1361,1 para 794,8 px, redução aproximada de 40%. Conferidos filtros, Limpar filtros, criação pelo modal, rolagem do calendário pelo teclado, acesso da equipe e filtro sem JavaScript.
